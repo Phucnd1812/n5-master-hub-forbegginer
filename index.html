@@ -276,6 +276,12 @@
             <button onclick="navigateTo('shadowing')" data-nav="shadowing" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="headphones" class="w-5 h-5 mr-3"></i><span>Nghe & Shadowing</span></button>
           </div>
         </details>
+        <details class="nav-group" open>
+          <summary class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none">Công cụ hỗ trợ</summary>
+          <div class="space-y-1 mt-1">
+            <button onclick="navigateTo('translator')" data-nav="translator" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="languages" class="w-5 h-5 mr-3"></i><span>Google Dịch Nhật – Việt</span></button>
+          </div>
+        </details>
         <details class="nav-group">
           <summary class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none">Cá nhân & Dữ liệu</summary>
           <div class="space-y-1 mt-1">
@@ -323,7 +329,7 @@
           <!-- Global Search Box -->
           <div class="relative w-48 sm:w-80">
             <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="globalSearchInput" placeholder="Tìm bằng tiếng Nhật, Romaji hoặc tiếng Việt... (Ấn /)" 
+            <input type="text" id="globalSearchInput" placeholder="Tìm toàn bộ N5: Nhật, Romaji, tiếng Việt... (Ấn /)" 
                    class="w-full pl-9 pr-8 py-1.5 text-sm bg-slate-100 dark:bg-jpdark-800 border border-transparent focus:border-sakura-500 rounded-xl focus:outline-none focus:bg-white dark:focus:bg-jpdark-900 transition-all">
             <span class="hidden sm:inline-block absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded">/</span>
           </div>
@@ -481,16 +487,357 @@
       return output;
     }
 
+    function compactSearchText(value) {
+      return normalizeSearchText(value).replace(/[^a-z0-9\u3040-\u30ff\u3400-\u9fff]/g, '');
+    }
+
+    // Giữ ranh giới giữa các cụm khi chuyển kana sang Romaji để tránh ghép nhầm
+    // cuối cụm trước với đầu cụm sau (ví dụ "...mo, waru..." thành "...mowaru...").
+    function romajiSearchTokens(value) {
+      const plain = plainSearchText(value);
+      return plain
+        .split(/[\s　、。．，,;:!?！？・/／（）()「」『』［］【】…—–\-]+/)
+        .map(segment => compactSearchText(kanaToRomaji(segment)))
+        .filter(Boolean);
+    }
+
+    // Mở rộng một số dạng chia thông dụng về dạng từ điển để tra cứu dễ hơn.
+    // Đây là heuristic phục vụ tra cứu N5, không thay thế bộ phân tích hình thái tiếng Nhật.
+    function deriveDictionaryForms(romajiQuery) {
+      const q = compactSearchText(romajiQuery);
+      const forms = new Set();
+      const add = value => { if (value && value.length >= 2) forms.add(value); };
+      const negativeRules = [
+        [/wanai$/, 'u'], [/kanai$/, 'ku'], [/ganai$/, 'gu'], [/sanai$/, 'su'],
+        [/tanai$/, 'tsu'], [/nanai$/, 'nu'], [/banai$/, 'bu'], [/manai$/, 'mu'], [/ranai$/, 'ru']
+      ];
+      negativeRules.forEach(([pattern, ending]) => {
+        if (pattern.test(q)) add(q.replace(pattern, ending));
+      });
+      if (/enai$/.test(q)) add(q.replace(/enai$/, 'eru'));
+      if (/inai$/.test(q)) add(q.replace(/inai$/, 'iru'));
+
+      // Dạng lịch sự: 終わります/終わりません, 食べます/食べません...
+      if (/imasu$/.test(q) || /imasen$/.test(q)) {
+        const suffix = /imasu$/.test(q) ? /imasu$/ : /imasen$/;
+        const stem = q.replace(suffix, '');
+        add(stem + 'u');
+        if (q === 'mimasu' || q === 'mimasen') add('miru');
+        if (q === 'kimasu' || q === 'kimasen') add('kuru');
+      }
+      if (/emasu$/.test(q) || /emasen$/.test(q)) {
+        const suffix = /emasu$/.test(q) ? /emasu$/ : /emasen$/;
+        add(q.replace(suffix, 'eru'));
+      }
+
+      // Thể た / て của các nhóm động từ thường gặp.
+      if (/tta$/.test(q) || /tte$/.test(q)) {
+        const stem = q.replace(/tt[ae]$/, '');
+        [stem + 'ru', stem + 'u', stem + 'tsu'].forEach(add);
+      }
+      if (/nda$/.test(q) || /nde$/.test(q)) {
+        const stem = q.replace(/nd[ae]$/, '');
+        [stem + 'mu', stem + 'bu', stem + 'nu'].forEach(add);
+      }
+      if (/ita$/.test(q) || /ite$/.test(q)) {
+        const stem = q.replace(/it[ae]$/, '');
+        [stem + 'ku', stem + 'iru'].forEach(add);
+      }
+      if (/ida$/.test(q) || /ide$/.test(q)) {
+        const stem = q.replace(/id[ae]$/, '');
+        add(stem + 'gu');
+      }
+      if (/shita$/.test(q) || /shite$/.test(q)) {
+        const stem = q.replace(/shit[ae]$/, '');
+        add(stem + 'su');
+      }
+      if (/eta$/.test(q) || /ete$/.test(q)) {
+        const stem = q.replace(/et[ae]$/, '');
+        add(stem + 'eru');
+      }
+      return [...forms];
+    }
+
+    function deriveJapaneseDictionaryForms(query) {
+      const q = String(query ?? '').normalize('NFKC').trim();
+      const forms = new Set();
+      const add = value => { if (value && value.length >= 2) forms.add(value); };
+      const godanNegative = [
+        [/わない$/, 'う'], [/かない$/, 'く'], [/がない$/, 'ぐ'], [/さない$/, 'す'],
+        [/たない$/, 'つ'], [/なない$/, 'ぬ'], [/ばない$/, 'ぶ'], [/まない$/, 'む'], [/らない$/, 'る']
+      ];
+      const matchedGodanNegative = godanNegative.some(([pattern, ending]) => {
+        if (!pattern.test(q)) return false;
+        add(q.replace(pattern, ending));
+        return true;
+      });
+      if (!matchedGodanNegative && /ない$/.test(q)) add(q.replace(/ない$/, 'る')); // 食べない → 食べる、見ない → 見る
+
+      const politeRules = [
+        [/りません$/, 'る'], [/います$/, 'う'], [/きます$/, 'く'], [/ぎます$/, 'ぐ'],
+        [/します$/, 'す'], [/ちます$/, 'つ'], [/にます$/, 'ぬ'], [/びます$/, 'ぶ'], [/みます$/, 'む'],
+        [/ります$/, 'る'], [/ません$/, 'る']
+      ];
+      politeRules.forEach(([pattern, ending]) => { if (pattern.test(q)) add(q.replace(pattern, ending)); });
+
+      if (/った$/.test(q) || /って$/.test(q)) {
+        const stem = q.replace(/っ[たて]$/, '');
+        [stem + 'る', stem + 'う', stem + 'つ'].forEach(add);
+      }
+      if (/んだ$/.test(q) || /んで$/.test(q)) {
+        const stem = q.replace(/ん[だで]$/, '');
+        [stem + 'む', stem + 'ぶ', stem + 'ぬ'].forEach(add);
+      }
+      if (/いた$/.test(q) || /いて$/.test(q)) add(q.replace(/い[たて]$/, 'く'));
+      if (/いだ$/.test(q) || /いで$/.test(q)) add(q.replace(/い[だで]$/, 'ぐ'));
+      if (/した$/.test(q) || /して$/.test(q)) add(q.replace(/し[たて]$/, 'す'));
+      if (/た$/.test(q) || /て$/.test(q)) add(q.replace(/[たて]$/, 'る'));
+      if (/行っ[たて]$/.test(q)) add(q.replace(/行っ[たて]$/, '行く'));
+      return [...forms];
+    }
+
+    function deriveLatinPoliteForms(dictionaryForm) {
+      const q = compactSearchText(dictionaryForm);
+      const forms = new Set();
+      const add = value => { if (value && value.length >= 2) forms.add(value); };
+      const godan = [
+        [/u$/, 'imasu'], [/ku$/, 'kimasu'], [/gu$/, 'gimasu'], [/su$/, 'shimasu'],
+        [/tsu$/, 'chimasu'], [/nu$/, 'nimasu'], [/bu$/, 'bimasu'], [/mu$/, 'mimasu']
+      ];
+      godan.forEach(([pattern, ending]) => { if (pattern.test(q)) add(q.replace(pattern, ending)); });
+      if (/ru$/.test(q)) {
+        const stem = q.replace(/ru$/, '');
+        if (/[ei]$/.test(stem)) add(stem + 'masu'); // nhóm II: taberu → tabemasu
+        else add(stem + 'rimasu'); // nhóm I: owaru → owarimasu
+      }
+      return [...forms];
+    }
+
+    function deriveJapanesePoliteForms(dictionaryForm) {
+      const q = String(dictionaryForm ?? '').normalize('NFKC');
+      const forms = new Set();
+      const add = value => { if (value && value.length >= 2) forms.add(value); };
+      const endings = [
+        [/う$/, 'います'], [/く$/, 'きます'], [/ぐ$/, 'ぎます'], [/す$/, 'します'],
+        [/つ$/, 'ちます'], [/ぬ$/, 'にます'], [/ぶ$/, 'びます'], [/む$/, 'みます']
+      ];
+      endings.forEach(([pattern, ending]) => { if (pattern.test(q)) add(q.replace(pattern, ending)); });
+      if (/る$/.test(q)) {
+        const stem = q.replace(/る$/, '');
+        const last = stem.slice(-1);
+        if (/[えけせてねへめれげぜでべぺいきしちにひみりぎじびぴ]$/.test(last)) add(stem + 'ます');
+        else if (/[ぁ-ゖァ-ヺ]$/.test(last)) add(stem + 'ります');
+        else { add(stem + 'ます'); add(stem + 'ります'); } // kanji-only stem can be ambiguous
+      }
+      return [...forms];
+    }
+
+    function getSearchQueryForms(query) {
+      const normalized = normalizeSearchText(query);
+      if (!normalized) return [];
+      const forms = new Set();
+      const compact = compactSearchText(normalized);
+      if (compact) forms.add(compact);
+      const hasKanji = /[\u3400-\u9fff]/.test(normalized);
+      if (hasKanji) {
+        deriveJapaneseDictionaryForms(normalized).forEach(dictionaryForm => {
+          forms.add(compactSearchText(dictionaryForm));
+          deriveJapanesePoliteForms(dictionaryForm).forEach(politeForm => forms.add(compactSearchText(politeForm)));
+        });
+      } else {
+        const romanized = compactSearchText(kanaToRomaji(normalized));
+        if (romanized) forms.add(romanized);
+        [compact, romanized].forEach(form => {
+          deriveDictionaryForms(form).forEach(dictionaryForm => {
+            forms.add(dictionaryForm);
+            deriveLatinPoliteForms(dictionaryForm).forEach(politeForm => forms.add(politeForm));
+          });
+        });
+      }
+      return [...forms].filter(form => form.length >= 2);
+    }
+
     function searchMatches(query, ...values) {
       const q = normalizeSearchText(query);
       if (!q) return true;
-      const qCompact = q.replace(/[^a-z0-9\u3040-\u30ff\u3400-\u9fff]/g, '');
+      const queryForms = getSearchQueryForms(query);
       return collectSearchStrings(values).some(raw => {
         const plain = plainSearchText(raw);
-        if (normalizeSearchText(plain).includes(q)) return true;
-        const romaji = kanaToRomaji(plain);
-        // Hỗ trợ cả kiểu gõ rút gọn như "isogashi" cho "isogashii".
-        return qCompact.length >= 4 && romaji.includes(qCompact);
+        const normalized = normalizeSearchText(plain);
+        if (normalized.includes(q)) return true;
+        const compact = compactSearchText(normalized);
+        const romajiTokens = romajiSearchTokens(plain);
+        return queryForms.some(form => {
+          const compactMatch = form.length < 4 ? compact.startsWith(form) : compact.includes(form);
+          const romajiMatch = romajiTokens.some(token => token.startsWith(form) || (form.length >= 4 && token.includes(form)));
+          return compactMatch || romajiMatch;
+        });
+      });
+    }
+
+    function escapeSearchHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    // Lập chỉ mục một lần cho cả ba kho học liệu để tìm xuyên trang nhanh và đồng nhất.
+    const GLOBAL_SEARCH_INDEX = [
+      ...VOCAB_DATA.map(item => ({ type: 'vocab', label: 'Từ vựng', item })),
+      ...KANJI_DATA.map(item => ({ type: 'kanji', label: 'Kanji', item })),
+      ...GRAMMAR_DATA.map(item => ({ type: 'grammar', label: 'Ngữ pháp', item }))
+    ].map(entry => {
+      const parts = collectSearchStrings(entry.item).map(value => plainSearchText(value)).filter(Boolean);
+      return {
+        ...entry,
+        normalizedParts: parts.map(normalizeSearchText),
+        compactParts: parts.map(compactSearchText),
+        romajiParts: parts.flatMap(romajiSearchTokens)
+      };
+    });
+
+    function scoreGlobalSearchResult(entry, query) {
+      const normalizedQuery = normalizeSearchText(query);
+      const queryForms = getSearchQueryForms(query);
+      let score = 0;
+      entry.normalizedParts.forEach(part => {
+        if (part === normalizedQuery) score = Math.max(score, 160);
+        else if (part.startsWith(normalizedQuery)) score = Math.max(score, 145);
+        else if (part.includes(normalizedQuery)) score = Math.max(score, 125);
+      });
+      queryForms.forEach(form => {
+        entry.compactParts.forEach(part => {
+          if (part === form) score = Math.max(score, 155);
+          else if (part.startsWith(form)) score = Math.max(score, 140);
+          else if (form.length >= 4 && part.includes(form)) score = Math.max(score, 112);
+        });
+        entry.romajiParts.forEach(part => {
+          if (part === form) score = Math.max(score, 158);
+          else if (part.startsWith(form)) score = Math.max(score, 142);
+          else if (form.length >= 4 && part.includes(form)) score = Math.max(score, 115);
+        });
+      });
+      return score;
+    }
+
+    function getGlobalSearchDisplay(entry) {
+      const item = entry.item;
+      if (entry.type === 'vocab') return {
+        title: item.kanji || item.kana,
+        subtitle: [item.kana, item.pos].filter(Boolean).join(' · '),
+        description: item.vi || '',
+        location: item.lesson || ''
+      };
+      if (entry.type === 'kanji') {
+        const compounds = (item.compounds || []).slice(0, 3).map(x => [x.jp, x.kana, x.vi].filter(Boolean).join(' · ')).join(' / ');
+        return {
+          title: item.kanji,
+          subtitle: [item.hanviet, item.onyomi ? 'On: ' + item.onyomi : '', item.kunyomi ? 'Kun: ' + item.kunyomi : ''].filter(Boolean).join(' · '),
+          description: [item.meaning ? 'Nghĩa: ' + item.meaning : '', compounds ? 'Từ ghép: ' + compounds : ''].filter(Boolean).join(' — '),
+          location: item.group || ''
+        };
+      }
+      return {
+        title: plainSearchText(item.title || item.formula),
+        subtitle: plainSearchText(item.formula || ''),
+        description: [item.meaning, item.brief].filter(Boolean).join(' — '),
+        location: item.lesson || ''
+      };
+    }
+
+    function renderGlobalSearchHub(container) {
+      const query = state.searchQuery.trim();
+      const results = GLOBAL_SEARCH_INDEX
+        .map(entry => ({ entry, score: scoreGlobalSearchResult(entry, query) }))
+        .filter(result => result.score > 0)
+        .sort((a, b) => b.score - a.score || ['vocab', 'kanji', 'grammar'].indexOf(a.entry.type) - ['vocab', 'kanji', 'grammar'].indexOf(b.entry.type));
+      const categoryInfo = [
+        { type: 'vocab', title: 'Từ vựng', icon: 'book-open', color: 'sky' },
+        { type: 'kanji', title: 'Kanji', icon: 'languages', color: 'violet' },
+        { type: 'grammar', title: 'Ngữ pháp', icon: 'book-marked', color: 'rose' }
+      ];
+      const counts = Object.fromEntries(categoryInfo.map(category => [category.type, results.filter(r => r.entry.type === category.type).length]));
+      const groups = categoryInfo.map(category => {
+        const items = results.filter(result => result.entry.type === category.type).slice(0, 10);
+        if (!items.length) return '';
+        return `
+          <section class="space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="${category.icon}" class="w-4 h-4 text-sakura-500"></i>${category.title}</h2>
+              <span class="text-xs text-slate-400">${counts[category.type]} kết quả${counts[category.type] > 10 ? ' · hiển thị 10 mục đầu' : ''}</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              ${items.map(({ entry }) => {
+                const display = getGlobalSearchDisplay(entry);
+                const id = escapeSearchHtml(entry.item.id);
+                return `<article class="p-4 rounded-2xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+                  <div class="flex items-center justify-between gap-2"><span class="text-[11px] font-bold uppercase tracking-wide text-sakura-600 dark:text-sakura-400">${category.title}</span><span class="text-[11px] text-slate-400">${escapeSearchHtml(display.location)}</span></div>
+                  <h3 class="text-lg font-extrabold text-slate-900 dark:text-white font-jp break-words">${escapeSearchHtml(display.title)}</h3>
+                  ${display.subtitle ? `<p class="text-sm text-slate-500 dark:text-slate-400 break-words">${escapeSearchHtml(display.subtitle)}</p>` : ''}
+                  ${display.description ? `<p class="text-sm text-slate-700 dark:text-slate-300 break-words">${escapeSearchHtml(display.description)}</p>` : ''}
+                  <div class="pt-1"><button onclick="openGlobalSearchResult('${entry.type}','${id}')" class="text-sm font-semibold text-sky-600 dark:text-sky-400 hover:underline">Mở mục này <span aria-hidden="true">→</span></button></div>
+                </article>`;
+              }).join('')}
+            </div>
+          </section>`;
+      }).join('');
+
+      const queryHasKanji = /[\u3400-\u9fff]/.test(query);
+      const derived = (queryHasKanji ? deriveJapaneseDictionaryForms(query) : deriveDictionaryForms(compactSearchText(kanaToRomaji(query))))
+        .filter(form => {
+          const candidates = queryHasKanji
+            ? [compactSearchText(form), ...deriveJapanesePoliteForms(form).map(compactSearchText)]
+            : [form, ...deriveLatinPoliteForms(form)];
+          return GLOBAL_SEARCH_INDEX.some(entry => candidates.some(candidate =>
+            entry.compactParts.some(part => part === candidate || part.startsWith(candidate)) ||
+            entry.romajiParts.some(part => part === candidate || part.startsWith(candidate))
+          ));
+        });
+      container.innerHTML = `
+        <div class="max-w-6xl mx-auto space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-sakura-500">Tìm kiếm toàn cục</p>
+              <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">Kết quả cho “${escapeSearchHtml(query)}”</h1>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Đã tìm đồng thời trong từ vựng, Kanji và ngữ pháp — không phụ thuộc trang đang mở.</p>
+            </div>
+            <button onclick="clearGlobalSearch()" class="self-start sm:self-auto px-3 py-2 rounded-xl text-sm font-semibold bg-slate-100 dark:bg-jpdark-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">Xóa tìm kiếm</button>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <span class="px-3 py-1.5 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300">Từ vựng: ${counts.vocab}</span>
+            <span class="px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300">Kanji: ${counts.kanji}</span>
+            <span class="px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300">Ngữ pháp: ${counts.grammar}</span>
+            ${derived.length ? `<span class="px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">Có mở rộng dạng gốc: ${derived.map(escapeSearchHtml).join(', ')}</span>` : ''}
+          </div>
+          ${results.length ? groups : `<div class="p-8 rounded-2xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 text-center"><i data-lucide="search-x" class="w-10 h-10 mx-auto text-slate-400 mb-3"></i><p class="font-semibold text-slate-700 dark:text-slate-200">Chưa tìm thấy kết quả phù hợp.</p><p class="text-sm text-slate-500 mt-1">Thử nhập Kanji, Hiragana, Romaji, một phần từ hoặc nghĩa tiếng Việt.</p></div>`}
+        </div>`;
+    }
+
+    function clearGlobalSearch() {
+      state.globalSearchActive = false;
+      state.searchQuery = '';
+      const input = document.getElementById('globalSearchInput');
+      if (input) input.value = '';
+      renderCurrentView();
+    }
+
+    function openGlobalSearchResult(type, id) {
+      const item = ({ vocab: VOCAB_DATA, kanji: KANJI_DATA, grammar: GRAMMAR_DATA }[type] || []).find(entry => entry.id === id);
+      if (!item) return;
+      state.globalSearchActive = false;
+      state.currentView = type;
+      if (type === 'kanji') state.selectedKanjiGroup = item.group || 'ALL';
+      else state.selectedLesson = item.lesson || 'ALL';
+      document.querySelectorAll('.nav-item').forEach(el => {
+        const active = el.getAttribute('data-nav') === type;
+        el.className = active
+          ? 'nav-item w-full flex items-center px-3 py-2.5 text-sm font-semibold rounded-xl bg-sakura-500 text-white shadow-md shadow-sakura-500/20'
+          : 'nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-jpdark-800 rounded-xl transition-all';
+      });
+      renderCurrentView();
+      requestAnimationFrame(() => {
+        const target = document.getElementById('search-item-' + id);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     }
 
@@ -506,6 +853,7 @@
       selectedLesson: 'ALL',
       selectedKanjiGroup: 'ALL',
       searchQuery: '',
+      globalSearchActive: false,
       bookmarks: JSON.parse(localStorage.getItem('n5_hub_bookmarks') || '[]'),
       completedItems: JSON.parse(localStorage.getItem('n5_hub_completed') || '[]'),
       ttsRate: parseFloat(localStorage.getItem('n5_hub_tts_rate') || '1.0'),
@@ -620,6 +968,10 @@
        4. NAVIGATION & VIEW RENDERER
        ========================================================================== */
     function navigateTo(view, preserveFlashcardMode = false) {
+      state.globalSearchActive = false;
+      state.searchQuery = '';
+      const searchInput = document.getElementById('globalSearchInput');
+      if (searchInput) searchInput.value = '';
       if (view === 'flashcard' && !preserveFlashcardMode) {
         state.fcMode = 'all';
         state.fcIndex = 0;
@@ -647,6 +999,11 @@
     function renderCurrentView() {
       const main = document.getElementById('mainContainer');
       main.scrollTop = 0;
+      if (state.globalSearchActive && state.searchQuery.trim()) {
+        renderGlobalSearchHub(main);
+        lucide.createIcons();
+        return;
+      }
       switch (state.currentView) {
         case 'dashboard': renderDashboard(main); break;
         case 'grammar': renderGrammarHub(main); break;
@@ -661,6 +1018,7 @@
         case 'backup': renderBackupHub(main); break;
         case 'kanjiWrite': renderKanjiWriteHub(main); break;
         case 'shadowing': renderShadowingHub(main); break;
+        case 'translator': renderTranslatorHub(main); break;
         default: renderDashboard(main); break;
       }
       lucide.createIcons();
@@ -669,6 +1027,74 @@
     /* ==========================================================================
        5. DASHBOARD VIEW
        ========================================================================== */
+    // Google Translate launcher: free to use without an API key; translation runs on Google's site.
+    let translateDirection = 'ja-vi';
+    let googleTranslatePopup = null;
+    function swapTranslateDirection() {
+      translateDirection = translateDirection === 'ja-vi' ? 'vi-ja' : 'ja-vi';
+      const from = document.getElementById('translateFromLabel');
+      const to = document.getElementById('translateToLabel');
+      if (from && to) {
+        from.textContent = translateDirection === 'ja-vi' ? 'Tiếng Nhật' : 'Tiếng Việt';
+        to.textContent = translateDirection === 'ja-vi' ? 'Tiếng Việt' : 'Tiếng Nhật';
+      }
+      const input = document.getElementById('translateInput');
+      if (input) input.placeholder = translateDirection === 'ja-vi' ? 'Nhập từ hoặc câu tiếng Nhật…' : 'Nhập từ hoặc câu tiếng Việt…';
+    }
+    function openGoogleTranslate() {
+      const input = document.getElementById('translateInput');
+      const text = (input?.value || '').trim();
+      if (!text) { showToast('Hãy nhập nội dung cần dịch trước nhé'); input?.focus(); return; }
+      const sl = translateDirection === 'ja-vi' ? 'ja' : 'vi';
+      const tl = translateDirection === 'ja-vi' ? 'vi' : 'ja';
+      const url = 'https://translate.google.com/?sl=' + sl + '&tl=' + tl + '&text=' + encodeURIComponent(text) + '&op=translate';
+      // Reuse one compact popup instead of creating a new browser tab every time.
+      // Because this runs directly from a user click / Ctrl+Enter, browsers are less
+      // likely to block it as a popup. The source learning page remains untouched.
+      if (googleTranslatePopup && !googleTranslatePopup.closed) {
+        try {
+          googleTranslatePopup.location.href = url;
+          googleTranslatePopup.focus();
+          return;
+        } catch (e) { googleTranslatePopup = null; }
+      }
+      googleTranslatePopup = window.open(url, 'N5MasterHubGoogleTranslate', 'popup=yes,width=520,height=740,resizable=yes,scrollbars=yes');
+      if (googleTranslatePopup) {
+        try { googleTranslatePopup.opener = null; googleTranslatePopup.focus(); } catch (e) {}
+      } else {
+        showToast('Trình duyệt đang chặn cửa sổ bật lên. Hãy cho phép popup để mở Google Dịch.');
+      }
+    }
+    function clearTranslateInput() {
+      const input = document.getElementById('translateInput');
+      if (input) { input.value = ''; input.focus(); }
+    }
+    function renderTranslatorHub(container) {
+      translateDirection = 'ja-vi';
+      container.innerHTML = `
+        <div class="max-w-3xl mx-auto space-y-6 animate-fade-in">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 flex items-center justify-center"><i data-lucide="languages" class="w-6 h-6"></i></div>
+            <div><h2 class="text-2xl font-bold text-slate-900 dark:text-white">Google Dịch Nhật – Việt</h2><p class="text-sm text-slate-500 dark:text-slate-400">Tra cứu nhanh hai chiều ngay từ N5 Master Hub</p></div>
+          </div>
+          <div class="bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex-1 min-w-0"><div class="text-xs text-slate-500 dark:text-slate-400 mb-1">NGÔN NGỮ NGUỒN</div><div id="translateFromLabel" class="font-semibold text-slate-800 dark:text-white">Tiếng Nhật</div></div>
+              <button type="button" onclick="swapTranslateDirection()" title="Đổi chiều dịch" aria-label="Đổi chiều dịch" class="shrink-0 w-11 h-11 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-jpdark-800 flex items-center justify-center"><i data-lucide="arrow-left-right" class="w-5 h-5"></i></button>
+              <div class="flex-1 min-w-0 text-right"><div class="text-xs text-slate-500 dark:text-slate-400 mb-1">NGÔN NGỮ ĐÍCH</div><div id="translateToLabel" class="font-semibold text-slate-800 dark:text-white">Tiếng Việt</div></div>
+            </div>
+            <textarea id="translateInput" rows="6" class="w-full resize-y rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-jpdark-800 text-slate-900 dark:text-white p-4 outline-none focus:ring-2 focus:ring-blue-400" placeholder="Nhập từ hoặc câu tiếng Nhật…" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){openGoogleTranslate();}"></textarea>
+            <div class="flex flex-col sm:flex-row gap-2 sm:justify-between">
+              <button type="button" onclick="clearTranslateInput()" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-jpdark-800"><i data-lucide="eraser" class="w-4 h-4 inline mr-2"></i>Xóa nội dung</button>
+              <button type="button" onclick="openGoogleTranslate()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"><i data-lucide="external-link" class="w-4 h-4 inline mr-2"></i>Tra cứu bằng Google Dịch</button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Mẹo: nhấn Ctrl + Enter (Windows) hoặc ⌘ + Enter (Mac) để tra cứu nhanh. Google Dịch mở trong một cửa sổ nhỏ riêng (nếu trình duyệt cho phép), không thay thế trang học. Cửa sổ này được dùng lại cho những lần tra tiếp theo.</p>
+          </div>
+          <div class="rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-900/40 p-4 text-sm text-amber-900 dark:text-amber-200"><i data-lucide="info" class="w-4 h-4 inline mr-1"></i><strong>Lưu ý:</strong> Đây là cách tích hợp miễn phí, không cần API key. Phần dịch vẫn được thực hiện trên Google Dịch nên kết quả chưa hiển thị trực tiếp trong website; cửa sổ Google Dịch có thể đặt cạnh N5 Master Hub để đối chiếu. Cần có kết nối Internet.</div>
+        </div>`;
+      lucide.createIcons();
+    }
+
     function renderDashboard(container) {
       const totalItems = GRAMMAR_DATA.length + VOCAB_DATA.length + KANJI_DATA.length;
       const completedCount = state.completedItems.length;
@@ -894,7 +1320,7 @@
               const isDone = state.completedItems.includes(item.id);
 
               return `
-                <div class="grammar-card bg-white dark:bg-jpdark-900 border ${isDone ? 'border-emerald-500/40 bg-emerald-50/10' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-6 transition-all shadow-sm hover:shadow-md">
+                <div id="search-item-${item.id}" class="grammar-card bg-white dark:bg-jpdark-900 border ${isDone ? 'border-emerald-500/40 bg-emerald-50/10' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-6 transition-all shadow-sm hover:shadow-md">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4 gap-2">
                     <div class="flex items-center space-x-3 min-w-0 flex-wrap">
                       <span class="px-2.5 py-1 bg-sakura-100 dark:bg-sakura-950/60 text-sakura-600 dark:text-sakura-400 text-xs font-bold rounded-lg">${item.lesson}</span>
@@ -1055,7 +1481,7 @@
                     const isDone = state.completedItems.includes(v.id);
 
                     return `
-                      <tr class="hover:bg-slate-50/80 dark:hover:bg-jpdark-800/40 transition-colors ${isDone ? 'bg-emerald-50/20' : ''}">
+                      <tr id="search-item-${v.id}" class="hover:bg-slate-50/80 dark:hover:bg-jpdark-800/40 transition-colors ${isDone ? 'bg-emerald-50/20' : ''}">
                         <td class="py-3.5 px-4">
                           <span class="px-2 py-0.5 bg-slate-100 dark:bg-jpdark-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded">${v.lesson}</span>
                         </td>
@@ -1131,7 +1557,7 @@
               const isDone = state.completedItems.includes(k.id);
 
               return `
-                <div class="grammar-card bg-white dark:bg-jpdark-900 border ${isDone ? 'border-emerald-500/40 bg-emerald-50/10' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
+                <div id="search-item-${k.id}" class="grammar-card bg-white dark:bg-jpdark-900 border ${isDone ? 'border-emerald-500/40 bg-emerald-50/10' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
                   <div>
                     <!-- Top bar -->
                     <div class="flex items-center justify-between mb-4">
@@ -1929,6 +2355,7 @@
       const globalSearch = document.getElementById('globalSearchInput');
       globalSearch.addEventListener('input', (e) => {
         state.searchQuery = e.target.value;
+        state.globalSearchActive = Boolean(state.searchQuery.trim());
         renderCurrentView();
       });
 
