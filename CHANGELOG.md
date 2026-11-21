@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.47.1
+
+- Hiển thị phiên bản đang chạy ngay dưới tiêu đề **Sao lưu & khôi phục**, kể cả khi học ngoại tuyến hoặc có bản mới đang chờ cập nhật.
+
 ## v5.47 — Stability & Performance Update
 
 - Giảm công việc lặp khi tìm kiếm toàn cục, Romaji và dạng chia. Giữ thứ tự và nội dung kết quả trên tập truy vấn hồi quy.

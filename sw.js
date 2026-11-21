@@ -1,4 +1,4 @@
-const RELEASE = '5.47';
+const RELEASE = '5.47.1';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
