@@ -4,12 +4,14 @@
   const displayMode = matchMedia('(display-mode: standalone)');
   const update = document.getElementById('n5-update');
   const updateMessage = document.getElementById('n5-update-message');
-  let registration, installPrompt, activeRelease, updateTimer;
+  const checkInterval = 15 * 60 * 1000;
+  const retryInterval = 60 * 1000;
+  let registration, installPrompt, activeRelease, updateTimer, watchedInstaller;
   let lastCheck = 0;
   let checking = false;
   let installingUpdate = false;
   let dismissed = false;
-  let registrationFailed = false;
+  let updateFailed = false;
   let installed = false;
 
   function render() {
@@ -25,7 +27,9 @@
     const standalone = displayMode.matches || navigator.standalone === true || installed;
     let status = 'Đang chuẩn bị dữ liệu học ngoại tuyến…';
     if (!workers) status = 'Mở website trong trình duyệt hỗ trợ Service Worker để học ngoại tuyến.';
-    else if (registrationFailed) status = 'Chưa chuẩn bị được dữ liệu ngoại tuyến. Hãy kiểm tra mạng rồi mở lại ứng dụng.';
+    else if (updateFailed && navigator.onLine) status = activeRelease
+      ? 'Chưa tải được bản cập nhật. Bạn vẫn có thể học bằng bản hiện tại và thử kiểm tra lại.'
+      : 'Chưa chuẩn bị được dữ liệu ngoại tuyến. Hãy thử kiểm tra lại khi có mạng ổn định.';
     else if (activeRelease) {
       status = navigator.onLine
         ? 'Đã sẵn sàng học ngoại tuyến trên thiết bị này.'
@@ -48,42 +52,48 @@
     },
   };
 
+  function watchInstaller() {
+    const worker = registration.installing;
+    if (!worker || worker === watchedInstaller) return;
+    watchedInstaller = worker;
+    dismissed = false;
+    const report = () => {
+      if (worker !== watchedInstaller) return;
+      if (worker.state === 'redundant' && !registration.waiting) updateFailed = true;
+      else if (worker.state === 'installed' || worker.state === 'activated') updateFailed = false;
+      render();
+    };
+    worker.addEventListener('statechange', report);
+    report();
+  }
+
   async function checkForUpdate(manual = false) {
-    if (!workers || checking || installingUpdate || (!manual && Date.now() - lastCheck < 15 * 60 * 1000)) return;
+    const interval = updateFailed ? retryInterval : checkInterval;
+    if (!workers || checking || installingUpdate || (!manual && Date.now() - lastCheck < interval)) return;
     if (!navigator.onLine) {
       if (manual) showToast('Cần Internet để kiểm tra cập nhật.');
       return;
     }
     checking = true;
+    lastCheck = Date.now();
     if (manual) dismissed = false;
     render();
     try {
       if (!registration) {
         registration = await workers.register('./sw.js', {updateViaCache: 'none'});
-        const onInstalling = () => {
-          const worker = registration.installing;
-          dismissed = false;
-          worker?.addEventListener('statechange', () => {
-            if (worker.state === 'redundant' && !workers.controller && !registration.active) {
-              registrationFailed = true;
-            }
-            render();
-          });
-          render();
-        };
-        registration.addEventListener('updatefound', onInstalling);
-        onInstalling();
+        registration.addEventListener('updatefound', watchInstaller);
       } else if (!registration.waiting && !registration.installing) {
+        const previousInstaller = watchedInstaller;
         await registration.update();
-        if (manual && !registration.installing && !registration.waiting && (!activeRelease || activeRelease === release)) {
-          showToast('Ứng dụng đang dùng bản mới nhất.');
+        if (!registration.installing && !registration.waiting && watchedInstaller === previousInstaller) updateFailed = false;
+        if (manual && !registration.installing && !registration.waiting && activeRelease === release) {
+          showToast(updateFailed ? 'Chưa tải được bản cập nhật. Hãy thử lại sau.' : 'Ứng dụng đang dùng bản mới nhất.');
         }
       }
-      registrationFailed = false;
-      lastCheck = Date.now();
+      watchInstaller();
       workers.controller?.postMessage('N5_GET_VERSION');
     } catch {
-      if (!workers.controller) registrationFailed = true;
+      updateFailed = true;
       if (manual) showToast('Chưa kiểm tra được cập nhật. Hãy thử lại khi có mạng.');
     } finally {
       checking = false;
@@ -146,7 +156,7 @@
       if (event.source !== workers.controller || event.data?.type !== 'N5_VERSION') return;
       if (activeRelease !== event.data.release) dismissed = false;
       activeRelease = event.data.release;
-      registrationFailed = false;
+      if (activeRelease !== release) updateFailed = false;
       if (installingUpdate && activeRelease !== release) {
         clearTimeout(updateTimer);
         location.reload();
@@ -162,7 +172,7 @@
     window.addEventListener('pageshow', () => checkForUpdate());
     setInterval(() => {
       if (!document.hidden) checkForUpdate();
-    }, 15 * 60 * 1000);
+    }, retryInterval);
     checkForUpdate();
   }
   window.addEventListener('online', () => {

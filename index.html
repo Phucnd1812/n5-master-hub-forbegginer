@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="application-name" content="N5 Master Hub">
-  <meta name="n5-release" content="5.46">
+  <meta name="n5-release" content="5.47">
   <meta name="description" content="Học tiếng Nhật JLPT N5 với từ vựng, Kanji, ngữ pháp và Flashcard ngoại tuyến.">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,10 +15,10 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch.png">
-  <title>N5 Master Hub v5.46</title>
+  <title>N5 Master Hub v5.47</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <script src="./assets/vendor/lucide-1.77.0.min.js" defer></script>
-  <script src="./pwa.js?v=5.46" defer></script>
+  <script src="./pwa.js?v=5.47" defer></script>
   <style>
     /* v5.18: TP Han Zi embedded locally; Japanese glyphs fall back to Noto Sans JP. */
     @font-face {
@@ -1914,7 +1914,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 .n5-personal-dialog{width:min(100%,550px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;color:#142437;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 25px 80px #0005;}
 .dark .n5-personal-dialog{background:#142337;color:#e5eef7}.n5-personal-dialog label{display:flex;flex-direction:column;gap:6px;font:600 13px/1.4 system-ui}.n5-personal-dialog input,.n5-personal-dialog select,.n5-personal-dialog textarea,.n5-p-actions select,.n5-p-actions input{width:100%;box-sizing:border-box;border:1px solid #94a3b877;background:#94a3b812;color:inherit;border-radius:12px;padding:10px;font:400 16px/1.4 system-ui;min-width:0}.n5-personal-dialog textarea{resize:vertical}.n5-p-button{padding:10px 13px;border-radius:12px;border:1px solid #94a3b855;background:#94a3b816;color:inherit;font-weight:700;font-size:13px;line-height:1.35;cursor:pointer;min-height:40px}.n5-p-button.primary{background:#0579b5;color:#fff;border-color:transparent}.n5-p-button.retry{background:#fef3c7;color:#92400e;border-color:#fbbf24}.n5-p-button:disabled{opacity:.4;cursor:default}.n5-p-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.n5-p-actions select,.n5-p-actions input{flex:1 1 140px;width:auto}.n5-p-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-top:1px solid #94a3b855;overflow-wrap:anywhere}.n5-p-row>div:first-child{min-width:0;flex:1}.n5-p-study{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:290px;padding:24px;border:1px solid #7dd3fc;border-radius:24px;background:linear-gradient(145deg,#eefaff,#e6fcf4);color:#16344c;text-align:center;overflow-wrap:anywhere;animation:n5PEnter .2s ease-out}.n5-p-study strong{font-size:clamp(24px,6vw,38px);line-height:1.5}.n5-p-study.answer{background:linear-gradient(140deg,#123449,#075b55);color:#fff}.dark .n5-p-study:not(.answer){background:#193347;color:#eff9ff}.n5-p-add{font-size:12px;white-space:nowrap}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto}.n5-smart-row>.n5-p-actions{justify-content:end}.n5-smart-row>.n5-p-add{grid-column:1/-1;justify-self:end}.n5-smart-row>.n5-p-actions .n5-p-add{white-space:normal}@keyframes n5PEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.n5-p-study{animation:none}}@media(max-width:600px){.n5-personal-overlay{align-items:flex-end;padding:8px}.n5-personal-dialog{max-height:85dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.n5-smart-row>.n5-p-actions{grid-column:1/-1}.n5-p-row{align-items:flex-start}.n5-p-row .n5-p-actions{flex-direction:column}}
 </style>
-  <link rel="stylesheet" href="./assets/tailwind.css?v=5.46">
+  <link rel="stylesheet" href="./assets/tailwind.css?v=5.47">
 </head>
 <body class="h-full bg-slate-50 dark:bg-jpdark-950 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
   <div id="app" class="flex h-screen overflow-hidden">
@@ -2446,53 +2446,72 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     // Lập chỉ mục một lần cho cả ba kho học liệu để tìm xuyên trang nhanh và đồng nhất.
-    const GLOBAL_SEARCH_INDEX = [
-      ...VOCAB_DATA.map(item => ({ type: 'vocab', label: 'Từ vựng', item })),
-      ...N5_SUPPLEMENT_VOCAB_DATA.map(item => ({ type: 'vocab', label: 'Từ vựng mở rộng', item })),
-      ...KANJI_DATA.map(item => ({ type: 'kanji', label: 'Kanji', item })),
-      ...N5_SUPPLEMENT_KANJI_DATA.map(item => ({ type: 'kanji', label: 'Kanji mở rộng', item })),
-      ...GRAMMAR_DATA.map(item => ({ type: 'grammar', label: 'Ngữ pháp', item }))
-    ].map(entry => {
-      const rawParts = (entry.type === 'vocab'
-        ? [entry.item.kanji, entry.item.kana, entry.item.vi, entry.item.audio, entry.item.accent]
-        : entry.type === 'kanji'
-          ? [entry.item.kanji, entry.item.hanviet, entry.item.onyomi, entry.item.kunyomi,
-             entry.item.meaning, ...(entry.item.compounds || []).flatMap(cp => [cp.jp, cp.kana, cp.vi])]
-          : collectSearchStrings(entry.item)
-      ).filter(Boolean);
-      const parts = rawParts.map(value => plainSearchText(value));
-      // Với ruby, ưu tiên nối phần furigana liên tục để "飲んでから"
-      // được lập chỉ mục thành "のんでから" thay vì tách rời từng âm đọc.
-      const readingParts = rawParts.map(value => String(value)
-        .replace(/<ruby[^>]*>[\s\S]*?<rt[^>]*>([\s\S]*?)<\/rt>[\s\S]*?<\/ruby>/gi, '$1')
-        .replace(/<[^>]*>/g, ' '));
-      const allParts = [...parts, ...readingParts];
-      return {
-        ...entry,
-        normalizedParts: allParts.map(normalizeSearchText),
-        compactParts: allParts.map(compactSearchText),
-        romajiParts: allParts.flatMap(value => /[\u3400-\u9fff]/.test(value)
-          ? [] // Không chuyển riêng hậu tố な của từ Kanji thành kết quả giả "na"
-          : [...romajiSearchTokens(value), compactSearchText(kanaToRomaji(value))]).filter(Boolean)
-      };
-    });
+    let globalSearchIndex;
+    function getGlobalSearchIndex() {
+      return globalSearchIndex ??= [
+        ...VOCAB_DATA.map(item => ({ type: 'vocab', label: 'Từ vựng', item })),
+        ...N5_SUPPLEMENT_VOCAB_DATA.map(item => ({ type: 'vocab', label: 'Từ vựng mở rộng', item })),
+        ...KANJI_DATA.map(item => ({ type: 'kanji', label: 'Kanji', item })),
+        ...N5_SUPPLEMENT_KANJI_DATA.map(item => ({ type: 'kanji', label: 'Kanji mở rộng', item })),
+        ...GRAMMAR_DATA.map(item => ({ type: 'grammar', label: 'Ngữ pháp', item }))
+      ].map(entry => {
+        const rawParts = (entry.type === 'vocab'
+          ? [entry.item.kanji, entry.item.kana, entry.item.vi, entry.item.audio, entry.item.accent]
+          : entry.type === 'kanji'
+            ? [entry.item.kanji, entry.item.hanviet, entry.item.onyomi, entry.item.kunyomi,
+               entry.item.meaning, ...(entry.item.compounds || []).flatMap(cp => [cp.jp, cp.kana, cp.vi])]
+            : collectSearchStrings(entry.item)
+        ).filter(Boolean);
+        const parts = rawParts.map(value => plainSearchText(value));
+        // Với ruby, ưu tiên nối phần furigana liên tục để "飲んでから"
+        // được lập chỉ mục thành "のんでから" thay vì tách rời từng âm đọc.
+        const readingParts = rawParts.map(value => String(value)
+          .replace(/<ruby[^>]*>[\s\S]*?<rt[^>]*>([\s\S]*?)<\/rt>[\s\S]*?<\/ruby>/gi, '$1')
+          .replace(/<[^>]*>/g, ' '));
+        const allParts = [...parts, ...readingParts];
+        return {
+          ...entry,
+          normalizedParts: allParts.map(normalizeSearchText),
+          compactParts: allParts.map(compactSearchText),
+          romajiParts: allParts.flatMap(value => /[\u3400-\u9fff]/.test(value)
+            ? [] // Không chuyển riêng hậu tố な của từ Kanji thành kết quả giả "na"
+            : [...romajiSearchTokens(value), compactSearchText(kanaToRomaji(value))]).filter(Boolean)
+        };
+      });
+    }
 
     // Khoảng cách Levenshtein có giới hạn: chỉ dùng cho truy vấn đủ dài để tránh
     // biến những truy vấn ngắn như "na" thành hàng loạt kết quả nhiễu.
     function searchEditDistance(a, b, limit = 2) {
-      a = String(a || ''); b = String(b || '');
-      if (Math.abs(a.length - b.length) > limit) return limit + 1;
-      let previous = Array.from({length: b.length + 1}, (_, i) => i);
-      for (let i = 1; i <= a.length; i++) {
-        const current = [i]; let rowMin = i;
-        for (let j = 1; j <= b.length; j++) {
-          current[j] = Math.min(current[j-1] + 1, previous[j] + 1, previous[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
-          rowMin = Math.min(rowMin, current[j]);
-        }
-        if (rowMin > limit) return limit + 1;
-        previous = current;
+      if (a === b) return 0;
+      if (a.length > b.length) [a, b] = [b, a];
+      const outside = limit + 1;
+      if (b.length - a.length > limit) return outside;
+      if (limit === 1) {
+        let i = 0;
+        while (i < a.length && a[i] === b[i]) i++;
+        const skip = a.length === b.length ? 1 : 0;
+        return a.slice(i + skip) === b.slice(i + 1) ? 1 : outside;
       }
-      return previous[b.length];
+      // Only compute cells that can reach the requested distance.
+      let previous = new Uint16Array(b.length + 1);
+      let current = new Uint16Array(b.length + 1);
+      for (let j = 0; j <= Math.min(limit, b.length); j++) previous[j] = j;
+      if (limit < b.length) previous[limit + 1] = outside;
+      for (let i = 1; i <= a.length; i++) {
+        const from = Math.max(1, i - limit);
+        const end = Math.min(b.length, i + limit);
+        current[from - 1] = from === 1 ? i : outside;
+        let minimum = current[from - 1];
+        for (let j = from; j <= end; j++) {
+          current[j] = Math.min(current[j - 1] + 1, previous[j] + 1, previous[j - 1] + Number(a[i - 1] !== b[j - 1]));
+          minimum = Math.min(minimum, current[j]);
+        }
+        if (minimum > limit) return outside;
+        if (end < b.length) current[end + 1] = outside;
+        [previous, current] = [current, previous];
+      }
+      return Math.min(previous[b.length], outside);
     }
 
     function fuzzySearchScore(form, part) {
@@ -2515,8 +2534,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       return best <= limit ? (best === 1 ? 72 : 58) : 0;
     }
 
-    function scoreGlobalSearchResult(entry, query, queryForms = getSearchQueryForms(query)) {
-      const normalizedQuery = normalizeSearchText(query);
+    function scoreGlobalSearchResult(entry, normalizedQuery, queryForms, fuzzyForms) {
       let score = 0;
       for (const part of entry.normalizedParts) {
         if (part === normalizedQuery) return 220;
@@ -2538,11 +2556,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       // Fuzzy matching is the expensive fallback. Run it only if no direct match exists,
       // only for queries >= 4 chars, and only against a small set of short title-like fields.
       if (score === 0) {
-        const fuzzyForms = queryForms.filter(form => form.length >= 4 && form.length <= 24);
         if (fuzzyForms.length) {
-          outer: for (const form of fuzzyForms) {
-            const uniqueChars = [...new Set(form)];
-            const overlapNeeded = Math.max(2, uniqueChars.length - (form.length >= 8 ? 2 : 1));
+          outer: for (const {form, uniqueChars, overlapNeeded, scores} of fuzzyForms) {
             const candidates = [...entry.compactParts, ...entry.romajiParts]
               .filter(part => {
                 if (!part || part.length > Math.max(24, form.length + 12)) return false;
@@ -2552,7 +2567,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
               })
               .slice(0, 5);
             for (const part of candidates) {
-              const fuzzyScore = fuzzySearchScore(form, part);
+              if (!scores.has(part)) scores.set(part, fuzzySearchScore(form, part));
+              const fuzzyScore = scores.get(part);
               if (fuzzyScore) {
                 score = Math.max(score, fuzzyScore);
                 break outer;
@@ -2570,9 +2586,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       if (globalSearchResultsCache.query === cacheKey) return globalSearchResultsCache.results;
       window.__n5SearchResultsLimit=20;
       const queryForms = getSearchQueryForms(query);
+      const fuzzyForms = queryForms.filter(form => form.length >= 4 && form.length <= 24).map(form => {
+        const uniqueChars = [...new Set(form)];
+        return {form, uniqueChars, overlapNeeded: Math.max(2, uniqueChars.length - (form.length >= 8 ? 2 : 1)), scores: new Map()};
+      });
       const results = [];
-      for (const entry of GLOBAL_SEARCH_INDEX) {
-        const score = scoreGlobalSearchResult(entry, query, queryForms);
+      for (const entry of getGlobalSearchIndex()) {
+        const score = scoreGlobalSearchResult(entry, cacheKey, queryForms, fuzzyForms);
         if (score > 0) results.push({ entry, score });
       }
       results.sort((a, b) => b.score - a.score || ['vocab', 'kanji', 'grammar'].indexOf(a.entry.type) - ['vocab', 'kanji', 'grammar'].indexOf(b.entry.type));
@@ -2808,13 +2828,14 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       n5SmartIndexCache={roman,japanese,allWords};return n5SmartIndexCache;
     }
     function n5SmartSegment(input,map) {
-      const n=input.length, best=Array(n+1).fill(null);best[0]={cost:0,parts:[],unknown:0};
+      const n=input.length, best=Array(n+1).fill(null);best[0]={cost:0,unknown:0};
       for(let i=0;i<n;i++){
         const curr=best[i];if(!curr)continue;
-        function update(j,t,c,unknown){const cost=curr.cost+c;if(!best[j]||cost<best[j].cost)best[j]={cost,parts:[...curr.parts,t],unknown:curr.unknown+unknown};}
+        function update(j,t,c,unknown){const cost=curr.cost+c;if(!best[j]||cost<best[j].cost)best[j]={cost,previous:i,token:t,unknown:curr.unknown+unknown};}
         for(let j=i+1;j<=Math.min(n,i+80);j++){
           const entries=map.get(input.slice(i,j));if(!entries)continue;
-          for(const t of entries.slice(0,3)){
+          for(let k=0;k<Math.min(entries.length,3);k++){
+            const t=entries[k];
             // Long dictionary matches are cheaper than accidental chains of short particles.
             const cost=t.kind==='function'?(i>0&&j<n?.85:1.9):Math.max(.35,2.4-t.weight*.42);
             update(j,t,cost,0);
@@ -2823,9 +2844,11 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         update(i+1,{jp:input[i],kana:'',kind:'unknown',vi:'Chưa nhận diện'},8,1);
       }
       const res=best[n];if(!res)return null;
+      const parts=[];
+      for(let i=n;i>0;i=best[i].previous)parts.push(best[i].token);
       const compact=[];
-      for(const t of res.parts){if(t.kind==='unknown'&&compact.at(-1)?.kind==='unknown')compact.at(-1).jp+=t.jp;else compact.push({...t});}
-      return {...res,parts:compact};
+      for(const t of parts.reverse()){if(t.kind==='unknown'&&compact.at(-1)?.kind==='unknown')compact.at(-1).jp+=t.jp;else compact.push({...t});}
+      return {cost:res.cost,unknown:res.unknown,parts:compact};
     }
     function n5SmartGrammar(parts,surface) {
       const keys=[], reading=parts.map(t=>t.kana||t.jp).join(''), has=(re)=>re.test(surface)||re.test(reading);
@@ -2931,20 +2954,38 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       <div class="n5-smart-chips">${a&&primary&&!/[a-z]/i.test(primary)?`<button onclick="playAudio(${arg(primary)})">Nghe tiếng Nhật</button><button onclick="n5SmartTranslate(${arg(primary)},'ja-vi')">Dịch Nhật → Việt ↗</button>`:`<button onclick="n5SmartTranslate(${arg(query)},'ja-vi')">Dịch Nhật → Việt ↗</button>`}<button onclick="n5SmartTranslate(${arg(query)},'vi-ja')">Dịch Việt → Nhật ↗</button></div><p class="n5-smart-note">Dịch mở Google Translate trong tab mới, chỉ gửi nội dung khi bạn bấm. Không cần API key.</p>${a?.parts.length?`<details class="n5-smart-history"><summary>Đọc câu với Furigana (theo cụm)</summary><p lang="ja" class="text-xl leading-loose break-words">${a.parts.map(t=>t.kana&&/[\u3400-\u9fff]/.test(t.jp)?`<ruby>${esc(t.jp)}<rt>${esc(t.kana)}</rt></ruby>`:esc(t.jp)).join(' ')}</p><p class="n5-smart-note">Cách đọc trên từng thành phần đã phân tích; có thể chưa chính xác nếu câu bị tách sai.</p></details>`:''}${corrections}${parts}${grammar}${hist}</section>`;
     }
 
+    let globalSearchParts;
+    function hasGlobalSearchPrefix(prefix) {
+      if (!prefix) return false;
+      globalSearchParts ??= [...new Set(getGlobalSearchIndex().flatMap(entry => [...entry.compactParts, ...entry.romajiParts]))].sort();
+      let low = 0, high = globalSearchParts.length;
+      while (low < high) {
+        const mid = (low + high) >>> 1;
+        if (globalSearchParts[mid] < prefix) low = mid + 1;
+        else high = mid;
+      }
+      return Boolean(globalSearchParts[low]?.startsWith(prefix));
+    }
+
     function renderGlobalSearchHub(container) {
       const query = state.searchQuery.trim();
       const allResults = getCachedGlobalSearchResults(query);
       const activeFilter = state.globalSearchFilter || 'all';
-      const results = activeFilter === 'all' ? allResults : allResults.filter(result => result.entry.type === activeFilter);
       const categoryInfo = [
         { type: 'vocab', title: 'Từ vựng', icon: 'book-open', color: 'sky' },
         { type: 'kanji', title: 'Kanji', icon: 'languages', color: 'violet' },
         { type: 'grammar', title: 'Ngữ pháp', icon: 'book-marked', color: 'rose' }
       ];
-      const counts = Object.fromEntries(categoryInfo.map(category => [category.type, allResults.filter(r => r.entry.type === category.type).length]));
+      const perGroupLimit = window.__n5SearchResultsLimit || 20;
+      const counts = {vocab: 0, kanji: 0, grammar: 0};
+      const visible = {vocab: [], kanji: [], grammar: []};
+      for (const result of allResults) {
+        const type = result.entry.type;
+        counts[type]++;
+        if ((activeFilter === 'all' || activeFilter === type) && visible[type].length < perGroupLimit) visible[type].push(result);
+      }
       const groups = categoryInfo.map(category => {
-        const perGroupLimit = window.__n5SearchResultsLimit || 20;
-        const items = results.filter(result => result.entry.type === category.type).slice(0, perGroupLimit);
+        const items = visible[category.type];
         if (!items.length) return '';
         return `
           <section class="space-y-3">
@@ -2975,10 +3016,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
           const candidates = queryHasKanji
             ? [compactSearchText(form), ...deriveJapanesePoliteForms(form).map(compactSearchText)]
             : [form, ...deriveLatinPoliteForms(form)];
-          return GLOBAL_SEARCH_INDEX.some(entry => candidates.some(candidate =>
-            entry.compactParts.some(part => part === candidate || part.startsWith(candidate)) ||
-            entry.romajiParts.some(part => part === candidate || part.startsWith(candidate))
-          ));
+          return candidates.some(hasGlobalSearchPrefix);
         }) : [];
       container.innerHTML = `
         <div class="max-w-6xl mx-auto space-y-6">
@@ -2996,7 +3034,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
             ${[['all','Tất cả',allResults.length],['vocab','Từ vựng',counts.vocab],['kanji','Kanji',counts.kanji],['grammar','Ngữ pháp',counts.grammar]].map(([key,label,count]) => `<button type="button" onclick="setGlobalSearchFilter('${key}')" aria-pressed="${activeFilter===key}" class="px-3 py-2 rounded-full border font-semibold transition-colors ${activeFilter===key ? 'bg-sky-600 text-white border-sky-600' : 'bg-white/70 dark:bg-jpdark-900/70 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-sky-400'}">${label} <span class="opacity-75">${count}</span></button>`).join('')}
             ${derived.length ? `<span class="px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">Có mở rộng dạng gốc: ${derived.map(escapeSearchHtml).join(', ')}</span>` : ''}
           </div>
-          ${results.length ? groups : `<div class="p-8 rounded-2xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 text-center"><i data-lucide="search-x" class="w-10 h-10 mx-auto text-slate-400 mb-3"></i><p class="font-semibold text-slate-700 dark:text-slate-200">Chưa tìm thấy kết quả phù hợp.</p><p class="text-sm text-slate-500 mt-1">Thử Kanji, Hiragana, Romaji, công thức ngữ pháp, nghĩa tiếng Việt hoặc kiểm tra lại chính tả gần đúng.</p></div>`}
+          ${(activeFilter === 'all' ? allResults.length : counts[activeFilter]) ? groups : `<div class="p-8 rounded-2xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 text-center"><i data-lucide="search-x" class="w-10 h-10 mx-auto text-slate-400 mb-3"></i><p class="font-semibold text-slate-700 dark:text-slate-200">Chưa tìm thấy kết quả phù hợp.</p><p class="text-sm text-slate-500 mt-1">Thử Kanji, Hiragana, Romaji, công thức ngữ pháp, nghĩa tiếng Việt hoặc kiểm tra lại chính tả gần đúng.</p></div>`}
         </div>`;
     }
 
@@ -3575,9 +3613,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function openGlobalSearchResult(type, id) {
-      const source = { vocab: [...VOCAB_DATA, ...N5_SUPPLEMENT_VOCAB_DATA], kanji: [...KANJI_DATA, ...N5_SUPPLEMENT_KANJI_DATA], grammar: GRAMMAR_DATA };
+      const source = { vocab: N5_ALL_VOCAB, kanji: N5_ALL_KANJI, grammar: GRAMMAR_DATA };
       const item = (source[type] || []).find(entry => entry.id === id);
       if (!item) return;
+      cancelScheduledGlobalSearchRender();
       state.globalSearchActive = false;
       state.currentView = type;
       window.__n5PendingSearchTarget=id;
@@ -3592,7 +3631,9 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       renderCurrentView();
       requestAnimationFrame(() => {
         const target = document.getElementById('search-item-' + id);
-        if (target) {target.scrollIntoView({ behavior: 'smooth', block: 'center' });window.__n5PendingSearchTarget=null;}
+        if (window.__n5PendingSearchTarget !== id) return;
+        window.__n5PendingSearchTarget = null;
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     }
 
@@ -3839,11 +3880,11 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         state.fcFilterLesson = 'ALL';
         refreshFlashcardDeck();
       }
-      saveLearningPosition();
       if (state.currentView !== view) { if (window.__n5ExpandedPanels) window.__n5ExpandedPanels.clear(); if (window.__n5CollapsedPanels) window.__n5CollapsedPanels.clear(); }
       // Clicking a practice menu item always starts a fresh randomized round.
       if (view === 'reading') { readingIndex = 0; readingOrder = shuffleStudy(READING_PRACTICE_SET.map((_,i)=>i)); readingAnswered = false; window.__readingSelected = -1; }
       if (view === 'listening') { listeningIndex = 0; listeningOrder = shuffleStudy(LISTENING_PRACTICE_SET.map((_,i)=>i)); listeningAnswered = false; listeningTranscriptVisible = false; window.__listeningSelected = -1; }
+      if (view === 'vocab' && state.currentView !== view && window.__vocabStart) window.__vocabKey = null;
       state.currentView = view;
       if(view==='grammar'&&!['ALL',...N5_LESSONS].includes(state.selectedLesson))state.selectedLesson='ALL';
       document.querySelectorAll('.nav-item').forEach(el => {
@@ -4688,6 +4729,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 
     function renderCurrentView(preserveScroll = false) {
       const main = document.getElementById('mainContainer');
+      if (vocabObserver) { vocabObserver.disconnect(); vocabObserver = null; }
       trackNavHistory();
       // v5.29: page-aware presentation layer; existing renderers and state stay untouched.
       main.dataset.n5Page = (state.globalSearchActive && state.searchQuery.trim()) ? 'global-search' : (state.currentView || 'dashboard');
@@ -5591,7 +5633,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function updateVocabCount() {
       const el = document.getElementById('vocabCount');
       const list = window.__vocabFiltered || [];
-      if (el) el.textContent = `Đang hiển thị ${Math.min(window.__vocabLimit || 0, list.length)} / ${list.length} từ`;
+      if (el) el.textContent = `Đang hiển thị ${Math.max(0, (window.__vocabLimit || 0) - (window.__vocabStart || 0))} / ${list.length} từ`;
     }
 
     function loadMoreVocab() {
@@ -5613,12 +5655,23 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       updateVocabCount();
     }
 
+    function loadPreviousVocab() {
+      const tbody = document.getElementById('vocabTableBody');
+      const start = window.__vocabStart || 0;
+      if (!tbody || !start) return;
+      const from = Math.max(0, start - VOCAB_CHUNK);
+      tbody.insertAdjacentHTML('afterbegin', window.__vocabFiltered.slice(from, start).map(vocabRowHtml).join(''));
+      window.__vocabStart = from;
+      if (!from) document.getElementById('vocabPreviousBar')?.remove();
+      updateVocabCount();
+    }
+
     function setupVocabInfiniteScroll() {
       if (vocabObserver) { vocabObserver.disconnect(); vocabObserver = null; }
       const bar = document.getElementById('vocabMoreBar');
       if (!bar || !('IntersectionObserver' in window)) return;
       vocabObserver = new IntersectionObserver(entries => {
-        if (entries.some(e => e.isIntersecting)) loadMoreVocab();
+        if (bar.isConnected && entries.some(e => e.isIntersecting)) loadMoreVocab();
       }, { rootMargin: '700px 0px' });
       vocabObserver.observe(bar);
     }
@@ -5648,9 +5701,16 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       });
       // Chỉ dựng một phần danh sách ban đầu; phần còn lại tự tải khi cuộn tới (nhẹ hơn nhiều trên điện thoại)
       const viewKey = state.selectedLesson + '|' + state.searchQuery;
-      if (window.__vocabKey !== viewKey) { window.__vocabKey = viewKey; window.__vocabLimit = VOCAB_CHUNK; }
-      const selectedIndex=filtered.findIndex(v=>v.id===window.__n5PendingSearchTarget);
-      if(selectedIndex>=0)window.__vocabLimit=Math.max(window.__vocabLimit||VOCAB_CHUNK,selectedIndex+1);
+      if (window.__vocabKey !== viewKey) {
+        window.__vocabKey = viewKey;
+        window.__vocabStart = 0;
+        window.__vocabLimit = VOCAB_CHUNK;
+      }
+      const selectedIndex = filtered.findIndex(v => v.id === window.__n5PendingSearchTarget);
+      if (selectedIndex >= 0) {
+        window.__vocabStart = Math.floor(selectedIndex / VOCAB_CHUNK) * VOCAB_CHUNK;
+        window.__vocabLimit = window.__vocabStart + VOCAB_CHUNK;
+      }
       const limit = window.__vocabLimit || VOCAB_CHUNK;
       window.__vocabFiltered = filtered;
       container.dataset.n5VocabMode=window.__n5VocabDisplayMode;
@@ -5685,6 +5745,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
             </div>
           </div>
 
+          ${window.__vocabStart ? `<div id="vocabPreviousBar" class="text-center"><button type="button" onclick="loadPreviousVocab()" class="px-5 py-2.5 rounded-xl bg-sakura-500 text-white text-sm font-bold">Hiện các từ phía trước</button></div>` : ''}
           <!-- Vocab Interactive Table -->
           <div class="bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto">
@@ -5705,7 +5766,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
                     <tr>
                       <td colspan="7" class="py-8 text-center text-slate-400">Không tìm thấy từ vựng nào.</td>
                     </tr>
-                  ` : filtered.slice(0, window.__vocabLimit).map(vocabRowHtml).join('')}
+                  ` : filtered.slice(window.__vocabStart, window.__vocabLimit).map(vocabRowHtml).join('')}
                 </tbody>
               </table>
             </div>
@@ -6423,9 +6484,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
        ========================================================================== */
     // Study continuity: remember exact document scroll position for each learning view.
     function saveLearningPosition() {
-      if (!['grammar','vocab','kanji'].includes(state.currentView)) return;
+      if ((state.globalSearchActive && state.searchQuery.trim()) || !['grammar','vocab','kanji'].includes(state.currentView)) return;
       const main = document.getElementById('mainContainer');
       const pos = { view: state.currentView, scrollTop: (window.matchMedia('(max-width: 767px)').matches ? window.scrollY : (main ? main.scrollTop : window.scrollY)), savedAt: Date.now() };
+      if (state.lastPosition?.view === pos.view && state.lastPosition.scrollTop === pos.scrollTop) return;
       state.lastPosition = pos;
       try { localStorage.setItem('n5_hub_last_position', JSON.stringify(pos)); } catch(e) {}
     }
@@ -6558,7 +6620,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5BackupPayload(){
-      return {version:'N5Hub-5.46',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
+      return {version:'N5Hub-5.47',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
         completedItems:[...state.completedItems],ttsRate:state.ttsRate,reviewData:state.reviewData,
         mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition};
     }
@@ -7327,7 +7389,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 
       // Global Search Input Listener
       const globalSearch = document.getElementById('globalSearchInput');
-      globalSearch.addEventListener('compositionstart', () => { globalSearchIsComposing = true; });
+      globalSearch.addEventListener('compositionstart', () => {
+        globalSearchIsComposing = true;
+        cancelScheduledGlobalSearchRender();
+      });
       globalSearch.addEventListener('compositionend', (e) => {
         globalSearchIsComposing = false;
         state.searchQuery = e.target.value;
@@ -7337,16 +7402,17 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         scheduleGlobalSearchRender();
       });
       globalSearch.addEventListener('input', (e) => {
-        state.searchQuery = e.target.value;
         updateTopSearchClearButton();
         if (globalSearchIsComposing || e.isComposing) return;
+        state.searchQuery = e.target.value;
         state.globalSearchFilter = 'all';
         state.globalSearchActive = Boolean(state.searchQuery.trim());
         scheduleGlobalSearchRender();
       });
 
       const mainScroll = document.getElementById('mainContainer');
-      const isMobileViewport = () => window.matchMedia('(max-width: 767px)').matches;
+      const mobileViewport = window.matchMedia('(max-width: 767px)');
+      const isMobileViewport = () => mobileViewport.matches;
       // v5.30: mobile bottom navigation hides on downward scroll and returns on upward scroll.
       const mobileBottomNav = document.getElementById('mobileBottomNav');
       let lastMobileScrollY = window.scrollY || 0;
@@ -7434,6 +7500,25 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     if(!n5CloudBase?.uid||!Number.isSafeInteger(n5CloudBase.revision)||!n5CloudBase.sig)n5CloudBase=null;
     let n5CloudBusy=false,n5CloudConflict=false,n5CloudText=n5CloudSession?'Đã lưu phiên đăng nhập; nhấn Đồng bộ ngay để kiểm tra.':'Chưa kết nối. Dữ liệu vẫn lưu trên thiết bị.';
     let n5CloudEnabled=!!(n5CloudSession&&n5CloudBase?.uid===n5CloudSession.user.id&&n5CloudBase.auto);
+    let n5CloudConflictRow = null;
+    let n5CloudReloadRequired = false;
+    const N5_CLOUD_RELOAD_MESSAGE = 'Dữ liệu hoặc tài khoản vừa thay đổi trong tab khác. Hãy mở lại tab này trước khi đồng bộ.';
+    const N5_CLOUD_SHARED_KEYS = [
+      N5_CLOUD_SESSION, N5_CLOUD_BASE, 'n5_hub_bookmarks', 'n5_hub_completed',
+      'n5_hub_tts_rate', 'n5_hub_review', 'n5_hub_mistakes', 'n5_hub_study_log',
+      'n5_hub_personal_cards', 'n5_smart_search_history'
+    ];
+    const n5CloudStoredValues = keys => JSON.stringify(keys.map(key => localStorage.getItem(key)));
+    function n5CloudCanAutoApply() {
+      return !document.hidden &&
+        !document.activeElement?.matches('input,textarea,select,[contenteditable=true]') &&
+        !document.querySelector('[aria-modal="true"]');
+    }
+    window.addEventListener('storage', event => {
+      if (event.storageArea !== localStorage || (event.key !== null && !N5_CLOUD_SHARED_KEYS.includes(event.key))) return;
+      n5CloudReloadRequired = true;
+      if (n5CloudSession) n5CloudSetStatus(N5_CLOUD_RELOAD_MESSAGE);
+    });
     function n5CloudCanonical(v){
       if(Array.isArray(v))return '['+v.map(n5CloudCanonical).join(',')+']';
       if(v&&typeof v==='object')return '{'+Object.keys(v).filter(k=>v[k]!==undefined).sort().map(k=>JSON.stringify(k)+':'+n5CloudCanonical(v[k])).join(',')+'}';
@@ -7452,7 +7537,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const history=p.searchHistory===undefined?[]:p.searchHistory;
       if(!Array.isArray(history)||history.length>15||history.some(x=>typeof x!=='string'||x.length>2000))throw Error('Lịch sử tìm kiếm không hợp lệ.');
       if(JSON.stringify(p).length>5*1024*1024)throw Error('Bản đồng bộ vượt giới hạn 5 MB.');
-      return {version:'N5Hub-5.46',...validated,searchHistory:history};
+      return {version:'N5Hub-5.47',...validated,searchHistory:history};
     }
     function n5CloudRememberBase(row,p){
       n5CloudBase={uid:n5CloudSession.user.id,revision:Number(row.revision),sig:n5CloudSignature(p),updated:row.updated_at||new Date().toISOString(),auto:n5CloudEnabled};
@@ -7480,10 +7565,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     async function n5CloudToken(){
       if(!n5CloudSession)throw Error('Bạn chưa đăng nhập.');
       if(n5CloudSession.expires_at>Date.now()/1000+75)return n5CloudSession.access_token;
+      const priorSession = localStorage.getItem(N5_CLOUD_SESSION);
       try{
         const r=await n5CloudRequest('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:n5CloudSession.refresh_token})});
+        if(n5CloudReloadRequired||priorSession!==localStorage.getItem(N5_CLOUD_SESSION))throw Error(N5_CLOUD_RELOAD_MESSAGE);
         n5CloudStoreSession(r);return n5CloudSession.access_token;
       }catch(e){
+        if(n5CloudReloadRequired||priorSession!==localStorage.getItem(N5_CLOUD_SESSION))throw Error(N5_CLOUD_RELOAD_MESSAGE);
         if(e.status===400||e.status===401){n5CloudSession=null;n5CloudEnabled=false;n5CloudRemove(N5_CLOUD_SESSION);throw Error('Phiên đăng nhập hết hạn. Hãy đăng nhập lại; dữ liệu học vẫn còn.');}
         throw e;
       }
@@ -7514,8 +7602,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const uid=n5CloudSession.user.id,revision=row?Number(row.revision)+1:1;
       const payload={user_id:uid,data:p,revision,updated_at:new Date().toISOString()};
       const path=row?'/rest/v1/n5_user_data?user_id=eq.'+encodeURIComponent(uid)+'&revision=eq.'+Number(row.revision):'/rest/v1/n5_user_data';
+      const authKeys = [N5_CLOUD_SESSION, N5_CLOUD_BASE];
+      const cloudLink = n5CloudStoredValues(authKeys);
       const result=await n5CloudRequest(path,{method:row?'PATCH':'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)},token);
       if(!Array.isArray(result)||result.length!==1||Number(result[0].revision)!==revision)throw Error('Bản cloud vừa thay đổi; đồng bộ lại để kiểm tra. Không ghi đè.');
+      if(n5CloudReloadRequired||cloudLink!==n5CloudStoredValues(authKeys)){
+        n5CloudSetStatus('Đã gửi bản học. '+N5_CLOUD_RELOAD_MESSAGE);return;
+      }
       n5CloudRememberBase(result[0],p);n5CloudConflict=false;
       n5CloudSetStatus('Đã gửi dữ liệu lên đám mây. '+new Date().toLocaleString('vi-VN'));
     }
@@ -7541,51 +7634,71 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const u=URL.createObjectURL(new Blob([JSON.stringify(p,null,2)],{type:'application/json'})),a=document.createElement('a');
       a.href=u;a.download='N5_Hub_pre_cloud_backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
     }
-    function n5CloudPause(msg){n5CloudConflict=true;n5CloudEnabled=false;
+    function n5CloudPause(msg, row = null, sig = null){
+      n5CloudConflict=true;n5CloudEnabled=false;
+      n5CloudConflictRow = row ? {revision: Number(row.revision), sig} : null;
       if(n5CloudBase){n5CloudBase.auto=false;n5CloudWrite(N5_CLOUD_BASE,n5CloudBase);}
       n5CloudSetStatus(msg);
     }
     async function n5CloudSync(mode='manual'){
+      if(n5CloudReloadRequired){if(mode!=='auto')n5CloudSetStatus(N5_CLOUD_RELOAD_MESSAGE);return;}
       if(n5CloudBusy||!n5CloudSession||navigator.onLine===false){if(mode!=='auto')n5CloudSetStatus('Cần đăng nhập, kết nối Internet và đợi lượt đồng bộ hiện tại kết thúc.');return;}
-      if(mode==='auto'&&(!n5CloudEnabled||n5CloudConflict||document.hidden||document.activeElement?.matches('input,textarea,select,[contenteditable=true]')||document.querySelector('[aria-modal="true"]')))return;
+      if(mode==='auto'&&(!n5CloudEnabled||n5CloudConflict||!n5CloudCanAutoApply()))return;
       n5CloudBusy=true;n5CloudSetStatus('Đang kiểm tra cloud…');
       try{
-        const token=await n5CloudToken(),local=n5CloudSnapshot(),localSig=n5CloudSignature(local);
+        const token=await n5CloudToken();
+        if(n5CloudReloadRequired)throw Error(N5_CLOUD_RELOAD_MESSAGE);
+        const stored = n5CloudStoredValues(N5_CLOUD_SHARED_KEYS);
+        const local=n5CloudSnapshot(),localSig=n5CloudSignature(local);
         const row=await n5CloudGet(token),base=n5CloudBase?.uid===n5CloudSession.user.id?n5CloudBase:null;
-        if(n5CloudSignature(n5CloudSnapshot())!==localSig)throw Error('Dữ liệu vừa thay đổi trong lúc đồng bộ. Hãy thử lại.');
+        const ensureCurrent = () => {
+          if(n5CloudReloadRequired)throw Error(N5_CLOUD_RELOAD_MESSAGE);
+          if(stored!==n5CloudStoredValues(N5_CLOUD_SHARED_KEYS)||n5CloudSignature(n5CloudSnapshot())!==localSig){
+            throw Error('Dữ liệu vừa thay đổi trong lúc đồng bộ. Hãy thử lại.');
+          }
+        };
+        ensureCurrent();
         if(!row){
-          if(mode==='auto'||mode==='cloud'){n5CloudPause('Chưa có bản cloud. Chọn giữ dữ liệu thiết bị để tạo bản mới.');return;}
+          if(mode==='auto'||mode==='cloud'||(mode==='local'&&n5CloudConflictRow)){n5CloudPause('Chưa có bản cloud. Chọn giữ dữ liệu thiết bị để tạo bản mới.');return;}
           if(!confirm('Chưa có dữ liệu cloud. Tải tiến độ hiện tại của thiết bị lên tài khoản này?')){n5CloudSetStatus('Đã hủy. Dữ liệu không thay đổi.');return;}
+          ensureCurrent();
           await n5CloudPush(token,null,local);return;
         }
         const remote=n5CloudSafePayload(row.data),remoteSig=n5CloudSignature(remote);
         if(remoteSig===localSig){n5CloudRememberBase(row,local);n5CloudConflict=false;n5CloudSetStatus('Dữ liệu đã đồng nhất. '+new Date().toLocaleString('vi-VN'));return;}
+        if((mode==='local'||mode==='cloud')&&
+          (!n5CloudConflict||n5CloudConflictRow?.revision!==Number(row.revision)||n5CloudConflictRow.sig!==remoteSig)){
+          n5CloudPause('Bản cloud đã thay đổi. Hãy đối chiếu và chọn lại bản muốn giữ.',row,remoteSig);return;
+        }
         if(mode==='local'){
           if(!confirm('Giữ dữ liệu thiết bị và thay bản cloud hiện tại? Đây là thao tác thay thế toàn bộ, không hợp nhất.')){n5CloudSetStatus('Đã hủy; giữ nguyên cả hai bản.');return;}
-          // Store both snapshots for recovery before deliberately replacing cloud.
+          ensureCurrent();
+          // Save the cloud copy for recovery before deliberately replacing it.
           if(!n5CloudWrite(N5_CLOUD_RECOVERY,row.data))throw Error('Không đủ bộ nhớ để lưu bản cloud cũ. Không thay thế.');
           await n5CloudPush(token,row,local);return;
         }
         if(mode==='cloud'){
           if(!confirm('Dùng bản cloud để thay dữ liệu trên thiết bị này? Bản cũ sẽ được lưu trong mục khôi phục trước đồng bộ.')){n5CloudSetStatus('Đã hủy; giữ nguyên cả hai bản.');return;}
-          if(n5CloudSignature(n5CloudSnapshot())!==localSig)throw Error('Dữ liệu thiết bị vừa thay đổi. Hãy thử lại.');
+          ensureCurrent();
           n5CloudApply(remote);n5CloudRememberBase(row,n5CloudSnapshot());n5CloudConflict=false;n5CloudSetStatus('Đã nhận dữ liệu từ cloud. '+new Date().toLocaleString('vi-VN'));renderCurrentView(true);return;
         }
-        if(!base){n5CloudPause('Hai bản chưa được liên kết. Hãy chọn dữ liệu muốn giữ sau khi sao lưu.');return;}
+        if(!base){n5CloudPause('Hai bản chưa được liên kết. Hãy chọn dữ liệu muốn giữ sau khi sao lưu.',row,remoteSig);return;}
         const changedLocal=localSig!==base.sig,changedRemote=Number(row.revision)!==base.revision||remoteSig!==base.sig;
-        if(changedLocal&&changedRemote){n5CloudPause('Xung đột: cả hai thiết bị đã thay đổi. Không có dữ liệu nào bị ghi đè.');return;}
+        if(changedLocal&&changedRemote){n5CloudPause('Xung đột: cả hai thiết bị đã thay đổi. Không có dữ liệu nào bị ghi đè.',row,remoteSig);return;}
         if(changedLocal&&!changedRemote){await n5CloudPush(token,row,local);return;}
         if(!changedLocal&&changedRemote){
           // No silent overwrite: manual pull or previously enabled automatic sync with recovery.
           if(mode!=='auto'&&!confirm('Có dữ liệu mới trên cloud. Nhận dữ liệu về thiết bị?')){n5CloudSetStatus('Đã hủy nhận dữ liệu.');return;}
-          if(n5CloudSignature(n5CloudSnapshot())!==localSig)throw Error('Dữ liệu thiết bị vừa thay đổi.');
+          if(mode==='auto'&&!n5CloudCanAutoApply()){n5CloudSetStatus('Sẽ nhận bản cloud khi bạn hoàn tất thao tác hiện tại.');return;}
+          ensureCurrent();
           n5CloudApply(remote);n5CloudRememberBase(row,n5CloudSnapshot());n5CloudConflict=false;n5CloudSetStatus('Đã nhận dữ liệu mới từ cloud. '+new Date().toLocaleString('vi-VN'));renderCurrentView(true);return;
         }
-        n5CloudPause('Không xác định được mốc dữ liệu. Hãy đối chiếu hai bản.');
+        n5CloudPause('Không xác định được mốc dữ liệu. Hãy đối chiếu hai bản.',row,remoteSig);
       }catch(e){n5CloudSetStatus('Chưa đồng bộ: '+(e.message||'Lỗi mạng')+' · Dữ liệu cục bộ vẫn được giữ.');}
       finally{n5CloudBusy=false;n5CloudRepaint();}
     }
     function n5CloudToggleAuto(checked){
+      if(n5CloudReloadRequired){n5CloudSetStatus(N5_CLOUD_RELOAD_MESSAGE);return;}
       if(checked&&(!n5CloudBase||n5CloudBase.uid!==n5CloudSession?.user?.id||n5CloudConflict)){n5CloudSetStatus('Hãy hoàn thành lần đồng bộ đầu tiên và xử lý xung đột trước.');n5CloudRepaint();return;}
       n5CloudEnabled=!!checked;
       if(n5CloudBase){n5CloudBase.auto=n5CloudEnabled;if(!n5CloudWrite(N5_CLOUD_BASE,n5CloudBase))n5CloudEnabled=false;}
@@ -7601,7 +7714,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CloudPanel(){
       const esc=studyEscape,button='rounded-xl px-4 py-3 text-sm font-bold';
       return `<section id="n5-cloud-panel" class="rounded-3xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 space-y-3">
-        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.46</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
+        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.47</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
         <p id="n5-cloud-status" role="status" class="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-3 text-sm leading-relaxed">${esc(n5CloudText)}</p>
         ${n5CloudSession?`<p class="text-sm break-all">Đăng nhập: <b>${esc(n5CloudSession.user.email||'Tài khoản của bạn')}</b></p>
         <button type="button" onclick="n5CloudSync()" class="w-full ${button} bg-sky-600 text-white">Đồng bộ ngay</button>

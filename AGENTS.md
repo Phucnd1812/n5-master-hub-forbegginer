@@ -13,6 +13,7 @@
   npx --yes tailwindcss@3.4.17 -c tools/tailwind.config.cjs -i tools/tailwind.css -o assets/tailwind.css --minify
   ```
 
+- Đọc [rà soát v5.47](docs/v5.47-review.md) để xem số đo, giới hạn đồng bộ, lộ trình tách module và dữ liệu dùng cho Smart Study.
 - Lucide 1.77.0 được lưu tại `assets/vendor/` cùng giấy phép. Font web là phần bổ sung khi có mạng. Nội dung học dùng được bằng font hệ thống. Phát âm dùng Web Speech API và giọng trên thiết bị. Giọng đã tải là điều kiện để luyện nghe ngoại tuyến.
 - Tiến độ, ôn SRS, câu sai, Flashcard cá nhân, tuỳ chọn và phiên đăng nhập nằm trong Local Storage. Kho từ điển nhập thêm sử dụng IndexedDB. Supabase Authentication và bảng `n5_user_data` cung cấp đồng bộ ảnh chụp có kiểm tra revision. Đồng bộ tự động do người dùng bật và chạy khi ứng dụng mở.
 
@@ -21,6 +22,12 @@
 - Giữ các kho từ vựng, Kanji, ngữ pháp, Flashcard Nhật–Việt, SRS, danh sách chưa nhớ, sổ tay câu sai, luyện chia thể, luyện viết Kanji, tìm kiếm toàn cục/Romaji/biến thể, nghe/đọc/Shadowing, thi JLPT, thống kê và Backup & Restore. Giữ tương thích với dữ liệu cũ và sao lưu JSON đã tạo.
 - Không xóa Local Storage hoặc IndexedDB khi cài đặt, làm mới hay cập nhật PWA. Giữ khoá lưu, ID giáo trình, định dạng sao lưu và cơ chế khôi phục. Dùng dữ liệu thử riêng khi kiểm thử.
 - Không thay đổi dự án Supabase, schema hoặc chính sách truy cập nếu không thực sự cần cho nhiệm vụ. Giữ kiểm tra revision, khôi phục và bước chọn bản khi có xung đột. Không ghi token, mật khẩu hoặc khoá đặc quyền vào repository, cache hay log. Yêu cầu Supabase và dịch vụ bên ngoài đi qua mạng như trước.
+
+## Kiểm thử tự động
+
+- Chạy Playwright tại `.github/tests`. Chạy `npm ci`, `npx playwright install chromium webkit`, rồi `npm test`. Biến `N5_TEST_BROWSER=webkit` chọn WebKit. GitHub Actions chạy cả hai engine khi PR vào `main` và khi cập nhật `main`.
+- Bộ kiểm thử phục vụ website theo đường dẫn con như Pages và mô phỏng Supabase trong trình duyệt. Khi sửa đồng bộ, giữ kiểm tra revision, chốt cho dữ liệu thay đổi trong tab khác và bước chọn lại khi revision cloud đã đổi. Khi sửa PWA, kiểm tra cả cache bị thu hồi và tài nguyên phát hành không đồng nhất.
+- Đo hiệu suất với cùng tập truy vấn, dữ liệu, thiết lập CPU và viewport trước/sau. Ghi rõ phép đo nào gồm dựng chỉ mục lần đầu và phép đo nào chạy sau khi chỉ mục có sẵn.
 
 ## Quy trình nâng cấp
 

@@ -1,0 +1,10 @@
+{
+  "name": "n5-master-hub-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test app.test.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
