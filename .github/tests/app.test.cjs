@@ -165,6 +165,7 @@ test('mobile and desktop study, Romaji, IME, deep link and legacy backup', {time
     return {...n5BackupPayload(), version:'N5Hub-5.46'};
   });
   await go(page, 'backup');
+  assert(await page.getByText('Phiên bản đang chạy v' + release, {exact: true}).isVisible());
   await page.locator('input[onchange="importHubData(event)"]').setInputFiles({
     name:'v546.json', mimeType:'application/json', buffer:Buffer.from(JSON.stringify(backup))
   });
@@ -225,6 +226,10 @@ test('evicted cache recovers; failed updates preserve offline study and retry ac
   await page.waitForFunction(r => document.title === 'N5 Master Hub v' + r, nextRelease);
   assert.equal(await other.title(), 'N5 Master Hub v' + release);
   await other.locator('#n5-update').waitFor({state:'visible'});
+  await go(other, 'backup');
+  assert(await other.getByText('Phiên bản đang chạy v' + release, {exact: true}).isVisible());
+  await go(page, 'backup');
+  assert(await page.getByText('Phiên bản đang chạy v' + nextRelease, {exact: true}).isVisible());
   assert.deepEqual(await page.evaluate(() => state.bookmarks), [id]);
   assert.deepEqual((await page.evaluate(() => caches.keys())).sort(),
     ['n5-master-hub:' + project + ':' + nextRelease, 'unrelated-cache']);
