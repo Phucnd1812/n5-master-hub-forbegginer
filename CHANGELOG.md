@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.47 — Stability & Performance Update
+
+- Giảm công việc lặp khi tìm kiếm toàn cục, Romaji và dạng chia. Giữ thứ tự và nội dung kết quả trên tập truy vấn hồi quy.
+- Mở kết quả sâu trong kho từ vựng theo nhóm, giảm số dòng dựng lúc chuyển trang. Bỏ qua tìm kiếm khi bộ gõ tiếng Nhật đang soạn và giảm ghi vị trí cuộn trùng.
+- Giữ bản ngoại tuyến đang chạy khi tải bản mới thất bại. Thêm kiểm tra lại sớm và khôi phục cache bị thu hồi khi có mạng.
+- Dừng Cloud Sync khi có dữ liệu mới từ tab khác. Yêu cầu xác nhận lại lựa chọn xung đột nếu bản cloud đã đổi revision. Giữ tương thích với bản sao lưu v5.46.
+- Thêm kiểm thử trình duyệt bằng Playwright và GitHub Actions. Ghi kết quả đo, rủi ro còn lại và lộ trình Smart Study trong tài liệu rà soát.
+
 ## v5.46
 
 - Thêm manifest, biểu tượng từ logo hiện có và chế độ standalone. Mục **Sao lưu & khôi phục** có hướng dẫn cài đặt trên Safari iPhone và Chrome/Edge Windows.
