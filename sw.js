@@ -1,4 +1,4 @@
-const RELEASE = '5.48';
+const RELEASE = '5.49';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -10,6 +10,17 @@ const assets = new Set([
   `assets/study-engine.js?v=${RELEASE}`,
   `assets/smart-study.js?v=${RELEASE}`,
   `assets/tailwind.css?v=${RELEASE}`,
+  `assets/search/lookup.css?v=${RELEASE}`,
+  `assets/search/lookup-ui.js?v=${RELEASE}`,
+  `assets/search/search-worker.js?v=${RELEASE}`,
+  'assets/search/search-client.js',
+  'assets/search/search-engine.js',
+  'assets/search/sentence-analyzer.js',
+  'assets/search/morphology.js',
+  'assets/search/grammar-data.js',
+  'assets/search/lexicon.js',
+  'assets/search/builtin-dictionary.json',
+  'assets/search/text.js',
   'assets/vendor/lucide-1.77.0.min.js',
   'assets/icons/favicon.png',
   'assets/icons/apple-touch.png',
