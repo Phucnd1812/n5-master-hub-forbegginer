@@ -179,8 +179,48 @@ test('mobile and desktop study, Romaji, IME, deep link and legacy backup', {time
   assert(await desktop.locator('#sidebar').isVisible());
 });
 
-test('evicted cache recovers; failed updates preserve offline study and retry across tabs', {timeout: 90_000}, async t => {
-  t.after(() => {networkAvailable = true; published = release; missingIcon = false; staleShell = false;});
+async function checkCandidate(page) {
+  const check = page.getByRole('button', {name:'Kiểm tra cập nhật'});
+  const reads = shellRequests;
+  for (let attempt = 0; attempt < 5 && shellRequests === reads; attempt++) {
+    await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
+    await check.click();
+    for (let i = 0; i < 10 && shellRequests === reads; i++) await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  assert(shellRequests > reads, 'the worker requested this candidate shell');
+  await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
+}
+
+for (const failure of ['missing icon', 'stale HTML']) {
+  test(`PWA keeps the active offline version after an update with ${failure}`, {timeout:90_000}, async t => {
+    t.after(() => {networkAvailable = true; published = release; missingIcon = false; staleShell = false;});
+    const {page} = await openApp(t);
+    const id = await page.evaluate(() => {
+      const id = VOCAB_DATA[0].id;
+      toggleBookmark(id);
+      return id;
+    });
+
+    // Use a fresh registration for each simulated deployment. The browser
+    // can delay another update attempt after a failed worker installation.
+    await go(page,'backup');
+    published = nextRelease;
+    missingIcon = failure === 'missing icon';
+    staleShell = failure === 'stale HTML';
+    await checkCandidate(page);
+    await page.getByText(/Chưa tải được bản cập nhật/).first().waitFor();
+    assert(await page.locator('#n5-update').isHidden());
+    assert.equal(await page.title(), 'N5 Master Hub v' + release);
+
+    networkAvailable = false;
+    assert.equal((await page.reload()).status(), 200);
+    await go(page, 'vocab');
+    assert.deepEqual(await page.evaluate(() => state.bookmarks), [id]);
+  });
+}
+
+test('PWA recovers an evicted cache and safely applies a valid update across tabs', {timeout:90_000}, async t => {
+  t.after(() => {networkAvailable = true; published = release;});
   const {context, page} = await openApp(t);
   const id = await page.evaluate(() => {
     const id = VOCAB_DATA[0].id;
@@ -202,31 +242,9 @@ test('evicted cache recovers; failed updates preserve offline study and retry ac
   await other.goto(site);
   await other.evaluate(() => caches.open('unrelated-cache'));
   await go(page, 'backup');
-  const check = page.getByRole('button', {name:'Kiểm tra cập nhật'});
   const notice = page.locator('#n5-update');
-  async function checkCandidate() {
-    const reads = shellRequests;
-    for (let attempt = 0; attempt < 5 && shellRequests === reads; attempt++) {
-      await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
-      await check.click();
-      for (let i = 0; i < 10 && shellRequests === reads; i++) await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    assert(shellRequests > reads, 'the worker requested this candidate shell');
-    await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
-  }
   published = nextRelease;
-  missingIcon = true;
-  await checkCandidate();
-  await page.getByText(/Chưa tải được bản cập nhật/).first().waitFor();
-  assert(await notice.isHidden());
-  assert.equal(await page.title(), 'N5 Master Hub v' + release);
-
-  missingIcon = false;
-  staleShell = true;
-  await checkCandidate();
-  assert(await notice.isHidden());
-  staleShell = false;
-  await checkCandidate();
+  await checkCandidate(page);
   await notice.waitFor({state:'visible'});
   await notice.getByRole('button', {name:'Cập nhật và mở lại'}).click();
   await page.waitForFunction(r => document.title === 'N5 Master Hub v' + r, nextRelease);
