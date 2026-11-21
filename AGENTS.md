@@ -7,12 +7,14 @@
 - `index.html` chứa giao diện Liquid Glass, các kho dữ liệu giáo trình và logic học. Giữ bố cục sidebar trên PC, điều hướng dưới trên mobile, chế độ sáng/tối/tự động và khoảng đệm safe area của iOS. Ưu tiên sửa đúng khu vực liên quan và tránh viết lại toàn bộ.
 - `manifest.webmanifest` khai báo URL khởi động, phạm vi, chế độ standalone và biểu tượng. Giữ `id` và `start_url` ổn định để bản mới tiếp tục dùng danh tính ứng dụng đã cài.
 - `sw.js` lưu HTML và danh sách tài nguyên tĩnh công khai theo phiên bản và phạm vi website. Cập nhật tải đủ tài nguyên trước khi kích hoạt, rồi dọn cache cũ của chính ứng dụng. `pwa.js` hiển thị trạng thái, hỗ trợ cài đặt và xin xác nhận trước khi mở lại phiên học.
-- Tailwind CSS 3.4.17 được biên dịch tĩnh từ `index.html` và commit vào `assets/tailwind.css`. Giữ tên đầy đủ của utility class trong template hoặc khai báo safelist khi tạo tên động. Khi thay đổi class hoặc cấu hình, chạy lệnh sau từ thư mục gốc.
+- Tailwind CSS 3.4.17 được biên dịch tĩnh từ `index.html` và `assets/smart-study.js` và commit vào `assets/tailwind.css`. Giữ tên đầy đủ của utility class trong template hoặc khai báo safelist khi tạo tên động. Khi thay đổi class hoặc cấu hình, chạy lệnh sau từ thư mục gốc.
 
   ```sh
   npx --yes tailwindcss@3.4.17 -c tools/tailwind.config.cjs -i tools/tailwind.css -o assets/tailwind.css --minify
   ```
 
+- Smart Study dùng `assets/study-engine.js` cho đề xuất và biểu diễn dữ liệu, `assets/smart-study.js` cho màn hình và phiên học. Cả hai phải được đưa vào cache theo phiên bản. Giữ các ID giáo trình và ưu tiên dùng trình chấm sẵn có.
+- Khóa `n5_smart_study_v1` lưu thiết lập, buổi học, lịch sử và hoạt động có giới hạn. Trường tùy chọn `smartStudy` trong JSON sao lưu và Cloud Sync giữ tương thích khi nhận bản cũ. Giữ Web Locks, dấu hiệu vị trí câu, kiểm tra revision và chốt buổi đang dở. Đọc [rà soát v5.48](docs/v5.48-review.md).
 - Đọc [rà soát v5.47](docs/v5.47-review.md) để xem số đo, giới hạn đồng bộ, lộ trình tách module và dữ liệu dùng cho Smart Study.
 - Lucide 1.77.0 được lưu tại `assets/vendor/` cùng giấy phép. Font web là phần bổ sung khi có mạng. Nội dung học dùng được bằng font hệ thống. Phát âm dùng Web Speech API và giọng trên thiết bị. Giọng đã tải là điều kiện để luyện nghe ngoại tuyến.
 - Tiến độ, ôn SRS, câu sai, Flashcard cá nhân, tuỳ chọn và phiên đăng nhập nằm trong Local Storage. Kho từ điển nhập thêm sử dụng IndexedDB. Supabase Authentication và bảng `n5_user_data` cung cấp đồng bộ ảnh chụp có kiểm tra revision. Đồng bộ tự động do người dùng bật và chạy khi ứng dụng mở.
@@ -27,6 +29,7 @@
 
 - Chạy Playwright tại `.github/tests`. Chạy `npm ci`, `npx playwright install chromium webkit`, rồi `npm test`. Biến `N5_TEST_BROWSER=webkit` chọn WebKit. GitHub Actions chạy cả hai engine khi PR vào `main` và khi cập nhật `main`.
 - Bộ kiểm thử phục vụ website theo đường dẫn con như Pages và mô phỏng Supabase trong trình duyệt. Khi sửa đồng bộ, giữ kiểm tra revision, chốt cho dữ liệu thay đổi trong tab khác và bước chọn lại khi revision cloud đã đổi. Khi sửa PWA, kiểm tra cả cache bị thu hồi và tài nguyên phát hành không đồng nhất.
+- Khi đổi Smart Study, kiểm tra cùng một buổi qua reload và ngoại tuyến, trạng thái lật/đã trả lời, sao lưu cũ và xung đột snapshot giữa thiết bị. Tách tự đánh giá khỏi đúng/sai và kiểm tra xóa phân tích độc lập với tiến độ.
 - Đo hiệu suất với cùng tập truy vấn, dữ liệu, thiết lập CPU và viewport trước/sau. Ghi rõ phép đo nào gồm dựng chỉ mục lần đầu và phép đo nào chạy sau khi chỉ mục có sẵn.
 
 ## Quy trình nâng cấp

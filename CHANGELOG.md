@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.48 — Smart Study & Personalized Learning
+
+- Tạo buổi học theo SRS, câu sai, tiến độ bài và lượt luyện. Mặc định 5 phút với tùy chọn thời lượng, trọng tâm và phương pháp.
+- Thêm kế hoạch hằng ngày, học nhanh từ trang chủ, thay hoặc bỏ qua nhiệm vụ và tiếp tục đúng câu hoặc thẻ sau khi mở lại. Tái sử dụng giáo trình, Flashcard, lịch ôn và bài luyện N5 hiện có.
+- Lưu chuỗi ngày từ hoạt động học, thời gian làm bài, lịch sử buổi, kết quả và đề xuất ôn sau. Cho phép tắt ghi chi tiết hoặc xóa dữ liệu phân tích độc lập với tiến độ.
+- Lưu mô-đun Smart Study vào PWA để học ngoại tuyến. Bổ sung trường Smart Study tùy chọn vào sao lưu và Cloud Sync, kèm chốt khi có buổi dở hoặc thay đổi từ tab khác.
+- Thêm kiểm thử Chromium và WebKit cho Smart Study, đồng bộ mô phỏng và dữ liệu cũ.
+
 ## v5.47.1
 
 - Hiển thị phiên bản đang chạy ngay dưới tiêu đề **Sao lưu & khôi phục**, kể cả khi học ngoại tuyến hoặc có bản mới đang chờ cập nhật.

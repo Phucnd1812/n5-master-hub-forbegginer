@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="application-name" content="N5 Master Hub">
-  <meta name="n5-release" content="5.47.1">
+  <meta name="n5-release" content="5.48">
   <meta name="description" content="Học tiếng Nhật JLPT N5 với từ vựng, Kanji, ngữ pháp và Flashcard ngoại tuyến.">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,10 +15,12 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch.png">
-  <title>N5 Master Hub v5.47.1</title>
+  <title>N5 Master Hub v5.48</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <script src="./assets/vendor/lucide-1.77.0.min.js" defer></script>
-  <script src="./pwa.js?v=5.47.1" defer></script>
+  <script src="./assets/study-engine.js?v=5.48" defer></script>
+  <script src="./assets/smart-study.js?v=5.48" defer></script>
+  <script src="./pwa.js?v=5.48" defer></script>
   <style>
     /* v5.18: TP Han Zi embedded locally; Japanese glyphs fall back to Noto Sans JP. */
     @font-face {
@@ -1914,7 +1916,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 .n5-personal-dialog{width:min(100%,550px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;color:#142437;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 25px 80px #0005;}
 .dark .n5-personal-dialog{background:#142337;color:#e5eef7}.n5-personal-dialog label{display:flex;flex-direction:column;gap:6px;font:600 13px/1.4 system-ui}.n5-personal-dialog input,.n5-personal-dialog select,.n5-personal-dialog textarea,.n5-p-actions select,.n5-p-actions input{width:100%;box-sizing:border-box;border:1px solid #94a3b877;background:#94a3b812;color:inherit;border-radius:12px;padding:10px;font:400 16px/1.4 system-ui;min-width:0}.n5-personal-dialog textarea{resize:vertical}.n5-p-button{padding:10px 13px;border-radius:12px;border:1px solid #94a3b855;background:#94a3b816;color:inherit;font-weight:700;font-size:13px;line-height:1.35;cursor:pointer;min-height:40px}.n5-p-button.primary{background:#0579b5;color:#fff;border-color:transparent}.n5-p-button.retry{background:#fef3c7;color:#92400e;border-color:#fbbf24}.n5-p-button:disabled{opacity:.4;cursor:default}.n5-p-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.n5-p-actions select,.n5-p-actions input{flex:1 1 140px;width:auto}.n5-p-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-top:1px solid #94a3b855;overflow-wrap:anywhere}.n5-p-row>div:first-child{min-width:0;flex:1}.n5-p-study{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:290px;padding:24px;border:1px solid #7dd3fc;border-radius:24px;background:linear-gradient(145deg,#eefaff,#e6fcf4);color:#16344c;text-align:center;overflow-wrap:anywhere;animation:n5PEnter .2s ease-out}.n5-p-study strong{font-size:clamp(24px,6vw,38px);line-height:1.5}.n5-p-study.answer{background:linear-gradient(140deg,#123449,#075b55);color:#fff}.dark .n5-p-study:not(.answer){background:#193347;color:#eff9ff}.n5-p-add{font-size:12px;white-space:nowrap}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto}.n5-smart-row>.n5-p-actions{justify-content:end}.n5-smart-row>.n5-p-add{grid-column:1/-1;justify-self:end}.n5-smart-row>.n5-p-actions .n5-p-add{white-space:normal}@keyframes n5PEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.n5-p-study{animation:none}}@media(max-width:600px){.n5-personal-overlay{align-items:flex-end;padding:8px}.n5-personal-dialog{max-height:85dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.n5-smart-row>.n5-p-actions{grid-column:1/-1}.n5-p-row{align-items:flex-start}.n5-p-row .n5-p-actions{flex-direction:column}}
 </style>
-  <link rel="stylesheet" href="./assets/tailwind.css?v=5.47.1">
+  <link rel="stylesheet" href="./assets/tailwind.css?v=5.48">
 </head>
 <body class="h-full bg-slate-50 dark:bg-jpdark-950 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
   <div id="app" class="flex h-screen overflow-hidden">
@@ -3771,15 +3773,22 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       state.completedItems = state.completedItems.filter(id => valid.has(id));
     })();
 
+    const N5_CORE_STORAGE_KEYS = [
+      'n5_hub_bookmarks', 'n5_hub_completed', 'n5_hub_tts_rate',
+      'n5_hub_review', 'n5_hub_mistakes', 'n5_hub_study_log'
+    ];
+    const n5CoreStored = () => JSON.stringify(N5_CORE_STORAGE_KEYS.map(key => localStorage.getItem(key)));
+    let n5CoreBaseline = n5CoreStored();
+
     function saveState() {
       let saved=true;
       try {
-      localStorage.setItem('n5_hub_bookmarks', JSON.stringify(state.bookmarks));
-      localStorage.setItem('n5_hub_completed', JSON.stringify(state.completedItems));
-      localStorage.setItem('n5_hub_tts_rate', state.ttsRate.toString());
-      localStorage.setItem('n5_hub_review', JSON.stringify(state.reviewData));
-      localStorage.setItem('n5_hub_mistakes', JSON.stringify(state.mistakes));
-      localStorage.setItem('n5_hub_study_log', JSON.stringify(state.studyLog));
+      const values = [
+        JSON.stringify(state.bookmarks), JSON.stringify(state.completedItems), state.ttsRate.toString(),
+        JSON.stringify(state.reviewData), JSON.stringify(state.mistakes), JSON.stringify(state.studyLog)
+      ];
+      N5_CORE_STORAGE_KEYS.forEach((key, index) => localStorage.setItem(key, values[index]));
+      n5CoreBaseline = JSON.stringify(values);
       } catch(error) {
         saved=false;
         if (!window.__n5StorageWarned) {
@@ -4601,7 +4610,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       lucide.createIcons();
     }
     function selectFormLesson(id){formPracticeState={lesson:id,index:0,answered:false};window.__formPracticeCorrect=false;renderFormPracticeHub(document.getElementById('mainContainer'));}
-    function checkFormPractice(){const input=document.getElementById('formPracticeAnswer');if(!input||!input.value.trim()){showToast('Hãy nhập đáp án');return;}const lesson=FORM_LESSONS.find(x=>x.id===formPracticeState.lesson),row=lesson.rows[formPracticeState.index%lesson.rows.length];const a=normalizeStudyAnswer(input.value),b=normalizeStudyAnswer(row[1]);window.__formPracticeCorrect=a===b;formPracticeState.answered=true;renderFormPracticeHub(document.getElementById('mainContainer'));}
+    function checkFormPractice(){const input=document.getElementById('formPracticeAnswer');if(!input||!input.value.trim()){showToast('Hãy nhập đáp án');return;}const lesson=FORM_LESSONS.find(x=>x.id===formPracticeState.lesson),row=lesson.rows[formPracticeState.index%lesson.rows.length];const a=normalizeStudyAnswer(input.value),b=normalizeStudyAnswer(row[1]);window.__formPracticeCorrect=a===b;formPracticeState.answered=true;window.n5SmartStudy?.record('form_'+lesson.id+'_'+formPracticeState.index,'form','write',a===b?'correct':'incorrect',lesson.id);renderFormPracticeHub(document.getElementById('mainContainer'));}
     function nextFormPractice(){const lesson=FORM_LESSONS.find(x=>x.id===formPracticeState.lesson);formPracticeState.index=(formPracticeState.index+1)%lesson.rows.length;formPracticeState.answered=false;window.__formPracticeCorrect=false;renderFormPracticeHub(document.getElementById('mainContainer'));}
 
     const NUMBER_GUIDE_SECTIONS=[
@@ -4733,6 +4742,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       trackNavHistory();
       // v5.29: page-aware presentation layer; existing renderers and state stay untouched.
       main.dataset.n5Page = (state.globalSearchActive && state.searchQuery.trim()) ? 'global-search' : (state.currentView || 'dashboard');
+      window.n5SmartStudy?.setView(main.dataset.n5Page);
       const mobileScrollY = preserveScroll && window.matchMedia('(max-width: 767px)').matches ? window.scrollY : 0;
       const mainScrollTop = preserveScroll ? main.scrollTop : 0;
       if (!preserveScroll) main.scrollTop = 0;
@@ -4747,6 +4757,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       }
       switch (state.currentView) {
         case 'dashboard': renderDashboard(main); break;
+        case 'smartStudy': window.n5SmartStudy?.render(main); break;
         case 'grammar': renderGrammarHub(main); break;
         case 'vocab': renderVocabHub(main); break;
         case 'kanji': renderKanjiHub(main); break;
@@ -4900,6 +4911,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
               日本語
             </div>
           </div>
+
+          ${window.n5SmartStudy?.homeHtml() || ''}
 
           <!-- Quick Stats Cards -->
           <div class="dashboard-stats-grid grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -5990,7 +6003,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       navigateTo('review');
     }
 
-    function saveFlashcardKnowledge(itemId, remembered) {
+    function updateFlashcardKnowledge(itemId, remembered) {
       const old = state.reviewData[itemId] || { interval: 0, ease: 2.5, reps: 0 };
       const ease = Number(old.ease) || 2.5;
       let interval = 0, reps = 0, due;
@@ -6008,13 +6021,25 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         interval, ease, reps, due: n5LocalDateKey(due),
         last: Date.now(), remembered: !!remembered
       };
+      return interval;
+    }
+
+    function saveFlashcardKnowledge(itemId, remembered) {
+      const interval = updateFlashcardKnowledge(itemId, remembered);
       saveState();
       return interval;
+    }
+
+    function n5StudyCardSkill(id) {
+      if (N5_ALL_VOCAB.some(item => item.id === id)) return 'vocab';
+      if (N5_ALL_KANJI.some(item => item.id === id)) return 'kanji';
+      return 'grammar';
     }
 
     function markFlashcardKnowledge(itemId, remembered) {
       if(window.__n5FlashcardAnimating)return;
       const interval=saveFlashcardKnowledge(itemId,remembered);
+      window.n5SmartStudy?.record(itemId,n5StudyCardSkill(itemId),'card',remembered?'remembered':'again');
       showToast(remembered?`Đã ghi nhận: bạn nhớ mục này · ôn lại sau ${interval} ngày`:'Đã thêm vào danh sách nội dung chưa nhớ');
       const advance=()=>{
         state.fcFlipped=false;
@@ -6381,6 +6406,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const isCorrect = idx === q.correct;
       if (isCorrect) state.quizScore += 10;
       state.quizUserAnswers.push({ question: q, userIdx: idx, isCorrect });
+      if (q.sourceId) window.n5SmartStudy?.record(q.sourceId,q.sourceType,'quiz',isCorrect?'correct':'incorrect');
       if (!isCorrect) addStudyMistake({ id: q.sourceId || ('q_'+Date.now()), type: q.sourceType || q.typeLabel, question: q.question, correctAnswer: q.options[q.correct], chosenAnswer: q.options[idx], date: new Date().toISOString(), explanation: q.explanation || '' });
 
       if (state.quizIndex < state.quizQuestions.length - 1) {
@@ -6616,7 +6642,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5PStart(due=false,shuffle=false){const pool=n5PFiltered().filter(c=>!due||n5PDue(c));if(!pool.length)return showToast('Chưa có thẻ phù hợp');n5PSession={ids:(shuffle?pickRandom(pool,pool.length):pool).map(c=>c.id),index:0,flipped:false,graded:{}};renderCurrentView();}
     function n5PMove(delta){if(!n5PSession)return;const s=n5PSession;s.index=Math.max(0,Math.min(s.ids.length,s.index+delta));s.flipped=false;renderCurrentView(true);}
     function n5PFlip(){if(n5PSession&&n5PSession.index<n5PSession.ids.length){n5PSession.flipped=!n5PSession.flipped;renderCurrentView(true);}}
-    function n5PGrade(remembered){const s=n5PSession;if(!s||!s.flipped||s.index>=s.ids.length)return;const id=s.ids[s.index],v=n5Pcopy(),c=v.cards.find(x=>x.id===id);if(!c)return n5PMove(1);const reps=remembered?(c.review?.reps||0)+1:0;const interval=remembered?(reps===1?1:reps===2?3:Math.min(365,Math.max(1,Math.round((c.review?.interval||3)*2.5)))):0;const d=new Date();d.setDate(d.getDate()+interval);c.review={remembered,due:n5LocalDateKey(d),reps,interval};if(!n5PersonalCommit(v))return;s.graded[id]=remembered;showToast(remembered?'Đã nhớ · ôn sau '+interval+' ngày':'Chưa nhớ · ôn lại hôm nay');n5PMove(1);}
+    function n5PGrade(remembered){const s=n5PSession;if(!s||!s.flipped||s.index>=s.ids.length)return;const id=s.ids[s.index],v=n5Pcopy(),c=v.cards.find(x=>x.id===id);if(!c)return n5PMove(1);const reps=remembered?(c.review?.reps||0)+1:0;const interval=remembered?(reps===1?1:reps===2?3:Math.min(365,Math.max(1,Math.round((c.review?.interval||3)*2.5)))):0;const d=new Date();d.setDate(d.getDate()+interval);c.review={remembered,due:n5LocalDateKey(d),reps,interval};if(!n5PersonalCommit(v))return;window.n5SmartStudy?.record(id,'vocab','card',remembered?'remembered':'again');s.graded[id]=remembered;showToast(remembered?'Đã nhớ · ôn sau '+interval+' ngày':'Chưa nhớ · ôn lại hôm nay');n5PMove(1);}
     function n5PStop(){n5PSession=null;renderCurrentView(true);}
     function n5PRender(container){const e=studyEscape,d=state.personalCards,base=d.cards.filter(c=>n5PDeck==='ALL'||c.deck===n5PDeck);if(n5PDeck!=='ALL'&&!d.decks.some(x=>x.id===n5PDeck))n5PDeck='ALL';const pool=n5PFiltered(),s=n5PSession;let work='';
       if(s){const c=d.cards.find(x=>x.id===s.ids[s.index]);if(!c){work=`<div class="n5-smart-panel text-center"><h2 class="text-xl font-bold">Hoàn thành phiên ôn</h2><p>Đã đánh giá ${Object.keys(s.graded).length} thẻ · ${Object.values(s.graded).filter(Boolean).length} đã nhớ.</p><button class="n5-p-button primary" onclick="n5PStop()">Về bộ thẻ</button></div>`;}else{work=`<div class="n5-smart-panel"><div class="flex justify-between items-center"><span>Thẻ ${s.index+1} / ${s.ids.length}</span><button class="n5-p-button" onclick="n5PStop()">Kết thúc</button></div><button class="n5-p-study ${s.flipped?'answer':''}" onclick="n5PFlip()"><span class="text-xs opacity-80">${s.flipped?'Mặt sau · Tiếng Việt':'Mặt trước · Tiếng Nhật'}</span><strong lang="${s.flipped?'vi':'ja'}">${e(s.flipped?c.vi:c.jp)}</strong>${c.kana?`<span lang="ja">${e(c.kana)}</span>`:''}${s.flipped&&c.note?`<small>${e(c.note)}</small>`:''}<span class="text-xs opacity-80">Chạm để lật thẻ</span></button><div class="n5-p-actions"><button class="n5-p-button" onclick="n5PMove(-1)" ${s.index===0?'disabled':''}>← Thẻ trước</button><button class="n5-p-button" onclick="playAudio(${n5PArg(c.jp)})">♪ Nghe</button><button class="n5-p-button" onclick="n5PMove(1)">Thẻ tiếp →</button></div><div class="n5-p-actions"><button class="n5-p-button retry" onclick="n5PGrade(false)" ${s.flipped?'':'disabled'}>Chưa nhớ</button><button class="n5-p-button primary" onclick="n5PGrade(true)" ${s.flipped?'':'disabled'}>Đã nhớ</button></div></div>`;}}
@@ -6625,12 +6651,17 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5BackupPayload(){
-      return {version:'N5Hub-5.47.1',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
+      const smartStudy = window.n5SmartStudy?.snapshot();
+      return {version:'N5Hub-5.48',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
         completedItems:[...state.completedItems],ttsRate:state.ttsRate,reviewData:state.reviewData,
-        mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition};
+        mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition,
+        ...(smartStudy === undefined ? {} : {smartStudy})};
     }
     function exportHubData(){
-      const data=n5BackupPayload();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      let data;
+      try { data = n5BackupPayload(); }
+      catch (error) { showToast('Không thể sao lưu: ' + error.message); return; }
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
       const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;
       a.download='N5_Master_Hub_backup_'+n5LocalDateKey(new Date())+'.json';a.click();
       setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Đã tạo file sao lưu');
@@ -6645,34 +6676,62 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       if(d.studyLog!==undefined&&(!Array.isArray(d.studyLog)||d.studyLog.length>30000))throw Error('Nhật ký học không hợp lệ.');
       if(d.lastPosition!==undefined&&d.lastPosition!==null&&!object(d.lastPosition))throw Error('Vị trí học không hợp lệ.');
       if(d.ttsRate!==undefined&&!Number.isFinite(Number(d.ttsRate)))throw Error('Tốc độ nghe không hợp lệ.');
+      const smartStudy = d.smartStudy === undefined ? undefined : N5StudyEngine.validate(d.smartStudy);
       return {personalCards:d.personalCards===undefined?state.personalCards:n5PersonalValidate(d.personalCards),bookmarks:[...new Set(d.bookmarks)],completedItems:[...new Set(d.completedItems)],
+        ...(smartStudy === undefined ? {} : {smartStudy}),
         reviewData:d.reviewData||{},mistakes:(d.mistakes||[]).filter(object),
         studyLog:(d.studyLog||[]).filter(x=>object(x)&&typeof x.date==='string'),
         lastPosition:d.lastPosition||null,ttsRate:Math.max(.5,Math.min(2,Number(d.ttsRate)||1))};
     }
+    function n5WriteBackup(backup, searchHistory) {
+      const {smartStudy, ...progress} = backup;
+      Object.assign(state, progress);
+      if (!saveState() || !n5PersonalCommit(backup.personalCards)) throw Error('Không lưu được tiến độ.');
+      localStorage.setItem('n5_hub_last_position',JSON.stringify(state.lastPosition));
+      if (searchHistory !== undefined) localStorage.setItem('n5_smart_search_history',JSON.stringify(searchHistory));
+      // Older files and older cloud snapshots leave local Smart Study data intact.
+      if (smartStudy !== undefined) window.n5SmartStudy.restore(smartStudy);
+    }
+
+    function n5RestoreSnapshot(backup, searchHistory, keepRecovery = false) {
+      const old = n5BackupPayload();
+      const oldSmartRaw = localStorage.getItem('n5_smart_study_v1');
+      if (keepRecovery && !n5CloudWrite(N5_CLOUD_RECOVERY, old)) {
+        throw Error('Không đủ bộ nhớ để tạo bản khôi phục an toàn. Hãy xuất JSON trước.');
+      }
+      try {
+        n5WriteBackup(backup, searchHistory);
+        if (typeof n5PSession !== 'undefined') n5PSession = null;
+        refreshFlashcardDeck();
+        updateHeaderProgress();
+      } catch (error) {
+        try { n5WriteBackup(n5ValidateBackup(old),old.searchHistory); } catch { /* Keep recovery JSON available. */ }
+        try { window.n5SmartStudy.restoreRaw(oldSmartRaw); } catch { /* Storage is unavailable. */ }
+        throw error;
+      }
+    }
+
     function importHubData(event){
       const input=event.target,file=input.files?.[0];if(!file)return;
       input.value='';
       if(file.size>5*1024*1024){showToast('File quá lớn: tối đa 5 MB.');return;}
       const reader=new FileReader();
-      reader.onload=()=>{
+      reader.onload=async()=>{
         let backup,raw;
         try{raw=JSON.parse(reader.result);backup=n5ValidateBackup(raw);if(raw.searchHistory!==undefined&&(!Array.isArray(raw.searchHistory)||raw.searchHistory.length>15||raw.searchHistory.some(q=>typeof q!=='string'||q.length>2000)))throw Error('Lịch sử tìm kiếm không hợp lệ.');}
         catch(error){showToast('File sao lưu không hợp lệ: '+error.message);return;}
-        const message=`Khôi phục ${backup.completedItems.length} mục đã học, ${backup.bookmarks.length} dấu trang và ${Object.keys(backup.reviewData).length} lịch ôn? Tiến độ hiện tại sẽ bị thay thế, gồm bộ thẻ cá nhân nếu có trong file. Bạn nên tải bản sao lưu hiện tại trước.`;
+        const stored = n5CloudStoredValues(N5_CLOUD_SHARED_KEYS);
+        const message=`Khôi phục ${backup.completedItems.length} mục đã học, ${backup.bookmarks.length} dấu trang và ${Object.keys(backup.reviewData).length} lịch ôn? Tiến độ hiện tại sẽ được thay bằng dữ liệu trong file, gồm Smart Study nếu có. Bạn nên tải bản sao lưu hiện tại trước khi tiếp tục.`;
         if(!window.confirm(message))return;
-        const old=n5BackupPayload();
-        try{
-          Object.assign(state,backup);
-          if(!saveState()||!n5PersonalCommit(backup.personalCards))throw Error('Không thể lưu dữ liệu vào thiết bị');
-          localStorage.setItem('n5_hub_last_position',JSON.stringify(state.lastPosition));
-          if(raw.searchHistory!==undefined)localStorage.setItem('n5_smart_search_history',JSON.stringify(raw.searchHistory));
-          updateHeaderProgress();renderBackupHub(document.getElementById('mainContainer'));
+        try {
+          await window.n5SmartStudy.withLock(() => {
+            if (stored !== n5CloudStoredValues(N5_CLOUD_SHARED_KEYS)) throw Error('Dữ liệu vừa thay đổi. Hãy kiểm tra rồi thử lại.');
+            n5RestoreSnapshot(backup, raw.searchHistory);
+          });
+          renderBackupHub(document.getElementById('mainContainer'));
           showToast('Đã khôi phục dữ liệu học');
-        }catch(error){
-          Object.assign(state,n5ValidateBackup(old));saveState();n5PersonalCommit(old.personalCards);
-          try{localStorage.setItem('n5_hub_last_position',JSON.stringify(old.lastPosition));localStorage.setItem('n5_smart_search_history',JSON.stringify(old.searchHistory||[]));}catch(_){}
-          showToast('Không thể khôi phục. Dữ liệu trước đó đã được giữ lại.');
+        } catch(error) {
+          showToast('Không thể khôi phục: ' + error.message);
         }
       };
       reader.onerror=()=>showToast('Không đọc được file sao lưu.');
@@ -6945,7 +7004,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       state.reviewData[item.id] = { interval,ease,reps,due:rating==='again'?studyTodayKey():`${due.getFullYear()}-${String(due.getMonth()+1).padStart(2,'0')}-${String(due.getDate()).padStart(2,'0')}`,last:Date.now(),remembered:rating!=='again',lastRating:rating };
       if (rating==='again') state.completedItems=state.completedItems.filter(id=>id!==item.id);
       else if (!state.completedItems.includes(item.id)) state.completedItems.push(item.id);
-      saveState(); srsSession.completed++; srsSession.index++; srsCardRevealed=false;
+      saveState(); window.n5SmartStudy?.record(item.id,item._kind,'srs',rating==='again'?'again':'remembered'); srsSession.completed++; srsSession.index++; srsCardRevealed=false;
       renderSrsSession(document.getElementById('mainContainer'));
     }
 
@@ -7183,6 +7242,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const romanEntered=normalizeStudyAnswer(kanaToRomaji(answer));
       const correct=entered===expected || entered===romanExpected || romanEntered===romanExpected;
       window.__verbLastCorrect=correct; verbChallengeAnswered=true;
+      window.n5SmartStudy?.record('verb_'+currentVerbChallenge.item.id+'_'+currentVerbChallenge.targetKey,
+        'form','write',correct?'correct':'incorrect',currentVerbChallenge.targetKey);
       if(!correct) addStudyMistake({id:'verb_'+currentVerbChallenge.item.id+'_'+currentVerbChallenge.targetKey,type:'conjugation',question:`${currentVerbChallenge.forms.masu} → ${currentVerbChallenge.targetLabel}`,chosenAnswer:answer,correctAnswer:currentVerbChallenge.expected,explanation:currentVerbChallenge.forms.explanation});
       renderConjugationHub(document.getElementById('mainContainer'));
     }
@@ -7193,7 +7254,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       container.innerHTML=`<div class="max-w-3xl mx-auto space-y-5"><div><p class="text-xs uppercase tracking-wider font-bold text-violet-600">読解 · N5</p><h1 class="text-2xl font-extrabold">Luyện đọc hiểu N5</h1><p class="text-sm text-slate-500 mt-1">Đọc đoạn văn, chọn đáp án, sau đó xem bản dịch và giải thích.</p></div><div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-500">Bài ${readingIndex+1} / ${READING_PRACTICE_SET.length}</span><span class="text-xs px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300">${studyEscape(p.level)}</span></div><article class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 space-y-4"><h2 class="font-bold text-lg">${studyEscape(p.title)}</h2><p class="text-xl sm:text-2xl leading-relaxed font-jp whitespace-pre-line">${studyEscape(p.jp)}</p><div class="flex flex-wrap gap-2"><button onclick="playAudio(${studyJsStringArg(p.jp)})" class="px-3 py-2 rounded-xl bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 text-sm font-semibold">Nghe đoạn văn</button></div><div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3"><h3 class="font-bold">${studyEscape(p.question)}</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${p.options.map((opt,i)=>`<button ${readingAnswered?'disabled':''} onclick="answerReading(${i})" class="p-3 rounded-xl border text-left ${readingAnswered && i===p.correct?'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20':readingAnswered && i===window.__readingSelected?'border-rose-400 bg-rose-50 dark:bg-rose-950/20':'border-slate-200 dark:border-slate-700 hover:border-violet-400'}">${String.fromCharCode(65+i)}. ${studyEscape(opt)}</button>`).join('')}</div></div>${readingAnswered?`<div class="p-4 rounded-2xl bg-violet-50 dark:bg-violet-950/20 space-y-2"><p class="font-bold ${window.__readingLastCorrect?'text-emerald-700':'text-rose-600'}">${window.__readingLastCorrect?'Chính xác!':'Chưa đúng. Đáp án đúng: '+studyEscape(p.options[p.correct])}</p><p class="text-sm">${studyEscape(p.explanation)}</p><p class="text-sm text-slate-600 dark:text-slate-300">${studyEscape(p.vi)}</p><p class="text-xs text-slate-500">${studyEscape(p.vocab)}</p></div><button onclick="nextReadingPassage()" class="w-full p-3 rounded-xl bg-violet-600 text-white font-bold">Đoạn tiếp theo</button>`:''}</article></div>`;
       lucide.createIcons();
     }
-    function answerReading(index){if(readingAnswered)return;const p=currentReadingPassage();readingAnswered=true;window.__readingSelected=index;window.__readingLastCorrect=index===p.correct;if(index!==p.correct)addStudyMistake({id:'reading_'+p.id,type:'reading',question:p.jp+' | '+p.question,chosenAnswer:p.options[index],correctAnswer:p.options[p.correct],explanation:p.explanation});renderReadingHub(document.getElementById('mainContainer'));}
+    function answerReading(index){if(readingAnswered)return;const p=currentReadingPassage();readingAnswered=true;window.__readingSelected=index;window.__readingLastCorrect=index===p.correct;window.n5SmartStudy?.record(p.id,'reading','choice',index===p.correct?'correct':'incorrect');if(index!==p.correct)addStudyMistake({id:'reading_'+p.id,type:'reading',question:p.jp+' | '+p.question,chosenAnswer:p.options[index],correctAnswer:p.options[p.correct],explanation:p.explanation});renderReadingHub(document.getElementById('mainContainer'));}
     function nextReadingPassage(){readingIndex++;if(readingIndex>=READING_PRACTICE_SET.length){readingIndex=0;readingOrder=shuffleStudy(READING_PRACTICE_SET.map((_,i)=>i));}readingAnswered=false;window.__readingSelected=-1;renderReadingHub(document.getElementById('mainContainer'));}
 
     function renderListeningHub(container){
@@ -7203,7 +7264,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       lucide.createIcons();
     }
     function toggleListeningTranscript(){listeningTranscriptVisible=!listeningTranscriptVisible;renderListeningHub(document.getElementById('mainContainer'));}
-    function answerListening(index){if(listeningAnswered)return;const p=currentListeningPassage();listeningAnswered=true;window.__listeningSelected=index;window.__listeningLastCorrect=index===p.correct;if(index!==p.correct)addStudyMistake({id:'listening_'+p.id,type:'listening',question:p.audio+' | '+p.question,chosenAnswer:p.options[index],correctAnswer:p.options[p.correct],explanation:p.explanation});renderListeningHub(document.getElementById('mainContainer'));}
+    function answerListening(index){if(listeningAnswered)return;const p=currentListeningPassage();listeningAnswered=true;window.__listeningSelected=index;window.__listeningLastCorrect=index===p.correct;window.n5SmartStudy?.record(p.id,'listening','choice',index===p.correct?'correct':'incorrect');if(index!==p.correct)addStudyMistake({id:'listening_'+p.id,type:'listening',question:p.audio+' | '+p.question,chosenAnswer:p.options[index],correctAnswer:p.options[p.correct],explanation:p.explanation});renderListeningHub(document.getElementById('mainContainer'));}
     function nextListeningPassage(){listeningIndex++;if(listeningIndex>=LISTENING_PRACTICE_SET.length){listeningIndex=0;listeningOrder=shuffleStudy(LISTENING_PRACTICE_SET.map((_,i)=>i));}listeningAnswered=false;listeningTranscriptVisible=false;window.__listeningSelected=-1;renderListeningHub(document.getElementById('mainContainer'));}
 
     function shuffleStudy(list){return [...list].sort(()=>Math.random()-0.5);}
@@ -7237,13 +7298,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
     function ensureMockExamTimer(){if(mockExamTimerHandle||!mockExamSession||!mockExamSession.active)return;mockExamTimerHandle=setInterval(()=>{if(!mockExamSession||!mockExamSession.active||mockExamSession.finished)return;mockExamSession.seconds++;const el=document.getElementById('mockExamTimer');if(el)el.textContent=formatTime(mockExamSession.seconds);},1000);}
     function startMockExam(){mockExamSession={active:true,finished:false,questions:buildMockExamQuestions(),index:0,answers:[],seconds:0};if(mockExamTimerHandle)clearInterval(mockExamTimerHandle);mockExamTimerHandle=null;ensureMockExamTimer();renderMockExamHub(document.getElementById('mainContainer'));}
-    function answerMockExam(index){if(!mockExamSession||mockExamSession.finished)return;const q=mockExamSession.questions[mockExamSession.index],correct=index===q.correct;mockExamSession.answers.push({question:q,chosen:index,correct});if(!correct)addStudyMistake({id:'mock_'+q.type+'_'+q.sourceId+'_'+Date.now(),type:q.type,question:q.question,chosenAnswer:q.options[index],correctAnswer:q.options[q.correct],explanation:q.explanation});mockExamSession.index++;if(mockExamSession.index>=mockExamSession.questions.length){mockExamSession.finished=true;mockExamSession.active=false;if(mockExamTimerHandle)clearInterval(mockExamTimerHandle);}renderMockExamHub(document.getElementById('mainContainer'));}
+    function answerMockExam(index){if(!mockExamSession||mockExamSession.finished)return;const q=mockExamSession.questions[mockExamSession.index],correct=index===q.correct;mockExamSession.answers.push({question:q,chosen:index,correct});window.n5SmartStudy?.record(q.sourceId,'jlpt','quiz',correct?'correct':'incorrect');if(!correct)addStudyMistake({id:'mock_'+q.type+'_'+q.sourceId+'_'+Date.now(),type:q.type,question:q.question,chosenAnswer:q.options[index],correctAnswer:q.options[q.correct],explanation:q.explanation});mockExamSession.index++;if(mockExamSession.index>=mockExamSession.questions.length){mockExamSession.finished=true;mockExamSession.active=false;if(mockExamTimerHandle)clearInterval(mockExamTimerHandle);}renderMockExamHub(document.getElementById('mainContainer'));}
     function renderMockExamResult(container){const total=mockExamSession.answers.length,correct=mockExamSession.answers.filter(x=>x.correct).length,byType=['vocab','grammar','reading','listening'].map(type=>{const rows=mockExamSession.answers.filter(x=>x.question.type===type);return {type,correct:rows.filter(x=>x.correct).length,total:rows.length,label:({vocab:'Từ vựng',grammar:'Ngữ pháp',reading:'Đọc hiểu',listening:'Nghe hiểu'})[type]};});container.innerHTML=`<div class="max-w-3xl mx-auto space-y-5"><div class="p-7 rounded-3xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 text-center"><p class="text-xs uppercase font-bold tracking-wider text-rose-600">Kết quả thi thử</p><div class="text-6xl font-black text-rose-500 my-3">${Math.round(correct/Math.max(1,total)*100)}%</div><p class="text-sm text-slate-500">Đúng ${correct}/${total} câu · Thời gian ${formatTime(mockExamSession.seconds)}</p></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${byType.map(x=>`<div class="p-4 rounded-xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800"><b class="text-xl">${x.correct}/${x.total}</b><p class="text-xs text-slate-500">${x.label}</p></div>`).join('')}</div><div class="space-y-3"><h2 class="font-bold">Đáp án và giải thích</h2>${mockExamSession.answers.map((x,i)=>`<div class="p-4 rounded-xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800"><p class="text-xs text-slate-400">Câu ${i+1} · ${studyEscape(x.question.typeLabel)}</p><p class="font-semibold mt-1 whitespace-pre-line">${studyEscape(x.question.question)}</p><p class="text-sm mt-2 ${x.correct?'text-emerald-600':'text-rose-600'}">Bạn chọn: ${studyEscape(x.question.options[x.chosen])}</p><p class="text-sm text-emerald-600">Đáp án: ${studyEscape(x.question.options[x.question.correct])}</p><p class="text-sm text-slate-500 mt-1">${studyEscape(x.question.explanation)}</p></div>`).join('')}</div><button onclick="mockExamSession=null;renderMockExamHub(document.getElementById('mainContainer'))" class="w-full p-3 rounded-xl bg-rose-600 text-white font-bold">Về trang thi thử</button></div>`;lucide.createIcons();}
 
     function addStudyMistake(entry){
       const date=entry.date||new Date().toISOString();
       state.mistakes.unshift({...entry,key:entry.key||`m_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,date,mastered:false,correctStreak:0,reviewCount:0});
-      state.mistakes=state.mistakes.slice(0,300);saveState();
+      state.mistakes=state.mistakes.slice(0,300);return saveState();
     }
     function ensureMistakeMetadata(){
       (state.mistakes||[]).forEach((m,i)=>{if(!m.key)m.key=`legacy_${m.id||'item'}_${i}_${String(m.date||'').replace(/[^0-9]/g,'')}`;if(typeof m.mastered!=='boolean')m.mastered=false;if(!Number.isFinite(Number(m.correctStreak)))m.correctStreak=0;if(!Number.isFinite(Number(m.reviewCount)))m.reviewCount=0;});
@@ -7266,7 +7327,59 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
     function setMistakeFilter(filter){mistakeFilter=filter;mistakePracticeKey=null;mistakePracticeFeedback=null;renderMistakesHub(document.getElementById('mainContainer'));}
     function startMistakePractice(key){const m=state.mistakes.find(x=>x.key===key);if(!m)return;mistakePracticeKey=key;mistakePracticeFeedback=null;mistakePracticeOptions=shuffleStudy([m.correctAnswer,m.chosenAnswer].filter((x,i,a)=>x!=null&&a.indexOf(x)===i));if(mistakePracticeOptions.length<2)mistakePracticeOptions=shuffleStudy([m.correctAnswer,'Tôi chưa chắc']);renderMistakesHub(document.getElementById('mainContainer'));}
-    function answerMistakePractice(index){const m=state.mistakes.find(x=>x.key===mistakePracticeKey);if(!m||mistakePracticeFeedback)return;const picked=mistakePracticeOptions[index],correct=String(picked)===String(m.correctAnswer);m.reviewCount=(Number(m.reviewCount)||0)+1;m.correctStreak=correct?(Number(m.correctStreak)||0)+1:0;m.mastered=m.correctStreak>=2;m.lastReviewed=new Date().toISOString();saveState();mistakePracticeFeedback={correct};renderMistakesHub(document.getElementById('mainContainer'));}
+    function updateMistakeReview(mistake, correct) {
+      mistake.reviewCount = (Number(mistake.reviewCount) || 0) + 1;
+      mistake.correctStreak = correct ? (Number(mistake.correctStreak) || 0) + 1 : 0;
+      mistake.mastered = mistake.correctStreak >= 2;
+      mistake.lastReviewed = new Date().toISOString();
+    }
+    function answerMistakePractice(index) {
+      const mistake = state.mistakes.find(item => item.key === mistakePracticeKey);
+      if (!mistake || mistakePracticeFeedback) return;
+      const correct = String(mistakePracticeOptions[index]) === String(mistake.correctAnswer);
+      updateMistakeReview(mistake, correct);
+      saveState();
+      window.n5SmartStudy?.record(mistake.contentId || mistake.id || mistake.key,mistake.type,'mistake',correct?'correct':'incorrect',mistake.form);
+      mistakePracticeFeedback = {correct};
+      renderMistakesHub(document.getElementById('mainContainer'));
+    }
+    function n5SmartApplyOutcome(item, result, chosenAnswer) {
+      const mistake = item.mistakeKey && state.mistakes.find(entry => entry.key === item.mistakeKey);
+      if (item.drill !== 'card' && !mistake && result !== 'incorrect') return;
+      if (n5CoreStored() !== n5CoreBaseline) {
+        throw Error('Tiến độ đã thay đổi ở tab khác. Hãy mở lại tab này trước khi lưu câu trả lời.');
+      }
+      const completed = [...state.completedItems];
+      const review = state.reviewData[item.contentId];
+      const mistakes = state.mistakes.slice();
+      if (mistake) mistakes[mistakes.indexOf(mistake)] = {...mistake};
+      let saved;
+      if (item.drill === 'card') {
+        if (!N5_CORE_PROGRESS_IDS.has(item.contentId) &&
+          !N5_ALL_VOCAB.some(entry => entry.id === item.contentId) && !N5_ALL_KANJI.some(entry => entry.id === item.contentId)) {
+          throw Error('Thẻ này không còn trong giáo trình. Hãy tạm dừng và thay nhiệm vụ.');
+        }
+        updateFlashcardKnowledge(item.contentId,result === 'remembered');
+        saved = saveState();
+      } else if (mistake) {
+        updateMistakeReview(mistake,result === 'correct');
+        saved = saveState();
+      } else {
+        saved = addStudyMistake({
+          id:item.contentId, contentId:item.contentId, type:item.skill, form:item.form,
+          question:item.audio ? item.audio + ' | ' + item.prompt : item.prompt,
+          chosenAnswer, correctAnswer:item.answer, explanation:item.detail || ''
+        });
+      }
+      if (!saved) {
+        state.completedItems = completed;
+        if (review === undefined) delete state.reviewData[item.contentId];
+        else state.reviewData[item.contentId] = review;
+        state.mistakes = mistakes;
+        saveState();
+        throw Error('Không thể lưu tiến độ học. Hãy kiểm tra dung lượng rồi thử lại.');
+      }
+    }
     function closeMistakePractice(){mistakePracticeKey=null;mistakePracticeFeedback=null;mistakePracticeOptions=[];renderMistakesHub(document.getElementById('mainContainer'));}
     function clearMistakeHistory(){if(!confirm('Bạn có chắc muốn xóa toàn bộ sổ tay câu sai?'))return;state.mistakes=[];saveState();closeMistakePractice();}
 
@@ -7511,7 +7624,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     const N5_CLOUD_SHARED_KEYS = [
       N5_CLOUD_SESSION, N5_CLOUD_BASE, 'n5_hub_bookmarks', 'n5_hub_completed',
       'n5_hub_tts_rate', 'n5_hub_review', 'n5_hub_mistakes', 'n5_hub_study_log',
-      'n5_hub_personal_cards', 'n5_smart_search_history'
+      'n5_hub_personal_cards', 'n5_smart_search_history', 'n5_smart_study_v1'
     ];
     const n5CloudStoredValues = keys => JSON.stringify(keys.map(key => localStorage.getItem(key)));
     function n5CloudCanAutoApply() {
@@ -7542,7 +7655,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const history=p.searchHistory===undefined?[]:p.searchHistory;
       if(!Array.isArray(history)||history.length>15||history.some(x=>typeof x!=='string'||x.length>2000))throw Error('Lịch sử tìm kiếm không hợp lệ.');
       if(JSON.stringify(p).length>5*1024*1024)throw Error('Bản đồng bộ vượt giới hạn 5 MB.');
-      return {version:'N5Hub-5.47.1',...validated,searchHistory:history};
+      return {version:'N5Hub-5.48',...validated,searchHistory:history};
     }
     function n5CloudRememberBase(row,p){
       n5CloudBase={uid:n5CloudSession.user.id,revision:Number(row.revision),sig:n5CloudSignature(p),updated:row.updated_at||new Date().toISOString(),auto:n5CloudEnabled};
@@ -7618,21 +7731,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       n5CloudSetStatus('Đã gửi dữ liệu lên đám mây. '+new Date().toLocaleString('vi-VN'));
     }
     function n5CloudApply(p){
-      const backup=n5CloudSafePayload(p),old=n5CloudSnapshot();
-      if(!n5CloudWrite(N5_CLOUD_RECOVERY,old))throw Error('Không đủ bộ nhớ để tạo bản khôi phục an toàn. Hãy xuất JSON trước.');
-      try{
-        Object.assign(state,n5ValidateBackup(backup));
-        if(!saveState()||!n5PersonalCommit(backup.personalCards))throw Error('Không lưu được tiến độ.');
-        localStorage.setItem('n5_hub_last_position',JSON.stringify(state.lastPosition));
-        localStorage.setItem('n5_smart_search_history',JSON.stringify(backup.searchHistory));
-        if(typeof n5PSession!=='undefined')n5PSession=null;
-        if(typeof refreshFlashcardDeck==='function')refreshFlashcardDeck();
-        updateHeaderProgress();
-      }catch(e){
-        Object.assign(state,n5ValidateBackup(old));saveState();n5PersonalCommit(old.personalCards);
-        try{localStorage.setItem('n5_hub_last_position',JSON.stringify(old.lastPosition));localStorage.setItem('n5_smart_search_history',JSON.stringify(old.searchHistory||[]));}catch(_){}
-        throw Error('Không thể áp dụng dữ liệu cloud. Bản khôi phục cục bộ vẫn được lưu.');
-      }
+      const backup = n5CloudSafePayload(p);
+      n5RestoreSnapshot(n5ValidateBackup(backup), backup.searchHistory, true);
     }
     function n5CloudRecoveryDownload(){
       const p=n5CloudRead(N5_CLOUD_RECOVERY);if(!p)return showToast('Chưa có bản khôi phục trước đồng bộ.');
@@ -7684,8 +7784,11 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         }
         if(mode==='cloud'){
           if(!confirm('Dùng bản cloud để thay dữ liệu trên thiết bị này? Bản cũ sẽ được lưu trong mục khôi phục trước đồng bộ.')){n5CloudSetStatus('Đã hủy; giữ nguyên cả hai bản.');return;}
-          ensureCurrent();
-          n5CloudApply(remote);n5CloudRememberBase(row,n5CloudSnapshot());n5CloudConflict=false;n5CloudSetStatus('Đã nhận dữ liệu từ cloud. '+new Date().toLocaleString('vi-VN'));renderCurrentView(true);return;
+          await window.n5SmartStudy.withLock(() => {
+            ensureCurrent();
+            n5CloudApply(remote);
+            n5CloudRememberBase(row,remote);
+          });n5CloudConflict=false;n5CloudSetStatus('Đã nhận dữ liệu từ cloud. '+new Date().toLocaleString('vi-VN'));renderCurrentView(true);return;
         }
         if(!base){n5CloudPause('Hai bản chưa được liên kết. Hãy chọn dữ liệu muốn giữ sau khi sao lưu.',row,remoteSig);return;}
         const changedLocal=localSig!==base.sig,changedRemote=Number(row.revision)!==base.revision||remoteSig!==base.sig;
@@ -7694,9 +7797,25 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         if(!changedLocal&&changedRemote){
           // No silent overwrite: manual pull or previously enabled automatic sync with recovery.
           if(mode!=='auto'&&!confirm('Có dữ liệu mới trên cloud. Nhận dữ liệu về thiết bị?')){n5CloudSetStatus('Đã hủy nhận dữ liệu.');return;}
-          if(mode==='auto'&&!n5CloudCanAutoApply()){n5CloudSetStatus('Sẽ nhận bản cloud khi bạn hoàn tất thao tác hiện tại.');return;}
-          ensureCurrent();
-          n5CloudApply(remote);n5CloudRememberBase(row,n5CloudSnapshot());n5CloudConflict=false;n5CloudSetStatus('Đã nhận dữ liệu mới từ cloud. '+new Date().toLocaleString('vi-VN'));renderCurrentView(true);return;
+          const received = await window.n5SmartStudy.withLock(() => {
+            ensureCurrent();
+            if (mode === 'auto') {
+              if (!n5CloudCanAutoApply()) {
+                n5CloudSetStatus('Sẽ nhận bản cloud khi bạn hoàn tất thao tác hiện tại.');
+                return false;
+              }
+              if (window.n5SmartStudy.wouldReplaceInProgress(remote.smartStudy)) {
+                n5CloudPause('Có buổi Smart Study đang dở. Hãy hoàn thành buổi học hoặc chọn bản muốn giữ.',row,remoteSig);
+                return false;
+              }
+            }
+            n5CloudApply(remote);
+            n5CloudRememberBase(row,remote);
+            n5CloudConflict=false;
+            return true;
+          });
+          if(!received)return;
+          n5CloudSetStatus('Đã nhận dữ liệu mới từ cloud. '+new Date().toLocaleString('vi-VN'));renderCurrentView(true);return;
         }
         n5CloudPause('Không xác định được mốc dữ liệu. Hãy đối chiếu hai bản.',row,remoteSig);
       }catch(e){n5CloudSetStatus('Chưa đồng bộ: '+(e.message||'Lỗi mạng')+' · Dữ liệu cục bộ vẫn được giữ.');}
@@ -7719,7 +7838,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CloudPanel(){
       const esc=studyEscape,button='rounded-xl px-4 py-3 text-sm font-bold';
       return `<section id="n5-cloud-panel" class="rounded-3xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 space-y-3">
-        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.47.1</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
+        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.48</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
         <p id="n5-cloud-status" role="status" class="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-3 text-sm leading-relaxed">${esc(n5CloudText)}</p>
         ${n5CloudSession?`<p class="text-sm break-all">Đăng nhập: <b>${esc(n5CloudSession.user.email||'Tài khoản của bạn')}</b></p>
         <button type="button" onclick="n5CloudSync()" class="w-full ${button} bg-sky-600 text-white">Đồng bộ ngay</button>
