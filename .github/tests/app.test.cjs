@@ -11,7 +11,7 @@ const project = '/n5-master-hub-forbegginer/';
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const release = index.match(/<meta name="n5-release" content="([^"]+)">/)[1];
 const nextRelease = release + '-test';
-const types = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.png':'image/png', '.webmanifest':'application/manifest+json'};
+const types = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json'};
 const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const mockPath = project + 'mock-supabase';
 let mockCloud;
@@ -65,9 +65,10 @@ after(async () => {
   await new Promise(resolve => server.close(resolve));
 });
 
-async function openApp(t, contextOptions) {
+async function openApp(t, contextOptions, initScript) {
   const context = await browser.newContext(contextOptions);
   t.after(() => context.close());
+  if (initScript) await context.addInitScript(initScript);
   await context.route('**/*', route =>
     route.request().url().startsWith(site) ? route.continue() : route.abort());
   const page = await context.newPage();
@@ -99,26 +100,11 @@ test('release metadata, scripts and PWA assets match', () => {
     assert(fs.existsSync(path.join(root, icon.src)));
     assert(worker.includes(icon.src.slice(2)));
   }
+  const searchAssets = fs.readdirSync(path.join(root,'assets/search'));
+  for (const asset of searchAssets) assert(worker.includes('assets/search/' + asset),asset);
   new vm.Script(worker);
   new vm.Script(fs.readFileSync(path.join(root, 'pwa.js'), 'utf8'));
   for (const script of index.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(script[1]);
-});
-
-test('bounded edit distance agrees with the full matrix for short inputs', () => {
-  const source = index.slice(index.indexOf('    function searchEditDistance('), index.indexOf('    function fuzzySearchScore('));
-  const distance = vm.runInNewContext(source + '; searchEditDistance');
-  const strings = ['', 'a', 'b', 'あ', 'aa', 'ab', 'ba', 'aba', 'bbあ', 'aあb', 'あab', 'babaab', 'ababaab', 'ああab'];
-  for (const a of strings) for (const b of strings) {
-    let row = Array.from({length:b.length+1}, (_, i) => i);
-    for (let i = 1; i <= a.length; i++) {
-      const previous = row;
-      row = [i];
-      for (let j = 1; j <= b.length; j++) {
-        row[j] = Math.min(previous[j]+1, row[j-1]+1, previous[j-1]+Number(a[i-1]!==b[j-1]));
-      }
-    }
-    for (const limit of [1,2]) assert.equal(distance(a,b,limit), Math.min(row[b.length],limit+1), JSON.stringify({a,b,limit}));
-  }
 });
 
 test('mobile and desktop study, Romaji, IME, deep link and legacy backup', {timeout: 90_000}, async t => {
@@ -135,10 +121,8 @@ test('mobile and desktop study, Romaji, IME, deep link and legacy backup', {time
   await search.dispatchEvent('compositionend');
   await page.waitForFunction(() => document.getElementById('mainContainer').dataset.n5Page === 'global-search');
   assert.equal(await page.locator('#mainContainer h1').textContent(), 'Kết quả cho “食べませんでした”');
-  for (const query of ['tabemasendeshita', 'tabemasu', '食べませんでした']) {
-    assert(await page.evaluate(q => n5SmartAnalyze(q)?.parts.some(part => part.base === 'たべる'), query));
-  }
-  assert(await page.evaluate(() => getCachedGlobalSearchResults('nihongoo').length > 0));
+  await page.locator('[data-lookup-state="ready"]').waitFor();
+  assert(await page.locator('[data-lookup-analysis]').getByText('食べる → 食べ → 食べませんでした').isVisible());
 
   const late = await page.evaluate(() => {
     clearGlobalSearch();
@@ -179,8 +163,197 @@ test('mobile and desktop study, Romaji, IME, deep link and legacy backup', {time
   assert(await desktop.locator('#sidebar').isVisible());
 });
 
-test('evicted cache recovers; failed updates preserve offline study and retry across tabs', {timeout: 90_000}, async t => {
-  t.after(() => {networkAvailable = true; published = release; missingIcon = false; staleShell = false;});
+async function lookup(page, query) {
+  const input = page.locator('#globalSearchInput');
+  await input.fill(query);
+  await input.press('Enter');
+  await page.locator('[data-lookup-state="ready"]').waitFor();
+  assert.equal(await page.locator('#mainContainer h1').textContent(), 'Kết quả cho “' + query + '”');
+}
+
+test('Universal Search connects sentence, dictionary, grammar, Kanji, review and history', {timeout: 90_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'});
+  const workers = [];
+  page.on('worker', worker => workers.push(worker.url()));
+  await lookup(page,'飲まなければならない');
+  assert(workers.some(url => url.includes('/assets/search/search-worker.js?v=' + release)));
+  const main = page.locator('#mainContainer');
+  const summary = main.locator('.n5-lookup-form');
+  assert(await summary.getByText('飲む → 飲まない → 飲まなければ → 飲まなければならない', {exact:true}).isVisible());
+  await main.locator('[data-result-id="v6c_028"] button').click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByText('Hiragana', {exact:true}).waitFor();
+  assert.equal(await main.getAttribute('data-n5-page'),'global-search');
+  const box = await dialog.boundingBox();
+  const {width,height} = page.viewportSize();
+  assert(box.width <= width + 1 && box.y + box.height >= height - 3,JSON.stringify(box));
+  assert(await dialog.getByText(/Động từ nhóm I \(godan\)/).isVisible());
+  assert(await dialog.locator('.n5-lookup-steps li').count() >= 3);
+
+  const oldSchedule = await page.evaluate(() => {
+    const id = 'v6c_028';
+    saveFlashcardKnowledge(id,true);
+    return {...state.reviewData[id]};
+  });
+  await dialog.getByRole('button',{name:'Thêm vào danh sách ôn'}).click();
+  await dialog.getByRole('button',{name:'Đã có trong danh sách ôn'}).waitFor();
+  const review = await page.evaluate(() => ({
+    schedule:state.reviewData.v6c_028, learned:state.completedItems.includes('v6c_028'),
+    due:getSrsQueueData().due.some(item => item.id === 'v6c_028')
+  }));
+  assert.equal(review.schedule.interval,oldSchedule.interval);
+  assert.equal(review.schedule.reps,oldSchedule.reps);
+  assert.equal(review.schedule.last,oldSchedule.last);
+  assert(review.learned && review.due);
+  await dialog.getByRole('button',{name:'～なければならない',exact:true}).click();
+  await dialog.getByRole('heading',{name:'Hình thành từng bước'}).waitFor();
+  await dialog.getByRole('button',{name:'行かなければならない',exact:true}).click();
+  assert.match(await dialog.getByRole('status').textContent(),/^Đúng/);
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await dialog.getByRole('button',{name:'飲',exact:true}).click();
+  await dialog.getByText('Âm On',{exact:true}).waitFor();
+  assert(await dialog.getByRole('button',{name:'Cách viết và thứ tự nét'}).isVisible());
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await dialog.getByRole('button',{name:'Thêm Flashcard cá nhân'}).click();
+  const personal = page.locator('#n5PersonalModal');
+  await personal.locator('textarea[name="jp"]').waitFor();
+  assert.equal(await personal.locator('textarea[name="jp"]').inputValue(),'飲む');
+  assert.match(await personal.locator('[name="vi"]').inputValue(),/uống/);
+  await personal.locator('button[type="submit"]').click();
+  assert(await page.evaluate(() => state.personalCards.cards.some(card => card.jp === '飲む')));
+
+  const sentence = '昨日、友達と映画を見てから、ご飯を食べました。';
+  await lookup(page,sentence);
+  await main.getByRole('button',{name:'Phân tích câu',exact:true}).click();
+  assert(await main.getByText(/Chỉ người cùng thực hiện/).isVisible());
+  assert(await main.getByText(/sau khi xem phim với bạn/).isVisible());
+  assert(await main.locator('ruby').count() > 0);
+  await main.getByRole('button',{name:'Furigana',exact:true}).click();
+  await main.getByRole('button',{name:'Romaji',exact:true}).click();
+  assert.equal(await main.locator('ruby').count(),0);
+  await main.getByRole('button',{name:'Lưu tra cứu',exact:true}).click();
+  assert(await page.evaluate(query => n5BackupPayload().searchHistory.includes(query),sentence));
+
+  await page.locator('#globalSearchClearBtn').click();
+  const recent = page.locator('#n5LookupRecent');
+  await recent.getByRole('button',{name:sentence,exact:true}).click();
+  await main.locator('[data-lookup-state="ready"]').waitFor();
+  assert.equal(await main.getByRole('button',{name:'Romaji',exact:true}).getAttribute('aria-pressed'),'false');
+
+  const desktop = await browser.newContext({viewport:{width:1280,height:800}});
+  t.after(() => desktop.close());
+  await desktop.route('**/*',route => route.request().url().startsWith(site) ? route.continue() : route.abort());
+  const desktopPage = await desktop.newPage();
+  await desktopPage.goto(site,{waitUntil:'domcontentloaded'});
+  await lookup(desktopPage,'na');
+  const known = desktopPage.locator('[data-result-type="vocab"]').first();
+  const knownId = await known.getAttribute('data-result-id');
+  await known.locator('button').click();
+  await desktopPage.getByRole('dialog').getByRole('button',{name:'Mở trong giáo trình'}).click();
+  await desktopPage.locator('#search-item-' + knownId).waitFor();
+  await desktopPage.locator('#backHeaderBtn').click();
+  await desktopPage.locator('[data-lookup-state="ready"]').waitFor();
+  assert.equal(await desktopPage.locator('#globalSearchInput').inputValue(),'na');
+  await known.locator('button').click();
+  await desktopPage.keyboard.press('Escape');
+  await desktopPage.getByRole('dialog').waitFor({state:'hidden'});
+  await desktopPage.waitForFunction(id =>
+    document.activeElement === document.querySelector('[data-result-id="' + id + '"] button'),knownId);
+
+  networkAvailable = false;
+  t.after(() => { networkAvailable = true; });
+  assert.equal((await page.reload()).status(),200);
+  await lookup(page,'nondekara');
+  const offline = page.locator('[data-lookup-analysis]');
+  assert(await offline.getByText(/飲む → 飲んで → 飲んでから/).isVisible());
+  await offline.getByRole('button',{name:'～てから',exact:true}).click();
+  await page.getByRole('dialog').getByRole('heading',{name:'Ví dụ và phân tích'}).waitFor();
+  await page.getByRole('dialog').getByRole('button',{name:'Đóng',exact:true}).click();
+  await page.locator('#handwritingSearchToggle').click();
+  await page.evaluate(() => {
+    handwritingStrokes = [handwritingPathToPoints(N5_KVG_OFFLINE_STROKES['一'][0])];
+  });
+  await page.locator('#recognizeHandwritingBtn').click();
+  await page.locator('#handwritingSearchResults .handwriting-candidate').filter({hasText:'一'}).first().click();
+  await page.locator('[data-result-type="kanji"]').first().waitFor();
+  assert.equal(await page.locator('#globalSearchInput').inputValue(),'一');
+});
+
+test('dictionary imports join Universal Search and remain available after offline reload', {timeout:60_000}, async t => {
+  const {page} = await openApp(t);
+  await go(page,'backup');
+  await page.locator('#n5-dictionary-packs input[type=file]').setInputFiles({
+    name:'test-dictionary.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify([{jp:'宇宙猫',kana:'うちゅうねこ',vi:'mèo không gian kiểm thử',pos:'Danh từ'}])),
+  });
+  await page.getByText(/test-dictionary.json/).waitFor();
+  await lookup(page,'meo khong gian kiem thu');
+  await page.locator('[data-result-type="vocab"]').filter({hasText:'宇宙猫'}).locator('button').click();
+  await page.getByRole('dialog').getByText('Tệp từ điển của bạn',{exact:false}).waitFor();
+  await page.getByRole('dialog').getByRole('button',{name:'Đóng',exact:true}).click();
+  networkAvailable = false;
+  t.after(() => { networkAvailable = true; });
+  await page.reload();
+  await lookup(page,'uchuuneko');
+  assert(await page.locator('[data-result-type="vocab"]').filter({hasText:'宇宙猫'}).isVisible());
+});
+
+test('Universal Search falls back when a browser cannot create module workers', {timeout:45_000}, async t => {
+  const {page} = await openApp(t,{},() => {
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url, options) {
+        if (options?.type === 'module') throw new Error('module workers disabled for this browser test');
+        super(url,options);
+      }
+    };
+  });
+  await lookup(page,'tabesasenai');
+  assert(await page.locator('[data-lookup-analysis]').getByText(/食べる → 食べさせる → 食べさせない/).isVisible());
+});
+
+async function checkCandidate(page) {
+  const check = page.getByRole('button', {name:'Kiểm tra cập nhật'});
+  const reads = shellRequests;
+  for (let attempt = 0; attempt < 5 && shellRequests === reads; attempt++) {
+    await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
+    await check.click();
+    for (let i = 0; i < 10 && shellRequests === reads; i++) await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  assert(shellRequests > reads, 'the worker requested this candidate shell');
+  await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
+}
+
+for (const failure of ['missing icon', 'stale HTML']) {
+  test(`PWA keeps the active offline version after an update with ${failure}`, {timeout:90_000}, async t => {
+    t.after(() => {networkAvailable = true; published = release; missingIcon = false; staleShell = false;});
+    const {page} = await openApp(t);
+    const id = await page.evaluate(() => {
+      const id = VOCAB_DATA[0].id;
+      toggleBookmark(id);
+      return id;
+    });
+
+    // Use a fresh registration for each simulated deployment. The browser
+    // can delay another update attempt after a failed worker installation.
+    await go(page,'backup');
+    published = nextRelease;
+    missingIcon = failure === 'missing icon';
+    staleShell = failure === 'stale HTML';
+    await checkCandidate(page);
+    await page.getByText(/Chưa tải được bản cập nhật/).first().waitFor();
+    assert(await page.locator('#n5-update').isHidden());
+    assert.equal(await page.title(), 'N5 Master Hub v' + release);
+
+    networkAvailable = false;
+    assert.equal((await page.reload()).status(), 200);
+    await go(page, 'vocab');
+    assert.deepEqual(await page.evaluate(() => state.bookmarks), [id]);
+  });
+}
+
+test('PWA recovers an evicted cache and safely applies a valid update across tabs', {timeout:90_000}, async t => {
+  t.after(() => {networkAvailable = true; published = release;});
   const {context, page} = await openApp(t);
   const id = await page.evaluate(() => {
     const id = VOCAB_DATA[0].id;
@@ -202,31 +375,9 @@ test('evicted cache recovers; failed updates preserve offline study and retry ac
   await other.goto(site);
   await other.evaluate(() => caches.open('unrelated-cache'));
   await go(page, 'backup');
-  const check = page.getByRole('button', {name:'Kiểm tra cập nhật'});
   const notice = page.locator('#n5-update');
-  async function checkCandidate() {
-    const reads = shellRequests;
-    for (let attempt = 0; attempt < 5 && shellRequests === reads; attempt++) {
-      await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
-      await check.click();
-      for (let i = 0; i < 10 && shellRequests === reads; i++) await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    assert(shellRequests > reads, 'the worker requested this candidate shell');
-    await page.waitForFunction(async () => !(await navigator.serviceWorker.getRegistration()).installing);
-  }
   published = nextRelease;
-  missingIcon = true;
-  await checkCandidate();
-  await page.getByText(/Chưa tải được bản cập nhật/).first().waitFor();
-  assert(await notice.isHidden());
-  assert.equal(await page.title(), 'N5 Master Hub v' + release);
-
-  missingIcon = false;
-  staleShell = true;
-  await checkCandidate();
-  assert(await notice.isHidden());
-  staleShell = false;
-  await checkCandidate();
+  await checkCandidate(page);
   await notice.waitFor({state:'visible'});
   await notice.getByRole('button', {name:'Cập nhật và mở lại'}).click();
   await page.waitForFunction(r => document.title === 'N5 Master Hub v' + r, nextRelease);

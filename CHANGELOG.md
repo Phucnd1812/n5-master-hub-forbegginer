@@ -1,5 +1,14 @@
 # Changelog
 
+## v5.49 — Universal Japanese Search & Grammar Intelligence
+
+- Tra Kana, Kanji, Romaji và nghĩa tiếng Việt trong giáo trình và kho từ điển. Xếp hạng theo mục khớp, tiền tố, lỗi gõ nhẹ và thành phần nhận diện. Thêm bộ lọc và danh sách tra gần đây.
+- Nhận diện dạng chia động từ/tính từ và cho xem đường biến đổi, quy tắc, nghĩa của dạng chia và cách hiểu khác. Phân tích câu theo cụm, đánh dấu trợ từ và phần ngoài kho. Hiện bản dịch khi có câu đối chiếu.
+- Thêm 34 bài ngữ pháp chuyên sâu về chia thể, trợ từ và mẫu thông dụng. Mỗi bài có ví dụ được giải thích và câu luyện có đáp án. Các mẫu giáo trình còn lại truy cập được qua cùng cửa sổ tra cứu.
+- Mở mục từ, Kanji và ngữ pháp ngay trong trang. Có tùy chọn Romaji và Furigana, nghe, thêm Flashcard, đưa từ vào lịch ôn và trở lại vị trí kết quả sau khi mở giáo trình.
+- Tách kho từ tích hợp khỏi HTML khởi động. Chạy tìm kiếm trong Web Worker và lưu các module cùng kho từ vào cache PWA. Mở kho IndexedDB đã nhập khi tra hoặc quản lý từ điển.
+- Bổ sung kiểm thử Chromium, WebKit và thuật toán. Kiểm tra dữ liệu giáo trình, nhận diện chữ viết tay, Smart Study, sao lưu cũ và Cloud Sync mô phỏng.
+
 ## v5.48 — Smart Study & Personalized Learning
 
 - Tạo buổi học theo SRS, câu sai, tiến độ bài và lượt luyện. Mặc định 5 phút với tùy chọn thời lượng, trọng tâm và phương pháp.
