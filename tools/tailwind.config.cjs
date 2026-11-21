@@ -1,5 +1,5 @@
 module.exports = {
-  content: { relative: true, files: ['../index.html'] },
+  content: { relative: true, files: ['../index.html', '../assets/smart-study.js'] },
   darkMode: 'class',
   theme: {
     extend: {

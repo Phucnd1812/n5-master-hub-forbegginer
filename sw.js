@@ -1,4 +1,4 @@
-const RELEASE = '5.47.1';
+const RELEASE = '5.48';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -7,6 +7,8 @@ const releaseMarker = `<meta name="n5-release" content="${RELEASE}">`;
 const assets = new Set([
   'manifest.webmanifest',
   `pwa.js?v=${RELEASE}`,
+  `assets/study-engine.js?v=${RELEASE}`,
+  `assets/smart-study.js?v=${RELEASE}`,
   `assets/tailwind.css?v=${RELEASE}`,
   'assets/vendor/lucide-1.77.0.min.js',
   'assets/icons/favicon.png',
