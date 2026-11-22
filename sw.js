@@ -1,4 +1,4 @@
-const RELEASE = '5.50';
+const RELEASE = '5.51';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -16,6 +16,7 @@ const assets = new Set([
   'assets/search/search-client.js',
   'assets/search/search-engine.js',
   'assets/search/sentence-analyzer.js',
+  'assets/search/syntax.js',
   'assets/search/morphology.js',
   'assets/search/grammar-data.js',
   'assets/search/lexicon.js',
@@ -27,6 +28,7 @@ const assets = new Set([
   'assets/grammar/practice.js',
   'assets/grammar/search-data.js',
   'assets/search/builtin-dictionary.json',
+  'assets/search/jmdict-essentials.json',
   'assets/search/text.js',
   'assets/vendor/lucide-1.77.0.min.js',
   'assets/icons/favicon.png',

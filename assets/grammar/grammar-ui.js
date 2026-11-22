@@ -3,7 +3,7 @@ import {COMPARISONS} from './comparisons.js';
 import {EXTENSIONS} from './extensions.js';
 import {APPLY,GUIDE_DISTRACTORS,checkPractice} from './practice.js';
 import {GRAMMAR_GUIDES} from '../search/grammar-data.js';
-import {HAS_HAN,japaneseKey,romanKey,romanize,wordPieces} from '../search/text.js';
+import {HAS_HAN,romanize} from '../search/text.js';
 
 const ADVANCED = new Set(['imperative','passive','causative','causative-passive','simultaneous','g11b_5','g11b_6','g13b_7','g13c_11','g14b_6']);
 const TOPICS = new Map();
@@ -52,8 +52,8 @@ export function grammarName(id) {
 }
 const includesJapaneseVerb = group => ['I','II','III'].includes(group);
 
-export function createGrammarView({esc,button,detailButton,settings,toggleDisplay,app,open,search}) {
-  let lexicon;
+export function createGrammarView({esc,button,detailButton,settings,toggleDisplay,app,open,search,entryLemma}) {
+  const exampleModels = new WeakMap();
   const group = (content) => `<div class="n5-lookup-actions">${content}</div>`;
   const links = ids => group([...new Set(ids)].map(id => detailButton('grammar',id,grammarName(id) || id)).join(''));
   const section = (id,title,content,opened = false) => content ?
@@ -79,7 +79,8 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
       ${kana ? `<div data-grammar-reading="roman" ${settings.roman ? '' : 'hidden'}>${note('Romaji theo Kana',romanize(kana))}</div>` : ''}
       <p>${esc(vi)}</p>
       ${note('Ngữ cảnh',context)}${note('Thành phần',notes)}
-      ${group(detailButton('audio',jp,'Nghe') + detailButton('grammar-segment',jp,'Tra từ và Kanji trong câu'))}
+      ${group(detailButton('audio',jp,'Nghe') + detailButton('grammar-segment',jp,'Tra từ và Kanji trong câu') +
+        detailButton('dialog-search',jp,'Phân tích câu'))}
       <div class="n5-grammar-tokens" aria-live="polite"></div>
     </article>`;
   }
@@ -146,6 +147,7 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
       data[3].some(id => topic.prerequisites.includes(id))).map(([key]) => key);
     const visual = visualizer(topic.id);
     const formation = topic.formation ? steps(topic.formation) : '';
+    const examples = [...topic.examples].sort((a,b) => a[0].length - b[0].length);
     const sections = [['rules','Cách dùng'], ...(formation || visual ? [['formation','Biến đổi']] : []),
       ['examples','Ví dụ'],['practice','Luyện tập'],['related','Kiến thức nền']];
     return `<div class="n5-lookup-word n5-lookup-grammar n5-grammar-chapter">
@@ -155,15 +157,16 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
       ${group(sections
         .map(([id,label]) => detailButton('grammar-jump',id,label)).join('') +
         detailButton('grammar-expand','','Mở rộng tất cả') + detailButton('grammar-collapse','','Thu gọn tất cả'))}
-      ${section('rules','Cách dùng và sắc thái',note('Cơ chế',topic.principle) +
-        note('Điều kiện',topic.conditions) + note('Ngữ cảnh',topic.usage) +
-        note('Lưu ý và ngoại lệ',topic.avoid) + note('Lỗi thường gặp',topic.mistakes) + note('So với mẫu gần',topic.compare))}
+      ${section('rules','Cách dùng và sắc thái',note('Khi dùng',topic.usage) + note('Cách hình thành',topic.principle) +
+        note('Điều kiện',topic.conditions) + note('Khi cần tránh',topic.avoid) +
+        note('Lỗi thường gặp',topic.mistakes) + note('So với mẫu gần',topic.compare),true)}
       ${section('formation','Hình thành từng bước',formation + (topic.groups ? steps(topic.groups) : '') + visual,true)}
-      ${section('examples','Ví dụ và phân tích',topic.examples.map(row => example(row,topic.usage)).join(''),true)}
+      ${section('examples','Ví dụ và phân tích',examples.map(row => example(row,topic.usage)).join(''),true)}
       ${section('practice','Bài tập áp dụng',practice(topic),true)}
-      ${section('related','Kiến thức nền và bài học',links([...topic.prerequisites,...(topic.course || []),...(EXTRA_MAPS[topic.id] || []),...related]) +
+      ${section('related','Kiến thức nền và bài học',links([...topic.prerequisites,...(topic.course || [])]) +
         group(detailButton('grammar','library:map','Sơ đồ kiến thức') +
         (app.item('grammar',topic.id) ? detailButton('course-grammar',topic.id,'Mở trong giáo trình') : '')),true)}
+      ${related.length ? '<section><h3>Mẫu dễ nhầm</h3>' + links([...related,...(EXTRA_MAPS[topic.id] || [])]) + '</section>' : ''}
     </div>`;
   }
 
@@ -171,9 +174,13 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
     return `<div class="n5-lookup-word n5-grammar-chapter">
       ${readingControls()}
       ${note('Điểm chung',common)}
-      <div class="n5-grammar-compare">${sides.map(([label,usage,row]) =>
-        `<section class="n5-lookup-card"><h3 lang="ja">${esc(label)}</h3>${example(row,usage)}</section>`).join('')}</div>
-      ${note('Điểm cần phân biệt',detail)}
+      <table class="n5-grammar-differences">
+        <thead><tr><th scope="col">Mẫu</th><th scope="col">Chọn khi</th></tr></thead>
+        <tbody>${sides.map(([label,usage]) => `<tr><th scope="row">${esc(label)}</th><td>${esc(usage)}</td></tr>`).join('')}</tbody>
+      </table>
+      ${note('Cách chọn',detail)}
+      <div class="n5-grammar-compare">${sides.map(([label,,row]) =>
+        `<section class="n5-lookup-card"><h3>${esc(label)}</h3>${example(row)}</section>`).join('')}</div>
       ${section('practice','Luyện phân biệt',choice(exercise,'compare:' + key),true)}
       ${links(prerequisites)}${detailButton('grammar','library:compare','Xem các bài so sánh')}
     </div>`;
@@ -214,19 +221,16 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
     const ticket = String(Number(form.dataset.request || 0) + 1);
     form.dataset.request = ticket;
     result.textContent = 'Đang tra từ…';
-    const {makeLemma,generateForms,describeForm} = await import('../search/morphology.js');
-    lexicon ??= app.vocab().flatMap(item => {
-      const lemma = makeLemma(item);
-      if (!lemma.group) return [];
-      const keys = [lemma.jp,lemma.kana,...wordPieces(item.kanji),...wordPieces(item.kana)].map(japaneseKey);
-      return [{lemma,keys,roman:romanKey(lemma.romaji)}];
-    });
-    if (!form.isConnected || form.dataset.request !== ticket) return;
     const raw = String(value ?? '').trim();
     form.elements.word.value = raw;
-    const matches = lexicon.filter(({lemma,keys,roman}) => chosenId ? lemma.id === chosenId :
-      keys.includes(japaneseKey(raw)) || roman && roman === romanKey(raw));
-    const eligible = matches.flatMap(({lemma}) => {
+    const [{generateForms,describeForm}, model] = await Promise.all([import('../search/morphology.js'),search(raw)]);
+    if (!form.isConnected || form.dataset.request !== ticket) return;
+    const exact = (model?.results || []).filter(entry => entry.type === 'vocab' && entry.group && entry.match === 'exact').map(entryLemma);
+    const parts = model?.analysis?.parts.filter(part => part.kind !== 'punct') || [];
+    const segment = model?.analysis?.coverage === 1 && parts.length === 1 ? parts[0] : null;
+    const matches = [...exact,segment?.lemma,...(segment?.alternatives || []).map(option => option.lemma)]
+      .filter(lemma => lemma?.group && (!chosenId || lemma.id === chosenId));
+    const eligible = matches.flatMap(lemma => {
       if (adjectiveGroup ? lemma.group !== adjectiveGroup :
           !includesJapaneseVerb(lemma.group) && !(id === 'g11a_1' && lemma.group === 'i')) return [];
       const target = id === 'g11a_1' && lemma.group === 'i' ? 'adjIf' : key;
@@ -244,15 +248,12 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
     });
     const unique = [...new Map(eligible.map(item => [item.lemma.jp + '\0' + item.lemma.kana + '\0' + item.lemma.group,item])).values()];
     if (!unique.length) {
-      result.textContent = 'Chưa xác định được mục từ có nhóm và quy tắc phù hợp. Hãy thử thể từ điển, Kana hoặc Romaji của từ trong giáo trình.';
+      result.textContent = 'Chưa xác định được mục từ có nhóm và quy tắc phù hợp. Hãy thử dạng từ điển, Kana hoặc Romaji.';
     } else if (unique.length > 1) {
       result.innerHTML = '<p>Chọn từ gốc phù hợp với ngữ cảnh.</p>' + group(unique.map(({lemma}) =>
         detailButton('grammar-lemma',lemma.id,lemma.jp + ' · ' + lemma.vi)).join(''));
     } else {
       const [item] = unique;
-      const gloss = item.lemma.vi.split(/[;,；]/)[0];
-      const meanings = {dictionary:gloss,stem:'Thân để ghép đuôi. Chưa tạo vị ngữ hoàn chỉnh.',
-        negative:'không ' + gloss,negativeBa:'nếu không ' + gloss,te:'Dạng nối để ghép cấu trúc.'};
       result.innerHTML = `<p class="n5-lookup-path" lang="ja">${item.steps.map(step => esc(step.jp)).join(' → ')}</p>
         <ol class="n5-grammar-steps">${item.steps.map((step,index) => {
           const old = item.steps[index-1];
@@ -262,7 +263,7 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
           return `<li><b lang="ja">${esc(step.jp)}</b> · ${esc(step.label)}
             ${settings.furigana && step.kana !== step.jp ? note('Cách đọc',step.kana) : ''}
             ${note('Thay đổi',changed)}${note('Quy tắc',step.rule)}
-            ${note('Ý nghĩa',meanings[step.key] || (index === item.steps.length-1 ? item.meaning || step.label : 'Chuẩn bị cho bước tiếp theo.'))}</li>`;
+            ${note('Ý nghĩa',step.meaning)}</li>`;
         }).join('')}</ol>`;
     }
   }
@@ -280,9 +281,9 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
     try {
       const model = await search(control.dataset.value);
       if (!result.isConnected) return;
-      result.innerHTML = group((model?.analysis?.parts || []).map(part => {
-        if (part.lemma?.id) return button('grammar-word',part.text,esc(part.text),
-          `class="n5-lookup-chip" lang="ja" data-lemma="${esc(JSON.stringify(part.lemma))}"`);
+      exampleModels.set(result,model);
+      result.innerHTML = group((model?.analysis?.parts || []).map((part,index) => {
+        if (part.lemma?.id) return button('grammar-word',index,esc(part.text),'class="n5-lookup-chip" lang="ja"');
         if (part.grammar) return detailButton('grammar',part.grammar,part.text);
         return `<span lang="ja">${esc(part.text)}</span>`;
       }).join('') || '<p>Chưa tách được cụm từ trong ví dụ này.</p>') +
@@ -314,8 +315,8 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
         break;
       case 'grammar-segment': return segment(control);
       case 'grammar-word': {
-        const lemma = JSON.parse(control.dataset.lemma);
-        open(app.item('vocab',lemma.id) ? 'related-item' : 'example-word',lemma.id,lemma);
+        const model = exampleModels.get(control.closest('.n5-grammar-tokens'));
+        if (model) open('part',value,{model});
         break;
       }
       case 'grammar-preview':

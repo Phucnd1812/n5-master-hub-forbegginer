@@ -9,10 +9,10 @@ export const EXTRA_WORDS = [
   ['仕事','しごと','công việc','Danh từ'],
   ['好き','すき','thích; yêu thích','Tính từ な'],
   ['明日','あした','ngày mai','Danh từ'],
-  ['行く','いく','đi','Động từ'],
-  ['飲む','のむ','uống','Động từ'],
-  ['終わる','おわる','kết thúc','Động từ'],
-  ['呼ぶ','よぶ','gọi; mời','Động từ']
+  ['行く','いく','đi','Động từ nhóm I'],
+  ['飲む','のむ','uống','Động từ nhóm I'],
+  ['終わる','おわる','kết thúc','Động từ nhóm I'],
+  ['呼ぶ','よぶ','gọi; mời','Động từ nhóm I']
 ];
 export const CURATED_SENTENCES = [
   ['日本語が好きです','にほんごがすきです','Tôi thích tiếng Nhật.'],
@@ -41,6 +41,7 @@ export const FUNCTION_WORDS = [
   ['も','mo','particle-mo','Cũng, thêm vào phạm vi.'],
   ['から','kara','particle-kara','Điểm bắt đầu hoặc nguyên nhân, tùy vế.'],
   ['まで','made','particle-kara','Điểm kết thúc hoặc giới hạn.'],
+  ['までに','madeni','compare:deadline','Hạn cuối để việc xảy ra hoặc được hoàn tất.'],
   ['より','yori','g3d_15','Mốc so sánh hoặc điểm xuất phát.'],
   ['か','ka','g4a_1','Tạo câu hỏi hoặc nêu lựa chọn.'],
   ['ね','ne','g1c_8','Xác nhận hoặc tìm sự đồng tình.'],
@@ -60,10 +61,10 @@ export const FUNCTION_WORDS = [
   ['それから','sorekara','','Sau đó.'],
   ['しかし','shikashi','','Nối đối chiếu: tuy nhiên.'],
   ['でも','demo','','Nhưng hoặc ngay cả, tùy chỗ đứng.'],
-  ['ので','node','','Lý do: vì, do.'],
+  ['ので','node','compare:reasons','Lý do: vì, do.'],
   ['について','nitsuite','','Về một chủ đề.'],
   ['ために','tameni','','Chỉ mục đích hoặc nguyên nhân.'],
-  ['ながら','nagara','','Hai hành động diễn ra cùng lúc.'],
+  ['ながら','nagara','simultaneous','Sau thân động từ, nối hai việc đồng thời. Trong một số cách nói còn mang ý nhượng bộ.'],
   ['かもしれない','kamoshirenai','','Nêu khả năng chưa chắc chắn.'],
   ['と思います','toomoimasu','','Đưa ra nhận định.'],
   ['ほうがいい','hougaii','','Đưa ra lời khuyên.'],
@@ -73,20 +74,33 @@ export const FUNCTION_WORDS = [
 
 export function builtInRows(rows) {
   return rows.map(([jp,readings,vi,pos,romans,aliases]) => ({
-    jp, kana:readings[0] || '', readings,vi,pos,romans,aliases,
+    jp, kana:readings[0] || '', readings,vi:vi.includes('{{') ? '' : vi,pos,romans,aliases,
     source:'Wiktionary / Kaikki · Tích hợp', builtin:true,
   }));
 }
 
-// Existing Kaikki/Wiktionary extract, moved out of the app shell unchanged.
+const JMDICT_POS = {
+  I:'Động từ nhóm I', II:'Động từ nhóm II', III:'Động từ nhóm III',
+  i:'Tính từ い', na:'Tính từ な', n:'Danh từ',
+};
+
+export function jmdictRows(rows) {
+  return rows.map(([seq,jp,kana,tag,vi,aliases,examples]) => ({
+    id:'jmdict:' + seq + ':' + jp + ':' + kana, jp, kana, vi, aliases, examples,
+    pos:JMDICT_POS[tag], verifiedGroup:tag === 'n' ? '' : tag,
+    source:'JMdict / EDRDG · Mở rộng', sourceId:seq, card:false,
+  }));
+}
+
 let builtin;
 export function loadBuiltInDictionary() {
-  builtin ??= fetch(new URL('./builtin-dictionary.json',import.meta.url)).then(async response => {
+  const rows = async name => {
+    const response = await fetch(new URL(name,import.meta.url));
     if (!response.ok) throw new Error('Dictionary file unavailable');
-    return builtInRows(await response.json());
-  }).catch(error => {
-    builtin = null;
-    throw error;
-  });
+    return response.json();
+  };
+  builtin ??= Promise.all([rows('./builtin-dictionary.json'),rows('./jmdict-essentials.json')])
+    .then(([legacy,verified]) => [...jmdictRows(verified), ...builtInRows(legacy)])
+    .catch(error => { builtin = null; throw error; });
   return builtin;
 }

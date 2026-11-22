@@ -8,7 +8,8 @@ const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const mime = {'.html':'text/html', '.css':'text/css', '.js':'text/javascript', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json'};
 const queries = ['na','owaranai','tabesasenai','ikanakerebanaranai','nondekara','tabetakotogaaru','không được làm','muốn làm',
   'nihongoo','学校','ﾃﾚﾋﾞ','高くなかった','飲まなければならない','食べられる','昨日、友達と映画を見てから、ご飯を食べました。',
-  '天体物理学ではブラックホールを研究します。'];
+  '天体物理学ではブラックホールを研究します。','owa','taberarenakatta','ikanakerebanarimasen','benkyoushiteimasu',
+  'không cần phải','vừa nghe nhạc vừa học','薬を飲んでから寝なければなりません。','申込みました'];
 const desktop = {viewport:{width:1280,height:800}};
 const mobile = {viewport:{width:390,height:844}, isMobile:true, hasTouch:true};
 const median = values => {
@@ -77,7 +78,7 @@ async function measure(browser, url, options) {
 }
 
 async function main() {
-  if (!process.argv[2]) throw new Error('Usage: node search-benchmark.cjs /absolute/path/to/v5.48 [candidate-root]');
+  if (!process.argv[2]) throw new Error('Usage: node search-benchmark.cjs /absolute/path/to/baseline [candidate-root]');
   const base = path.resolve(process.argv[2]);
   const candidate = path.resolve(process.argv[3] || path.join(__dirname,'../..'));
   const sites = await Promise.all([serve(base),serve(candidate)]);
@@ -92,14 +93,19 @@ async function main() {
           totals[version].push(measurements);
         }
       }
-      const results = totals.map(runs => ({
-        appLoadedMs:round(median(runs.map(run => run.loadedMs))),
-        coldMs:round(median(runs.map(run => run.stats[0].ms))),
-        warmMs:round(median(runs.flatMap(run => run.stats.slice(1).map(row => row.ms)))),
-        coldLongestFrameMs:round(median(runs.map(run => run.stats[0].longestFrame))),
-        warmLongestFrameMs:round(median(runs.flatMap(run => run.stats.slice(1).map(row => row.longestFrame)))),
-        warmWorstFrameMs:round(Math.max(...runs.flatMap(run => run.stats.slice(1).map(row => row.longestFrame)))),
-      }));
+      const results = totals.map(runs => {
+        const warm = runs.flatMap(run => run.stats.slice(1));
+        const worst = warm.reduce((a,b) => a.longestFrame > b.longestFrame ? a : b);
+        return {
+          appLoadedMs:round(median(runs.map(run => run.loadedMs))),
+          coldMs:round(median(runs.map(run => run.stats[0].ms))),
+          warmMs:round(median(warm.map(row => row.ms))),
+          coldLongestFrameMs:round(median(runs.map(run => run.stats[0].longestFrame))),
+          warmLongestFrameMs:round(median(warm.map(row => row.longestFrame))),
+          warmWorstFrameMs:round(worst.longestFrame),
+          warmWorstQuery:worst.query,
+        };
+      });
       console.log(JSON.stringify({engine,viewport,baseline:results[0],candidate:results[1]},null,2));
     }
   } finally {

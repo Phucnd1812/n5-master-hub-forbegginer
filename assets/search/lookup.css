@@ -192,3 +192,54 @@
   .n5-lookup-chip, .n5-token { min-height: 2.65rem; }
   .n5-lookup-grid { grid-template-columns: minmax(0,1fr); }
 }
+
+.n5-lookup-dialog-search {
+  display: flex;
+  gap: .45rem;
+  padding: .6rem 1rem;
+  border-bottom: 1px solid var(--n5-border);
+  background: var(--n5-surface);
+}
+.n5-lookup-dialog-search input {
+  flex: 1;
+  min-width: 0;
+  padding: .35rem .65rem;
+  border: 1px solid var(--n5-border);
+  border-radius: .72rem;
+  background: var(--n5-surface-soft);
+  color: var(--n5-text);
+  font-size: 1rem;
+}
+.n5-lookup-phrases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+}
+.n5-lookup-phrases > div {
+  padding: .3rem .45rem;
+  border: 1px solid var(--n5-border);
+  border-radius: .8rem;
+}
+.n5-lookup-phrases > div > div { display: flex; gap: .24rem; flex-wrap: wrap; }
+.n5-lookup-steps li { margin-block: .3rem; padding: .35rem .4rem; border-bottom: 1px solid var(--n5-border); }
+.n5-lookup-strokes {
+  display: block;
+  width: min(100%,12rem);
+  margin-block: .45rem;
+  background: var(--n5-surface-soft);
+  border-radius: .8rem;
+}
+.n5-lookup-strokes path { fill: none; stroke: var(--n5-text); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.n5-lookup-strokes text {
+  fill: var(--lookup-blue);
+  font-size: 7px;
+  font-weight: 750;
+  stroke: var(--n5-surface);
+  stroke-width: 1.6;
+  paint-order: stroke;
+}
+@media (max-width: 767px) {
+  .n5-lookup-dialog-search {
+    padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+  }
+}

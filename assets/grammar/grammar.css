@@ -39,3 +39,13 @@
 .n5-grammar-chapter [role="status"]:empty { display: none; }
 .n5-grammar-chain { display: flex; align-items: start; flex-wrap: wrap; gap: .5rem; }
 .n5-grammar-chapter :is(p,div,ul)[hidden] { display: none; }
+
+.n5-grammar-differences { width: 100%; border-collapse: collapse; }
+.n5-grammar-differences :is(th,td) {
+  padding: .55rem .6rem;
+  text-align: start;
+  vertical-align: top;
+  border-bottom: 1px solid var(--n5-border);
+}
+.n5-grammar-differences thead { background: var(--n5-surface-soft); }
+.n5-grammar-differences tbody th { width: 28%; }

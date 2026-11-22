@@ -1,7 +1,8 @@
 import {FUNCTION_WORDS, CURATED_SENTENCES} from './lexicon.js';
 import {SEARCH_TOPICS,SEARCH_LESSONS} from '../grammar/search-data.js';
 import {describeForm,formRomaji} from './morphology.js';
-import {HAS_JAPANESE, IS_ROMAN, hiragana, japaneseKey, romanize, romanAliases, romanKey} from './text.js';
+import {collectPhrases} from './syntax.js';
+import {HAS_HAN, HAS_JAPANESE, IS_ROMAN, hiragana, japaneseKey, romanize, romanAliases, romanKey} from './text.js';
 
 const SEPARATOR = /([\s、。，．,.！？!?「」『』（）();；:：…]+)/u;
 const JAPANESE_LIMIT = 240;
@@ -22,22 +23,29 @@ const PARTICLE_NOTES = {
 
 function grammarForPart(part, parts, index) {
   const prior = parts[index - 1];
-  const predicate = parts.slice(index + 1).find(token => token.kind === 'punct' || token.form);
+  const predicate = parts.slice(index + 1).find(token => token.kind === 'unknown' ||
+    token.kind === 'punct' && /[、,。.!?！？]/.test(token.text) ||
+    token.ref?.lemma.group && !['attributive','adverb'].includes(token.form?.key));
   const lemma = predicate?.ref?.lemma.jp || '';
-  const next = parts[index + 1];
-  if (part.jp === 'を' && /(?:歩く|通る|渡る|出る|降りる)$/.test(lemma)) {
+  if (part.jp === 'を' && /^(?:歩く|通る|渡る|出る|降りる|跨ぐ)$/.test(lemma)) {
     return 'Có thể đánh dấu nơi đi qua hoặc rời khỏi với ' + lemma + '. Đọc o.';
   }
-  if (part.jp === 'が' && /(?:好き|嫌い|できる)$/.test(next?.jp || lemma)) return 'Đánh dấu đối tượng của sở thích hoặc khả năng.';
   if (part.jp === 'が' && prior?.form) return 'Có thể nối hai vế với ý đối chiếu.';
+  if (part.jp === 'が' && (/^(?:好き|嫌い|できる|苦手|得意)$/.test(lemma) ||
+      predicate?.form?.grammar === 'potential' && !predicate.candidates.some(candidate => candidate.form?.grammar === 'passive'))) {
+    return 'Có thể đánh dấu đối tượng của sở thích hoặc khả năng.';
+  }
   if (part.jp === 'に') {
     if (/(?:時|分|月|日)$/.test(prior?.jp || '')) return 'Có thể đánh dấu mốc thời gian đứng trước.';
     if (/(?:行く|来る|帰る|着く)$/.test(lemma)) return 'Đánh dấu đích của ' + lemma + '.';
-    if (/(?:ある|いる)$/.test(lemma)) return 'Có thể đánh dấu vị trí tồn tại.';
+    if (/^(?:ある|いる|有る|居る)$/.test(lemma)) return 'Có thể đánh dấu vị trí tồn tại.';
   }
   if (part.jp === 'で') {
     if (/^(?:電車|バス|車|自転車|飛行機|タクシー|船|地下鉄)$/.test(prior?.jp || '')) return 'Chỉ phương tiện được dùng để thực hiện hành động.';
     if (/^(?:学校|店|図書館|駅|家|教室|公園|ここ|そこ|あそこ)$/.test(prior?.jp || '')) return 'Chỉ nơi hành động diễn ra.';
+    if (/^(?:前|後ろ|近く|隣|中|外)$/.test(prior?.jp || '') && parts[index - 2]?.jp === 'の') {
+      return 'Có thể chỉ nơi hành động diễn ra, xác định bằng danh từ trước の.';
+    }
   }
   if (part.jp === 'と') {
     if (/^(?:言う|思う|書く)$/.test(lemma)) return 'Có thể đánh dấu nội dung được nói, nghĩ hoặc viết.';
@@ -45,6 +53,8 @@ function grammarForPart(part, parts, index) {
         /(?:行く|来る|帰る|見る|食べる|遊ぶ|出かける)$/.test(lemma)) return 'Chỉ người cùng thực hiện hành động.';
   }
   if (part.jp === 'から' && prior?.form?.key === 'te') return 'Nối sau thể て để đặt mốc trước hành động tiếp theo.';
+  if (part.jp === 'から' && prior?.ref?.lemma.group) return 'Có thể nối lý do với kết quả trong vế sau.';
+  if (part.jp === 'までに') return 'Đặt hạn hoàn tất hoặc thời điểm muộn nhất để hành động xảy ra.';
   return PARTICLE_NOTES[part.jp] || part.vi;
 }
 
@@ -72,7 +82,9 @@ function tokenize(source, isRoman, lexicon, lengths, original) {
             !(romanOnlyReading && i === 0 && end === run[1]))) continue;
         const cost = token.kind === 'function'
           ? (i > 0 ? .79 : 2.25)
-          : Math.max(.30, 1.80 - token.weight / 5) - Math.min(10, length) * 0.025;
+          : Math.max(.30, 1.80 - token.weight / 5) - Math.min(10, length) * 0.025 -
+            (!isRoman && token.written === key && HAS_HAN.test(key) ? .18 : 0) +
+            (token.form?.key.endsWith('Te') && token.form.key !== 'negativeTe' ? .30 : 0);
         consider(i, end, token, cost, key, matches);
       }
     }
@@ -92,16 +104,28 @@ function phraseKey(value) {
   return hiragana(value).replace(/[\s、，,]/g, '').replace(/[。.]$/, '');
 }
 
-export function createSentenceAnalyzer() {
+function inflectedSpellings(lemma, form) {
+  if (!lemma.aliases?.length) return [];
+  let prefix = 0;
+  while (prefix < lemma.jp.length && lemma.jp[prefix] === form.jp[prefix]) prefix++;
+  if (!prefix) return [];
+  const tail = lemma.jp.slice(prefix);
+  return lemma.aliases.filter(alias => alias.endsWith(tail)).map(alias =>
+    alias.slice(0,alias.length - tail.length) + form.jp.slice(prefix));
+}
+
+export function createSentenceAnalyzer(wordExamples = []) {
   const japanese = new Map();
   const roman = new Map();
+  const jpLengths = new Set();
+  const romanLengths = new Set();
   const maximum = 64;
   let lengthsJP;
   let lengthsRoman;
-  function put(map, key, token) {
+  function put(map, lengths, key, token) {
     if (!key || key.length > maximum) return;
     const matches = map.get(key);
-    if (!matches) { map.set(key, [token]); return; }
+    if (!matches) { map.set(key, [token]); lengths.add(key.length); return; }
     if (matches.some(current => current.signature === token.signature)) return;
     if (matches.length === 10 && matches.at(-1).weight >= token.weight) return;
     matches.push(token);
@@ -109,11 +133,16 @@ export function createSentenceAnalyzer() {
     if (matches.length > 10) matches.length = 10;
   }
   function add(token, spellings = [], extraRoman = []) {
-    for (const spelling of [token.jp, token.kana, ...spellings]) {
-      put(japanese, japaneseKey(spelling), token);
+    token.written = japaneseKey(token.jp);
+    put(japanese,jpLengths,token.written,token);
+    for (const spelling of [token.kana, ...spellings]) {
+      const key = japaneseKey(spelling);
+      if (key !== token.written) put(japanese,jpLengths,key,token);
     }
-    for (const spelling of [...romanAliases(token.romaji), ...extraRoman]) {
-      put(roman, spelling, token);
+    const readings = romanAliases(token.romaji);
+    for (const spelling of readings) put(roman,romanLengths,spelling,token);
+    for (const spelling of extraRoman) {
+      if (!readings.includes(spelling)) put(roman,romanLengths,spelling,token);
     }
   }
   for (const [jp, spelling, grammar, vi, aliases] of FUNCTION_WORDS) {
@@ -127,7 +156,7 @@ export function createSentenceAnalyzer() {
     if (!readings.has(key)) readings.set(key,example);
     else if (phraseKey(readings.get(key)?.jp) !== phraseKey(example.jp)) readings.set(key,null);
   }
-  for (const [jp, kana, vi] of [...CURATED_SENTENCES, ...[...SEARCH_TOPICS,...SEARCH_LESSONS].flatMap(guide => guide.examples)]) {
+  for (const [jp, kana, vi] of [...CURATED_SENTENCES, ...[...SEARCH_TOPICS,...SEARCH_LESSONS].flatMap(guide => guide.examples),...wordExamples]) {
     const key = phraseKey(jp);
     const example = {jp,kana,vi};
     if (!curatedJP.has(key)) curatedJP.set(key,example);
@@ -143,10 +172,10 @@ export function createSentenceAnalyzer() {
     for (const form of ref.forms.values()) {
       if (form.key === 'dictionary' || form.key === 'stem') continue;
       const romaji = formRomaji(form);
-      const aliases = form.key.startsWith('prohibition') ? romanAliases(romanize(form.kana)) : [];
+      const aliases = /^(?:prohibition|dutyNakute)/.test(form.key) ? romanAliases(romanize(form.kana)) : [];
       add({kind:'word', jp:form.jp, kana:form.kana, romaji, id:lemma.id, pos:lemma.pos, vi:lemma.vi,
-        form, grammar:form.grammar, signature:lemma.jp + ':' + form.key, ref, weight:weight + 0.35},
-      [], aliases);
+        form, grammar:form.grammar, signature:lemma.jp + ':' + lemma.kana + ':' + form.key, ref, weight:weight + 0.35},
+      inflectedSpellings(lemma,form), aliases);
     }
   }
 
@@ -161,8 +190,8 @@ export function createSentenceAnalyzer() {
       return isJapanese ? {original, parts:[], grammar:[], readings:'', romaji:'', translation:'',
         notes:['Hãy chia văn bản thành từng câu tối đa ' + JAPANESE_LIMIT + ' ký tự để phân tích.']} : null;
     }
-    lengthsJP ??= [...new Set([...japanese.keys()].map(key => key.length))].sort((a, b) => a - b);
-    lengthsRoman ??= [...new Set([...roman.keys()].map(key => key.length))].sort((a, b) => a - b);
+    lengthsJP ??= [...jpLengths].sort((a, b) => a - b);
+    lengthsRoman ??= [...romanLengths].sort((a, b) => a - b);
     const parts = [];
     let unknownUnits = 0;
     let totalUnits = 0;
@@ -181,30 +210,44 @@ export function createSentenceAnalyzer() {
         const text = isRoman || normalized.length !== chunk.length ? token.text : chunk.slice(offset, offset + token.text.length);
         offset += token.text.length;
         totalUnits += token.text.length;
-        if (token.kind === 'unknown') {
+        const previous = parts.at(-1);
+        const uncertainSuffix = !isRoman && previous?.kind === 'unknown' && HAS_HAN.test(previous.text) &&
+          token.kind === 'word' && token.text !== token.written && !HAS_HAN.test(token.text);
+        if (token.kind === 'unknown' || uncertainSuffix) {
           unknownUnits += token.text.length;
-          if (parts.at(-1)?.kind === 'unknown') {
-            parts.at(-1).text += text;
-            continue;
-          }
+          if (previous?.kind === 'unknown') previous.text += text;
+          else parts.push({kind:'unknown',text});
+          continue;
         }
         parts.push({...token, text});
       }
     }
     const coverage = totalUnits ? 1 - unknownUnits / totalUnits : 0;
     const wordCount = parts.filter(part => part.kind === 'word').length;
-    if (isRoman && (coverage < .65 || !wordCount)) return null;
+    if (isRoman) {
+      const terms = parts.filter(part => part.kind !== 'punct');
+      const wholeWord = terms.length === 1 && wordCount === 1;
+      const predicate = parts.some(part => part.form && part.text.length >= 4 ||
+        part.kind === 'function' && /^(?:です|でした|だ|じゃない)$/.test(part.jp));
+      const nounPhrase = wordCount > 1 && (/\s/.test(source) || parts.some(part => part.jp === 'の'));
+      if (coverage < .65 || !wordCount || !wholeWord && !predicate && !nounPhrase) return null;
+    }
 
     const detections = new Set();
     const notes = [];
     const publicParts = parts.map((part, i) => {
       if (part.kind === 'punct' || part.kind === 'unknown') return {kind:part.kind, text:part.text};
-      const grammar = part.jp === 'から' && parts[i - 1]?.form?.key === 'te' ? 'te-kara' : part.grammar;
+      let grammar = part.grammar;
+      if (part.jp === 'から' && parts[i - 1]?.form?.key === 'te') grammar = 'te-kara';
+      else if (part.jp === 'から' && parts[i - 1]?.ref?.lemma.group) grammar = 'compare:reasons';
+      else if (part.jp === 'が' && parts[i - 1]?.form) grammar = '';
+      else if (part.ref?.lemma.kana === 'ある' && parts[i - 1]?.form?.key === 'te') grammar = 'compare:state';
       if (grammar && (part.jp !== 'しか' || parts.some(token => /ない|ません/.test(token.jp || ''))) &&
           (!isRoman || part.kind !== 'function' || parts.some(token => token.form || token.ref?.lemma.group))) detections.add(grammar);
       const options = (part.candidates || []).filter(candidate => candidate.signature !== part.signature &&
-        candidate.kind === part.kind && candidate.ref && candidate.weight >= part.weight - 1 &&
-        (candidate.form || !part.form)).slice(0, PREVIEW_ALTERNATIVES);
+        candidate.kind === part.kind && candidate.ref && candidate.weight >= part.weight - 2 &&
+        (!HAS_HAN.test(part.text) || candidate.written === part.written ||
+          candidate.ref.lemma.jp === part.ref.lemma.jp)).slice(0, PREVIEW_ALTERNATIVES);
       for (const option of options) if (option.form?.grammar) detections.add(option.form.grammar);
       return {
         kind:part.kind, text:part.text, jp:part.jp, kana:part.kana, romaji:part.romaji, vi:part.vi,
@@ -221,15 +264,17 @@ export function createSentenceAnalyzer() {
     const wordForms = publicParts.filter(part => part.form);
     if (detections.has('te-kara') && wordCount > 1) notes.push('Vế có ～てから nêu hành động trước. Vị ngữ ở vế sau nêu hành động tiếp theo.');
     if (detections.has('tara') || detections.has('ba')) notes.push('Vế điều kiện đặt mốc cho kết quả hoặc hành động ở vế còn lại.');
-    const lastWord = publicParts.filter(part => part.kind !== 'punct').at(-1);
-    if (!unknownUnits && wordForms.length && lastWord?.form && !lastWord.ending && (wordCount > 1 || parts.some(part => part.jp === 'を'))) {
-      notes.push('Vị ngữ chính nằm ở cuối: ' + lastWord.jp + '. Các cụm có trợ từ đứng trước bổ nghĩa cho vị ngữ.');
+    if (detections.has('compare:state')) notes.push('Vて theo sau bởi ある có thể mô tả kết quả của việc đã làm có chủ ý. Cần xem động từ và hoàn cảnh để xác nhận.');
+    const phrases = wordCount > 1 || parts.some(part => part.kind === 'function') ? collectPhrases(publicParts) : [];
+    if (phrases.some(phrase => phrase.label === 'Vị ngữ') && !parts.some(part => part.kind === 'function' && ['は','が'].includes(part.jp))) {
+      notes.push('Chủ thể có thể được lược bỏ. Cần ngữ cảnh để biết ai thực hiện.');
     }
-    if (parts.some(part => part.jp === 'を') && !parts.some(part => part.jp === 'は' || part.jp === 'が') && wordForms.length) {
-      notes.push('Câu không nêu rõ chủ thể bằng は hoặc が. Có thể cần ngữ cảnh để biết ai thực hiện.');
-    }
-    const example = isJapanese ? curatedJP.get(phraseKey(source)) || curatedKana.get(phraseKey(source)) :
-      (/[?？]$/.test(source) ? undefined : curatedRoman.get(romanKey(source)));
+    const ambiguousReading = publicParts.some(part =>
+      part.alternatives?.some(option => option.lemma.jp !== part.lemma?.jp || option.lemma.kana !== part.lemma?.kana));
+    const candidate = !unknownUnits && !ambiguousReading ?
+      (isRoman ? curatedRoman.get(romanKey(source)) : !HAS_HAN.test(source) ? curatedKana.get(phraseKey(source)) : null) : null;
+    const example = isJapanese && curatedJP.get(phraseKey(source)) ||
+      (isRoman && /[?？!]$/.test(source) ? null : candidate);
     if (unknownUnits || publicParts.some(part => part.kind === 'word' && !part.kana)) {
       notes.push('Một số đoạn nằm ngoài kho dữ liệu hoặc chưa có cách đọc. Phần nhận diện được chỉ mang tính tham khảo.');
     }
@@ -237,7 +282,7 @@ export function createSentenceAnalyzer() {
     const reading = name => publicParts.map(part => part.kind === 'punct' ? part.text : part[name] || '[…]');
     return {original, japanese:isRoman ? example?.jp || publicParts.map(part => part.jp || part.text).join('') : original,
       readings:reading('kana').join(''), romaji:reading('romaji').join(' ').replace(/\s+([。、,.!?])/g,'$1').trim(),
-      coverage, parts:publicParts, grammar:[...detections], notes, translation:example?.vi || ''};
+      coverage, parts:publicParts, phrases, grammar:[...detections], notes, translation:example?.vi || ''};
   }
   return {addWord, analyze};
 }

@@ -64,13 +64,15 @@ export function romanize(input) {
   for (let i = 0; i < kana.length; i++) {
     const char = kana[i];
     const pair = kana.slice(i, i + 2);
-    const next = KANA_ROMAJI[kana.slice(i + 1, i + 3)] || KANA_ROMAJI[kana[i + 1]];
-    if (char === 'っ') {
-      if (next) result += next.startsWith('ch') ? 't' : next[0];
+    if (char === 'っ' || char === 'ん') {
+      const next = KANA_ROMAJI[kana.slice(i + 1, i + 3)] || KANA_ROMAJI[kana[i + 1]];
+      if (char === 'っ') {
+        if (next) result += next.startsWith('ch') ? 't' : next[0];
+      } else {
+        result += next && /^[aeiouy]/.test(next) ? "n'" : 'n';
+      }
     } else if (char === 'ー') {
       result += result.match(/[aeiou](?!.*[aeiou])/)?.[0] || '';
-    } else if (char === 'ん' && /^[aeiouy]/.test(next || '')) {
-      result += "n'";
     } else if (pair.length === 2 && KANA_ROMAJI[pair]) {
       result += KANA_ROMAJI[pair];
       i++;
@@ -82,6 +84,10 @@ export function romanize(input) {
 }
 
 const LONG_VOWELS = {ā:'aa', â:'aa', ī:'ii', î:'ii', ū:'uu', û:'uu', ē:'ee', ê:'ee', ō:'ou', ô:'ou'};
+const KUNREI = {
+  sha:'sya', shu:'syu', sho:'syo', cha:'tya', chu:'tyu', cho:'tyo',
+  shi:'si', chi:'ti', tsu:'tu', fu:'hu', ja:'zya', ju:'zyu', jo:'zyo', ji:'zi',
+};
 export const IS_ROMAN = /^[a-zāâīîūûēêōô\s'’.,!?-]+$/i;
 
 export function romanKey(value) {
@@ -93,10 +99,7 @@ export function romanAliases(value) {
   const key = romanKey(value);
   if (!key) return [];
   const short = key.replace(/ou|oo/g, 'o').replace(/(a|i|u|e)\1/g, '$1');
-  const alternative = key.replace(/sha/g, 'sya').replace(/shu/g, 'syu').replace(/sho/g, 'syo')
-    .replace(/cha/g, 'tya').replace(/chu/g, 'tyu').replace(/cho/g, 'tyo')
-    .replace(/shi/g, 'si').replace(/chi/g, 'ti').replace(/tsu/g, 'tu').replace(/fu/g, 'hu')
-    .replace(/ja/g, 'zya').replace(/ju/g, 'zyu').replace(/jo/g, 'zyo').replace(/ji/g, 'zi');
+  const alternative = key.replace(/sh[auoi]|ch[auoi]|tsu|fu|j[auoi]/g, value => KUNREI[value]);
   return [...new Set([key, short, alternative])];
 }
 

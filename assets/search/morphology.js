@@ -59,13 +59,14 @@ export function makeLemma(item) {
   const [reading = ''] = wordPieces(plain(item.kana, true));
   const kana = hiragana(reading);
   const pos = String(item.pos || '');
-  const group = IS_KANA.test(kana) && (
-    /Tính từ (?:đuôi )?い/i.test(pos) && kana.endsWith('い') ? 'i' :
-      /Tính từ (?:đuôi )?な/i.test(pos) ? 'na' : verbGroup(pos, jp, kana));
+  const group = IS_KANA.test(kana) && (item.verifiedGroup ||
+    (/Tính từ (?:đuôi )?い/i.test(pos) && kana.endsWith('い') ? 'i' :
+      /Tính từ (?:đuôi )?な/i.test(pos) ? 'na' : verbGroup(pos, jp, kana)));
   const root = group && /^[IV]+$/.test(group) ? dictionaryForm(jp || kana, kana, group) : {jp:jp || kana, kana};
   // Mixed-surface imports can have no reading. Keep the written entry only.
   return {...root, group:group || '', id:item.id, vi:item.vi || '', pos, lesson:item.lesson,
-    source:item.source, card:item.card !== false, romaji:IS_KANA.test(root.kana) ? romanize(root.kana) : ''};
+    source:item.source, sourceId:item.sourceId, readings:item.readings, aliases:item.aliases, examples:item.examples,
+    card:item.card !== false, romaji:IS_KANA.test(root.kana) ? romanize(root.kana) : ''};
 }
 
 const FORM_LABELS = {
@@ -73,18 +74,14 @@ const FORM_LABELS = {
   masen:'Thể lịch sự phủ định ません', mashita:'Thể lịch sự quá khứ ました',
   masenPast:'Thể lịch sự quá khứ phủ định ませんでした', negative:'Thể thường phủ định ない',
   negativePast:'Thể thường quá khứ phủ định なかった', te:'Thể て', past:'Thể thường quá khứ た',
-  potential:'Thể khả năng', potentialNegative:'Thể khả năng phủ định', potentialPast:'Thể khả năng quá khứ',
-  passive:'Thể bị động', passiveNegative:'Thể bị động phủ định', passivePast:'Thể bị động quá khứ',
-  causative:'Thể sai khiến', causativeNegative:'Thể sai khiến phủ định', causativePast:'Thể sai khiến quá khứ',
-  causativePassive:'Thể sai khiến bị động', causativePassiveNegative:'Thể sai khiến bị động phủ định',
-  causativePassivePast:'Thể sai khiến bị động quá khứ', volitional:'Thể ý chí', mashou:'Thể ý chí lịch sự',
+  potential:'Thể khả năng', passive:'Thể bị động',
+  causative:'Thể sai khiến', causativePassive:'Thể sai khiến bị động',
+  volitional:'Thể ý chí', mashou:'Thể ý chí lịch sự',
   imperative:'Thể mệnh lệnh', ba:'Điều kiện ～ば', tara:'Điều kiện ～たら', negativeBa:'Điều kiện phủ định ～なければ',
-  potentialPolite:'Thể khả năng lịch sự', potentialPolitePast:'Thể khả năng lịch sự quá khứ',
-  passivePolite:'Thể bị động lịch sự', passivePolitePast:'Thể bị động lịch sự quá khứ',
-  causativePolite:'Thể sai khiến lịch sự', causativePolitePast:'Thể sai khiến lịch sự quá khứ',
-  causativePassivePolite:'Thể sai khiến bị động lịch sự', causativePassivePolitePast:'Thể sai khiến bị động lịch sự quá khứ',
   duty:'Nghĩa vụ ～なければならない', dutyPolite:'Nghĩa vụ ～なければなりません',
   simultaneous:'Hai hành động đồng thời ～ながら',
+  dutyNakute:'Nghĩa vụ ～なくてはいけない', dutyNakutePolite:'Nghĩa vụ ～なくてはいけません',
+  negativeNakya:'Điều kiện phủ định rút gọn ～なきゃ', dutyNakya:'Nghĩa vụ trong hội thoại ～なきゃいけない',
   dutyNaito:'Nghĩa vụ ～ないといけません', dutyNaitoPlain:'Nghĩa vụ ～ないといけない', afterTe:'Trình tự ～てから',
   experience:'Kinh nghiệm ～たことがある', experiencePolite:'Kinh nghiệm ～たことがあります',
   desire:'Mong muốn ～たい', desirePolite:'Mong muốn lịch sự ～たいです', desireNegative:'Mong muốn phủ định ～たくない',
@@ -93,6 +90,10 @@ const FORM_LABELS = {
   negativeRequest:'Yêu cầu phủ định ～ないでください', permit:'Cho phép ～てもいい', permitPolite:'Cho phép ～てもいいです',
   permitQuestion:'Xin phép ～てもいいですか', optional:'Không bắt buộc ～なくてもいい',
   optionalPolite:'Không bắt buộc ～なくてもいいです', before:'Trước khi ～前に', after:'Sau khi ～後で',
+  negativeDe:'Không làm việc trước ～ないで', negativeTe:'Phủ định nối vế ～なくて',
+  progressivePlainPast:'～ていた', progressiveNegative:'～ていない', progressiveNegativePast:'～ていなかった',
+  progressivePoliteNegative:'～ていません', progressivePoliteNegativePast:'～ていませんでした',
+  causativePassiveShort:'Thể sai khiến bị động rút gọn',
   potentialKoto:'Khả năng ～ことができる', potentialKotoPolite:'Khả năng ～ことができます',
   invite:'Lời mời ～ませんか', propose:'Đề nghị ～ましょうか', justPast:'Vừa mới ～たばかり',
   copula:'Tính từ な làm vị ngữ', attributive:'Tính từ な bổ nghĩa danh từ', adverb:'Tính từ な làm trạng ngữ',
@@ -104,20 +105,37 @@ const FORM_LABELS = {
   adjNegPastFormal:'Tính từ quá khứ phủ định trang trọng',
 };
 
+const VOICE_FORMS = ['potential','passive','causative','causativePassive'];
+const VOICE_ENDINGS = [
+  ['Negative', 'phủ định', 'ない'], ['Past', 'quá khứ', 'た'], ['NegativePast', 'quá khứ phủ định', 'なかった'],
+  ['Polite', 'lịch sự', 'ます'], ['PolitePast', 'lịch sự quá khứ', 'ました'],
+  ['PoliteNegative', 'lịch sự phủ định', 'ません'], ['PoliteNegativePast', 'lịch sự quá khứ phủ định', 'ませんでした'],
+  ['Te', 'nối vế', 'て'],
+];
+for (const voice of [...VOICE_FORMS,'causativePassiveShort']) {
+  for (const [key,label] of VOICE_ENDINGS) FORM_LABELS[voice + key] = FORM_LABELS[voice] + ' ' + label;
+}
+
 const FORM_GRAMMAR = {
   masu:'masu', masen:'masu', mashita:'masu', masenPast:'masu', negative:'nai', negativePast:'nai',
   te:'te', past:'ta', potential:'potential', potentialKoto:'potential', potentialKotoPolite:'potential',
-  potentialNegative:'potential', potentialPast:'potential', passive:'passive', passiveNegative:'passive', passivePast:'passive',
-  causative:'causative', causativeNegative:'causative', causativePast:'causative',
-  causativePassive:'causative-passive', causativePassiveNegative:'causative-passive', causativePassivePast:'causative-passive',
+  passive:'passive', causative:'causative', causativePassive:'causative-passive',
   volitional:'volitional', mashou:'volitional', imperative:'imperative', ba:'ba', negativeBa:'ba', tara:'tara',
   simultaneous:'simultaneous', duty:'obligation', dutyPolite:'obligation', dutyNaito:'obligation', dutyNaitoPlain:'obligation', afterTe:'te-kara',
   experience:'experience', experiencePolite:'experience', desire:'desire', desirePolite:'desire', desireNegative:'desire',
   prohibition:'prohibition', prohibitionPolite:'prohibition', progressive:'progressive', progressivePolite:'progressive',
   progressivePast:'progressive', request:'request', negativeRequest:'negative-request',
+  progressivePlainPast:'progressive', progressiveNegative:'progressive', progressiveNegativePast:'progressive',
+  progressivePoliteNegative:'progressive', progressivePoliteNegativePast:'progressive',
+  dutyNakute:'obligation', dutyNakutePolite:'obligation',
+  negativeNakya:'g11b_5', dutyNakya:'g11b_6',
+  negativeDe:'compare:negative-connect', negativeTe:'compare:negative-connect', causativePassiveShort:'causative-passive',
   permit:'permission', permitPolite:'permission', permitQuestion:'permission', optional:'optional', optionalPolite:'optional',
   invite:'g7c_5', propose:'g14a_1', justPast:'g10b_5', before:'g10a_2', after:'g10a_3',
 };
+for (const voice of [...VOICE_FORMS,'causativePassiveShort']) {
+  for (const [key] of VOICE_ENDINGS) FORM_GRAMMAR[voice + key] = FORM_GRAMMAR[voice];
+}
 
 function formBuilder(lemma) {
   const forms = new Map();
@@ -140,16 +158,17 @@ function adjectiveForms(lemma, change, add) {
     for (const [key, suffix, rule] of [
       ['copula','だ','Thêm だ để làm vị ngữ thể thường.'], ['attributive','な','Thêm な trước danh từ.'],
       ['adverb','に','Thêm に khi bổ nghĩa cho hành động.'], ['adjNeg','ではない','Đổi vị ngữ sang ではない.'],
-      ['adjPast','だった','Thêm だった để chỉ quá khứ.'], ['adjNegPast','ではなかった','Đổi ない thành なかった.'],
+      ['adjPast','だった','Thêm だった để chỉ quá khứ.'],
       ['adjConnect','で','Thêm で để nối hai đặc điểm hoặc vế.'], ['adjIf','なら','Thêm なら để nêu điều kiện.'],
       ['adjPolite','です','Thêm です làm vị ngữ lịch sự.'], ['adjNegPolite','ではないです','Thêm です sau phủ định.'],
       ['adjPastPolite','でした','Thêm でした để diễn đạt quá khứ lịch sự.'],
-      ['adjNegPastPolite','ではなかったです','Thêm です sau phủ định quá khứ.'],
       ['adjNegAlt','じゃない','Dùng じゃ để rút gọn では trong hội thoại.'],
-      ['adjNegPastAlt','じゃなかった','Đổi ない thành なかった trong cách nói hội thoại.'],
       ['adjNegFormal','ではありません','Dùng ではありません làm phủ định lịch sự.'],
-      ['adjNegPastFormal','ではありませんでした','Đổi ありません thành ありませんでした.'],
     ]) change(key, 'dictionary', 0, suffix, rule);
+    change('adjNegPast','adjNeg',2,'なかった','Đổi ない thành なかった.');
+    change('adjNegPastPolite','adjNegPast',0,'です','Thêm です sau phủ định quá khứ.');
+    change('adjNegPastAlt','adjNegAlt',2,'なかった','Đổi ない thành なかった trong cách nói hội thoại.');
+    change('adjNegPastFormal','adjNegFormal',0,'でした','Thêm でした sau ありません.');
     return;
   }
   const exceptional = /^(?:いい|よい|かっこいい)$/.test(kana);
@@ -157,9 +176,10 @@ function adjectiveForms(lemma, change, add) {
   const jStem = exceptional && jp.endsWith('いい') ? jp.slice(0,-2) + 'よ' : jp.slice(0,-1);
   const replaceEnding = exceptional ? 'Dùng thân よ của いい／良い' : 'Bỏ い cuối';
   for (const [key, ending] of [
-    ['adjNeg','くない'], ['adjPast','かった'], ['adjNegPast','くなかった'], ['adjConnect','くて'],
+    ['adjNeg','くない'], ['adjPast','かった'], ['adjConnect','くて'],
     ['adjIf','ければ'], ['adjNegFormal','くありません'], ['adjNegPastFormal','くありませんでした'],
   ]) add(key, 'dictionary', jStem + ending, kStem + ending, replaceEnding + ' rồi thêm ' + ending + '.');
+  change('adjNegPast','adjNeg',2,'なかった','Đổi ない thành なかった.');
   change('adjPolite', 'dictionary', 0, 'です', 'Giữ い và thêm です.');
   for (const [key, parent] of [['adjNegPolite','adjNeg'], ['adjPastPolite','adjPast'], ['adjNegPastPolite','adjNegPast']]) {
     change(key, parent, 0, 'です', 'Thêm です để nói lịch sự.');
@@ -234,59 +254,138 @@ export function generateForms(lemma) {
   }
   replace('negativePast','negative',2,'なかった','Đổi ない thành なかった.');
   replace('negativeBa','negative',2,'なければ','Đổi ない thành なければ.');
+  replace('negativeNakya','negativeBa',4,'なきゃ','Rút なければ thành なきゃ trong hội thoại.');
+  attach('negativeDe','negative','で','Thêm で sau dạng ない. Dùng để nêu việc không làm trước hành động khác.');
+  replace('negativeTe','negative',2,'なくて','Đổi ない thành なくて để nối vế phủ định.');
   attach('duty','negativeBa','ならない','Thêm ならない để diễn đạt nghĩa vụ.', 'ならない', 'なければならない');
   attach('dutyPolite','negativeBa','なりません','Thêm なりません để diễn đạt nghĩa vụ lịch sự.', 'なりません', 'なければなりません');
+  attach('dutyNakute','negativeTe','はいけない','Thêm はいけない sau なくて để nói phải làm.', 'はいけない', 'なくてはいけない');
+  attach('dutyNakutePolite','negativeTe','はいけません','Thêm はいけません sau なくて để nói nghĩa vụ lịch sự.', 'はいけません', 'なくてはいけません');
+  attach('dutyNakya','negativeNakya','いけない','Thêm いけない để diễn đạt việc phải làm.', 'いけない', 'なきゃいけない');
   attach('dutyNaito','negative','といけません','Thêm といけません, nghĩa là phải làm.', 'といけません', 'といけません');
   attach('dutyNaitoPlain','negative','といけない','Thêm といけない, nghĩa là phải làm.', 'といけない', 'といけない');
   attach('tara','past','ら','Thêm ら sau thể た để nêu điều kiện.', 'ら', 'ら');
-  replace('optional','negative',2,'なくてもいい','Đổi ない thành なくて rồi thêm もいい.', 'なくてもいい');
+  attach('optional','negativeTe','もいい','Thêm もいい sau なくて để cho phép bỏ qua việc đó.', 'もいい', 'なくてもいい');
   attach('optionalPolite','optional','です');
   for (const [key, parent, suffix, reading = suffix] of [
     ['afterTe','te','から'], ['experience','past','ことがある'], ['experiencePolite','past','ことがあります'],
-    ['desire','stem','たい'], ['simultaneous','stem','ながら'], ['progressive','te','いる'], ['progressivePolite','te','います'], ['progressivePast','te','いました'],
+    ['desire','stem','たい'], ['simultaneous','stem','ながら'], ['progressive','te','いる'],
     ['prohibition','te','はいけない'], ['prohibitionPolite','te','はいけません'],
-    ['request','te','ください'], ['negativeRequest','negative','でください'], ['permit','te','もいい'],
+    ['request','te','ください'], ['permit','te','もいい'],
     ['permitPolite','permit','です'], ['permitQuestion','permitPolite','か'], ['before','dictionary','前に','まえに'],
     ['after','past','後で','あとで'], ['potentialKoto','dictionary','ことができる'],
     ['potentialKotoPolite','dictionary','ことができます'], ['invite','masen','か'], ['propose','mashou','か'],
     ['justPast','past','ばかり'],
   ]) attach(key, parent, suffix, 'Thêm ' + suffix + ' sau ' + FORM_LABELS[parent].toLowerCase() + '.', reading, suffix);
+  attach('negativeRequest','negativeDe','ください','Thêm ください sau ないで để tạo lời yêu cầu phủ định.', 'ください', 'ないでください');
   attach('desirePolite','desire','です');
   replace('desireNegative','desire',1,'くない','Chia たい như tính từ い, đổi い thành くない.','たくない');
+  for (const [key,parent,end,marker] of [
+    ['progressivePolite','progressive','ます','ています'],
+    ['progressivePast','progressive','ました','ていました'],
+    ['progressivePlainPast','progressive','た','ていた'],
+    ['progressiveNegative','progressive','ない','ていない'],
+    ['progressivePoliteNegative','progressive','ません','ていません'],
+  ]) replace(key,parent,1,end,'Chia いる sau thể て: bỏ る rồi thêm ' + end + '.',marker);
+  replace('progressiveNegativePast','progressiveNegative',2,'なかった','Đổi ない thành なかった.','ていなかった');
+  attach('progressivePoliteNegativePast','progressivePoliteNegative','でした','Thêm でした sau ません.','ていませんでした');
 
-  if (forms.has('causative')) replace('causativePassive','causative',1,'られる','Chia thể sai khiến như động từ nhóm II: bỏ る, thêm られる.');
-  for (const key of ['potential','passive','causative','causativePassive']) {
+  if (forms.has('causative')) {
+    replace('causativePassive','causative',1,'られる','Chia thể sai khiến như động từ nhóm II: bỏ る, thêm られる.');
+    if (lemma.group === 'I' && !lemma.kana.endsWith('す')) {
+      replace('causativePassiveShort','causativePassive',4,'される','Trong hội thoại, dạng nhóm I đuôi ～せられる thường rút thành ～される. Động từ đuôi す giữ ～せられる.');
+    }
+  }
+  for (const key of [...VOICE_FORMS,'causativePassiveShort']) {
     if (!forms.has(key)) continue;
-    replace(key + 'Negative',key,1,'ない','Dạng này chia như động từ nhóm II: bỏ る, thêm ない.');
-    replace(key + 'Past',key,1,'た','Dạng này chia như động từ nhóm II: bỏ る, thêm た.');
-    replace(key + 'Polite',key,1,'ます','Dạng này chia như động từ nhóm II: bỏ る, thêm ます.');
-    replace(key + 'PolitePast',key,1,'ました','Dạng này chia như động từ nhóm II: bỏ る, thêm ました.');
+    for (const [suffix,,ending] of VOICE_ENDINGS) {
+      if (suffix === 'NegativePast') {
+        replace(key + suffix,key + 'Negative',2,ending,'Đổi ない thành なかった.');
+      } else if (suffix === 'PoliteNegativePast') {
+        attach(key + suffix,key + 'PoliteNegative','でした','Thêm でした sau ません.');
+      } else {
+        replace(key + suffix,key,1,ending,'Dạng này chia như động từ nhóm II: bỏ る, thêm ' + ending + '.');
+      }
+    }
   }
   return forms;
 }
 
 export function formRomaji(form) {
   const reading = romanize(form.kana);
-  return form.key.startsWith('prohibition') ? reading.replace(/hai(ke(?:nai|masen))$/, 'wai$1') : reading;
+  return /^(?:prohibition|dutyNakute)/.test(form.key) ? reading.replace(/hai(ke(?:nai|masen))$/, 'wai$1') : reading;
+}
+
+const STEP_MEANINGS = {
+  stem:'Thân dùng trước ます và một số mẫu như ～たい, ～ながら.',
+  te:'Dạng nối làm nền cho yêu cầu, trình tự và các trợ động từ.',
+  negative:'Phủ định một hành động hoặc trạng thái.',
+  negativePast:'Một hành động đã không xảy ra, hoặc một trạng thái đã không đúng.',
+  negativeBa:'Đặt việc không làm (hoặc không có trạng thái) làm điều kiện.',
+  negativeNakya:'Điều kiện “nếu không…”. Khi bỏ vế sau trong hội thoại có thể ngụ ý “phải…”.',
+  negativeTe:'Nối vế phủ định với kết quả hoặc lý do.',
+  negativeDe:'Nêu việc được bỏ qua khi thực hiện hành động khác.',
+  duty:'Diễn đạt một việc phải làm.',
+  dutyPolite:'Diễn đạt một việc phải làm trong lời nói lịch sự.',
+  dutyNakute:'Diễn đạt một việc phải làm.',
+  dutyNakutePolite:'Diễn đạt một việc phải làm trong lời nói lịch sự.',
+  potential:'Nói về khả năng thực hiện.',
+  passive:'Nhìn hành động từ phía người hoặc vật chịu tác động.',
+  causative:'Nêu việc khiến hoặc cho phép ai làm gì.',
+  causativePassive:'Nêu việc một người bị bắt hoặc bị thúc phải làm.',
+  causativePassiveShort:'Vẫn mang nghĩa bị khiến phải làm. Dạng rút gọn thường gặp trong hội thoại.',
+  progressive:'Tùy động từ, nêu việc đang diễn ra, thói quen hoặc trạng thái kết quả.',
+  simultaneous:'Nêu hành động nền diễn ra đồng thời với hành động chính. Hai hành động thường cùng chủ thể.',
+  afterTe:'Đặt hành động này trước hành động tiếp theo.',
+};
+
+const MEANING_PREFIX = {
+  duty:'phải ', dutyPolite:'phải ', dutyNakute:'phải ', dutyNakutePolite:'phải ', dutyNakya:'phải ',
+  dutyNaito:'phải ', dutyNaitoPlain:'phải ', afterTe:'sau khi ', simultaneous:'trong khi ',
+  desire:'muốn ', desirePolite:'muốn ', desireNegative:'không muốn ', negative:'không ', negativePast:'đã không ',
+  negativeBa:'nếu không ', experience:'đã từng ', experiencePolite:'đã từng ',
+  prohibition:'không được ', prohibitionPolite:'không được ', potential:'có thể ', potentialNegative:'không thể ',
+  potentialNegativePast:'đã không thể ', past:'đã ', masen:'không ', mashita:'đã ', masenPast:'đã không ',
+  optional:'không cần ', optionalPolite:'không cần ', negativeDe:'không ', negativeRequest:'xin đừng ',
+};
+
+const FORM_CONTEXTS = {
+  potential:'Dùng khi nói về năng lực hoặc điều kiện cho phép thực hiện việc đó.',
+  passive:'Góc nhìn đặt vào người hoặc vật chịu tác động. Các dạng ～られる còn có cách hiểu khác.',
+  'causative-passive':'Góc nhìn đặt vào người bị buộc hoặc được khiến phải thực hiện hành động.',
+  obligation:'Dùng cho quy định, trách nhiệm hoặc điều người nói xem là cần làm.',
+  progressive:'Xét loại động từ và ngữ cảnh để phân biệt đang diễn ra, thói quen và kết quả còn lại.',
+  'te-kara':'Dùng khi hành động sau bắt đầu từ lúc hành động trước đã xong.',
+  simultaneous:'Hành động chính đứng ở vế sau, hành động đồng thời đứng trước ながら.',
+};
+
+function changedEnding(before, after) {
+  let start = 0;
+  while (start < before.length && before[start] === after[start]) start++;
+  return {removed:before.slice(start), added:after.slice(start)};
 }
 
 export function describeForm(lemma, forms, key) {
   const form = forms.get(key);
   if (!form) return null;
   const steps = [];
+  const gloss = lemma.vi.split(/[;,；]/)[0].trim();
+  const meaning = key => gloss && MEANING_PREFIX[key] ? MEANING_PREFIX[key] + gloss : '';
   let node = form;
   while (node) {
-    steps.push({jp:node.jp, kana:node.kana, rule:node.rule, key:node.key, label:FORM_LABELS[node.key]});
-    node = forms.get(node.parent);
+    const parent = forms.get(node.parent);
+    steps.push({jp:node.jp, kana:node.kana, rule:node.rule, key:node.key, label:FORM_LABELS[node.key],
+      changed:parent ? changedEnding(parent.kana,node.kana) : null,
+      meaning:node.key === 'dictionary' ? gloss : meaning(node.key) || STEP_MEANINGS[node.key] || FORM_LABELS[node.key]});
+    node = parent;
   }
-  const gloss = lemma.vi.split(/[;,；]/)[0].trim();
-  const meaning = {
-    duty:'phải ', dutyPolite:'phải ', dutyNaito:'phải ', dutyNaitoPlain:'phải ', afterTe:'sau khi ',
-    desire:'muốn ', desirePolite:'muốn ', desireNegative:'không muốn ', negative:'không ',
-    experience:'đã từng ', experiencePolite:'đã từng ', prohibition:'không được ', prohibitionPolite:'không được ',
-    potential:'có thể ', potentialNegative:'không thể ',
-  }[key];
+  const register = /Polite|masu|masen|mashita|mashou|masenPast/.test(key) ? 'Lịch sự' :
+    /Short|Nakya/.test(key) ? 'Thường gặp trong hội thoại' :
+    key === 'imperative' ? 'Mệnh lệnh mạnh' :
+    ['negative','past','negativePast','progressive','progressivePlainPast','progressiveNegative','progressiveNegativePast'].includes(key) ?
+      'Thể thông thường' : '';
   return {lemma, key, jp:form.jp, kana:form.kana, romaji:formRomaji(form), label:FORM_LABELS[key],
-    grammar:form.grammar, ending:form.ending, meaning:gloss && meaning ? meaning + gloss : '',
+    grammar:form.grammar, ending:form.ending, meaning:meaning(key),
+    register, context:FORM_CONTEXTS[form.grammar] || STEP_MEANINGS[key] || '',
     steps:steps.reverse()};
 }

@@ -15,9 +15,10 @@ let engine;
 
 before(async () => {
   const {createSearchEngine} = await import('../../assets/search/search-engine.js');
-  const {builtInRows} = await import('../../assets/search/lexicon.js');
+  const {builtInRows,jmdictRows} = await import('../../assets/search/lexicon.js');
   const rows = JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../assets/search/builtin-dictionary.json'),'utf8'));
-  engine = await createSearchEngine({...data, pack:[...builtInRows(rows), ...data.pack]});
+  const verified = JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../assets/search/jmdict-essentials.json'),'utf8'));
+  engine = await createSearchEngine({...data, pack:[...jmdictRows(verified),...builtInRows(rows), ...data.pack]});
 });
 
 test('key normalization preserves kana voicing and folds Vietnamese independently', async () => {
@@ -129,7 +130,9 @@ test('grammar guides have verified references, examples and keyed exercises', as
   const {GRAMMAR_GUIDES,GRAMMAR_BY_ID} = await import('../../assets/search/grammar-data.js');
   const {generateForms,makeLemma,describeForm} = await import('../../assets/search/morphology.js');
   const {EXTENSIONS} = await import('../../assets/grammar/extensions.js');
-  const known = new Set([...data.grammar.map(item => item.id),...GRAMMAR_BY_ID.keys(), ...EXTENSIONS.map(row => row[0])]);
+  const {COMPARISONS} = await import('../../assets/grammar/comparisons.js');
+  const known = new Set([...data.grammar.map(item => item.id),...GRAMMAR_BY_ID.keys(),
+    ...EXTENSIONS.map(row => row[0]),...COMPARISONS.map(([id]) => 'compare:' + id)]);
   assert.equal(GRAMMAR_BY_ID.size,GRAMMAR_GUIDES.length);
   for (const guide of GRAMMAR_GUIDES) {
     for (const field of ['title','meaning','formula','conditions','principle','contexts','avoid','mistakes','compare']) assert(guide[field],guide.id);
@@ -161,7 +164,7 @@ test('deep grammar covers every old ID, authored answers, examples and learning 
   for (const guide of GRAMMAR_GUIDES) {
     assert.equal(GUIDE_DISTRACTORS[guide.id]?.length,guide.exercise[1].length - 1,guide.id);
   }
-  assert.equal(COMPARISONS.length,14);
+  assert.equal(COMPARISONS.length,19);
   const known = new Set([...COURSE,...EXTENSIONS].map(row => row[0]).concat(GRAMMAR_GUIDES.map(guide => guide.id)));
   function exercise([prompt,...choices]) {
     assert(prompt);
@@ -174,7 +177,8 @@ test('deep grammar covers every old ID, authored answers, examples and learning 
     assert(examples.length >= 2 && examples.every(row => row.length === 4 && row.every(Boolean)),id);
     exercise(quiz);
   }
-  for (const [id,,,,common,sides,detail,quiz] of COMPARISONS) {
+  for (const [id,,,requires,common,sides,detail,quiz] of COMPARISONS) {
+    assert(requires.length > 0 && requires.every(key => known.has(key)),id);
     assert(common && detail && sides.length > 1 && sides.every(side => side[2].length === 4 && side[2].every(Boolean)),id);
     exercise(quiz);
   }
@@ -203,4 +207,109 @@ test('deep grammar is searchable by Japanese, intent, Romaji and exact examples'
   assert(analysis.grammar.includes('negative-request'));
   const example = (await engine.search('明日でもいいですか。')).analysis;
   assert.equal(example.translation,'Ngày mai có được không?');
+});
+
+test('Search 2.0 distinguishes exact, prefix, typo, and contextual matches', async () => {
+  const firstVocab = result => result.results.find(entry => entry.type === 'vocab');
+  for (const query of ['薬局','やっきょく','ヤッキョク','yakkyoku','yak kyo ku','hiệu thuốc','hieu thuoc']) {
+    const result = await engine.search(query);
+    assert.equal(firstVocab(result).title,'薬局',query);
+    assert.equal(firstVocab(result).match,'exact',query);
+  }
+  for (const [query,head] of [['na','な'],['owa','おわ']]) {
+    const result = await engine.search(query);
+    assert(firstVocab(result).reading.startsWith(head),query);
+    assert.equal(firstVocab(result).match,'prefix',query);
+    assert.equal(result.analysis,null,query);
+  }
+  for (const query of ['nihonog','nihongoo','ni hon go o']) {
+    const result = await engine.search(query);
+    assert.equal(firstVocab(result).title,'日本語',query);
+    assert.equal(firstVocab(result).match,'fuzzy',query);
+  }
+  for (const [query,id] of [
+    ['không cần phải','optional'],['khong can phai di','optional'],['vừa nghe nhạc vừa học','simultaneous'],
+    ['chậm nhất vào thứ tư','compare:deadline'],['làm xong rồi mới ăn','te-kara'],
+  ]) {
+    const {results,analysis} = await engine.search(query);
+    assert.equal(results[0].id,id,query);
+    assert.equal(results[0].match,'inferred',query);
+    assert.equal(analysis,null,query);
+  }
+});
+
+test('verified external inflections recognize aliases, combinations and different readings', async () => {
+  for (const [query,base,key] of [
+    ['owaranai','終わる','negative'],['taberarenakatta','食べる','potentialNegativePast'],
+    ['nondekara','飲む','afterTe'],['ikanakerebanarimasen','行く','dutyPolite'],
+    ['ben kyou shite imasu','勉強する','progressivePolite'],
+    ['跨がせられませんでした','跨ぐ','causativePassivePoliteNegativePast'],
+    ['またがされました','跨ぐ','causativePassiveShortPolitePast'],
+    ['申込みました','申し込む','mashita'],['提出しなきゃ','提出する','negativeNakya'],
+    ['提出しなければなりません','提出する','dutyPolite'],
+    ['うるさくなかった','うるさい','adjNegPast'],
+  ]) {
+    const {analysis,results} = await engine.search(query);
+    const {form,lemma} = analysis.parts.find(part => part.form);
+    assert.equal(lemma.jp,base,query);
+    assert.equal(form.key,key,query);
+    assert(form.steps.every(step => step.meaning && (step.key === 'dictionary' || step.rule && step.changed)),query);
+    assert.equal(results.find(entry => entry.type === 'vocab').title,base,query);
+    if (['跨ぐ','申し込む','提出する'].includes(base)) assert(lemma.sourceId && !lemma.card,query);
+  }
+  const read = (await engine.search('開く')).analysis.parts[0];
+  assert.deepEqual(new Set([read.lemma,...read.alternatives.map(option => option.lemma)].map(lemma => lemma.kana)),
+    new Set(['あく','ひらく']));
+  const verb = (await engine.search('taberarenakatta')).analysis.parts[0];
+  assert(verb.alternatives.some(option => option.form.key === 'passiveNegativePast'));
+  const duty = (await engine.search('寝なければなりません')).analysis.parts[0].form;
+  assert.deepEqual(duty.steps.map(step => step.jp),['寝る','寝ない','寝なければ','寝なければなりません']);
+  assert.equal(duty.meaning,'phải ngủ');
+});
+
+test('the selected dictionary keeps provenance, readings, parts of speech and unique entry IDs', async () => {
+  const {builtInRows,jmdictRows} = await import('../../assets/search/lexicon.js');
+  const {makeLemma,generateForms} = await import('../../assets/search/morphology.js');
+  const {IS_KANA} = await import('../../assets/search/text.js');
+  const source = JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../assets/search/jmdict-essentials.json'),'utf8'));
+  const rows = jmdictRows(source);
+  assert.equal(rows.length,74);
+  assert.equal(new Set(rows.map(item => item.id)).size,rows.length);
+  for (const row of rows) {
+    assert(Number.isInteger(row.sourceId) && row.jp && IS_KANA.test(row.kana) && row.vi && row.pos && !row.card);
+    assert.equal(makeLemma(row).jp,row.jp);
+    assert.equal(makeLemma(row).group,row.verifiedGroup);
+    assert.equal(generateForms(makeLemma(row)).size === 1,!row.verifiedGroup);
+    if (row.examples) assert(row.examples.every(example => example.length === 4 && example.every(Boolean)));
+  }
+  const legacy = builtInRows([['呁',[],'{{rfdef}}','Ký tự',[], []]])[0];
+  assert.equal(legacy.vi,'');
+  assert.equal(legacy.jp,'呁');
+});
+
+test('unseen sentences mark clause roles, unfamiliar words and translation evidence', async () => {
+  async function check(query, labels) {
+    const {analysis} = await engine.search(query);
+    assert.equal(analysis.original,query);
+    assert.equal(analysis.translation,'',query);
+    assert(analysis.phrases.length > 0,query);
+    for (const label of labels) assert(analysis.phrases.some(phrase => phrase.label === label),label + ': ' + query);
+    return analysis;
+  }
+  const duty = await check('薬を飲んでから寝なければなりません。',['Tân ngữ','Hành động trước','Vị ngữ']);
+  assert(duty.grammar.includes('obligation') && duty.grammar.includes('te-kara'));
+  assert(duty.notes.some(note => note.includes('Chủ thể có thể được lược bỏ')));
+  const place = await check('今朝、図書館の前で友達が車を止めました。',
+    ['Mốc thời gian','Bổ nghĩa cho danh từ sau の','Nơi thực hiện','Chủ thể có thể có','Tân ngữ','Vị ngữ']);
+  assert.equal(place.coverage,1);
+  assert.equal(place.parts.at(-2).lemma.jp,'止める');
+  const unknown = await check('曜肬坯を見てから帰りました。',['Chưa nhận diện','Hành động trước','Vị ngữ']);
+  assert(unknown.coverage < 1);
+  assert.equal((await engine.search('日本語が隙です。')).analysis.translation,'');
+  assert.equal((await engine.search('日本語が好きです。')).analysis.translation,'Tôi thích tiếng Nhật.');
+  assert((await engine.search('金曜日までに宿題を提出します。')).analysis.grammar.includes('compare:deadline'));
+  const state = (await engine.search('ドアが少し開けてありました。')).analysis;
+  assert(state.grammar.includes('compare:state'));
+  assert.equal(state.parts.find(part => part.text === '少し').kana,'すこし');
+  assert.equal(state.parts.find(part => part.text === '開けて').lemma.jp,'開ける');
 });
