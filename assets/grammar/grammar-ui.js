@@ -105,9 +105,14 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
     });
   }
 
-  function example([jp,kana,vi,notes], context) {
+  function example([jp,kana,vi,notes], context, formula='') {
+    const fragments=(formula.match(/[ぁ-ゖ]{2,}/g) || []).sort((a,b)=>b.length-a.length);
+    const fragment=fragments.find(value=>jp.includes(value));
+    const index=fragment ? jp.indexOf(fragment) : -1;
+    const sentence=index<0?esc(jp):esc(jp.slice(0,index))+'<mark class="n5-result-grammar-mark">'+esc(fragment)+
+      '</mark>'+esc(jp.slice(index+fragment.length));
     return `<article class="n5-lookup-example n5-grammar-example">
-      <p lang="ja">${esc(jp)}</p>
+      <p lang="ja">${sentence}</p>
       ${kana ? `<p class="n5-lookup-meta" lang="ja" data-grammar-reading="furigana" ${settings.furigana ? '' : 'hidden'}>${esc(kana)}</p>` : ''}
       ${kana ? `<div data-example-romaji data-example-kana="${esc(kana)}" data-grammar-reading="roman" ${settings.roman ? '' : 'hidden'}>${note('Romaji theo mặt chữ',romanize(kana))}</div>` : ''}
       <p>${esc(vi)}</p>
@@ -188,7 +193,9 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
     const sections = [['rules','Cách dùng'], ...(formation || visual ? [['formation','Biến đổi']] : []),
       ['examples','Ví dụ'],['practice','Luyện tập'],['related','Kiến thức nền']];
     return `<div class="n5-lookup-word n5-lookup-grammar n5-grammar-chapter">
-      <div class="n5-lookup-form">${note('Công thức',topic.formula)}${note('Ý nghĩa',topic.meaning)}
+      <div class="n5-lookup-form n5-result-surface" data-result-tone="grammar">
+        <p class="n5-result-formula"><strong>Công thức</strong> ${esc(topic.formula)}</p>
+        <p class="n5-result-meaning"><strong>Ý nghĩa</strong> ${esc(topic.meaning)}</p>
         ${ADVANCED.has(topic.id) ? '<p class="n5-lookup-meta">Phần mở rộng ngoài trọng tâm N5</p>' : ''}</div>
       ${readingControls()}
       ${group(sections
@@ -198,7 +205,7 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
         note('Điều kiện',topic.conditions) + note('Khi cần tránh',topic.avoid) +
         note('Lỗi dễ nhầm',topic.mistakes || topic.exercise[2]?.[1]) + note('So với mẫu gần',topic.compare),true)}
       ${section('formation','Hình thành từng bước',formation + (!tables && topic.groups ? steps(topic.groups) : '') + visual,true)}
-      ${section('examples','Ví dụ và phân tích',examples.map(row => example(row,topic.usage)).join(''),true)}
+      ${section('examples','Ví dụ và phân tích',examples.map(row => example(row,topic.usage,topic.formula)).join(''),true)}
       ${section('practice','Bài tập áp dụng',practice(topic),true)}
       ${section('related','Kiến thức nền và bài học',links([...topic.prerequisites,...(topic.course || [])]) +
         group(detailButton('grammar','library:map','Sơ đồ kiến thức') +

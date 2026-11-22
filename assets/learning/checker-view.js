@@ -121,15 +121,19 @@ function renderReport(report,result,input,hooks) {
   result.replaceChildren();
   const status = element('h3',STATUS_LABELS[report.status],'n5-checker-status');
   status.dataset.checkerStatus = report.status;
-  result.append(status,element('p',report.note,'n5-checker-note'));
-  if (report.original.trim()) result.append(originalLine(report.original,report.issues));
+  const summary=element('section',undefined,'n5-result-surface');
+  summary.dataset.resultTone=report.issues.length?'warning':'source';
+  summary.append(status);
   if (report.corrected) {
-    result.append(paragraph('Câu sau khi áp dụng các sửa đổi có căn cứ',report.corrected,'ja'));
-    result.append(action('Đưa gợi ý vào ô nhập',() => {
+    summary.append(paragraph('Câu sau khi áp dụng các sửa đổi có căn cứ',report.corrected,'ja'));
+    summary.append(action('Đưa gợi ý vào ô nhập',() => {
       input.value = report.corrected;
       input.focus();
     }));
   }
+  summary.append(element('p',report.note,'n5-checker-note'));
+  if (report.original.trim()) summary.append(originalLine(report.original,report.issues));
+  result.append(summary);
   for (const issue of report.issues) result.append(issueArticle(issue,report.original,hooks));
   if (report.original.trim() && hooks.open && report.coverage !== null) {
     const actions = element('div',undefined,'n5-checker-actions');

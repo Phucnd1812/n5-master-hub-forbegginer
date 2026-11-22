@@ -79,8 +79,11 @@ async function measure(browser, url, options, effectsMode) {
         let last = start;
         let longestFrame = 0;
         let renderedAt;
-        const hasResults = () => content.querySelector('h1')?.textContent === 'Kết quả cho “' + query + '”' &&
-          content.querySelector(ready);
+        const hasResults = () => {
+          const result=content.querySelector(ready);
+          return result && (result.dataset.lookupQuery===query ||
+            content.querySelector('h1')?.textContent==='Kết quả cho “'+query+'”');
+        };
         const observer = new MutationObserver(() => {
           if (renderedAt === undefined && hasResults()) renderedAt = performance.now();
         });
