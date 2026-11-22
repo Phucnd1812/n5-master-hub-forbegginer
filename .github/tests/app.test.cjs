@@ -100,8 +100,9 @@ test('release metadata, scripts and PWA assets match', () => {
     assert(fs.existsSync(path.join(root, icon.src)));
     assert(worker.includes(icon.src.slice(2)));
   }
-  const searchAssets = fs.readdirSync(path.join(root,'assets/search'));
-  for (const asset of searchAssets) assert(worker.includes('assets/search/' + asset),asset);
+  for (const directory of ['assets/search','assets/grammar']) {
+    for (const asset of fs.readdirSync(path.join(root,directory))) assert(worker.includes(directory + '/' + asset),asset);
+  }
   new vm.Script(worker);
   new vm.Script(fs.readFileSync(path.join(root, 'pwa.js'), 'utf8'));
   for (const script of index.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(script[1]);
@@ -277,6 +278,70 @@ test('Universal Search connects sentence, dictionary, grammar, Kanji, review and
   await page.locator('#handwritingSearchResults .handwriting-candidate').filter({hasText:'一'}).first().click();
   await page.locator('[data-result-type="kanji"]').first().waitFor();
   assert.equal(await page.locator('#globalSearchInput').inputValue(),'一');
+});
+
+test('deep grammar builds forms, compares usage, saves a closed error and opens offline examples', {timeout:90_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'});
+  await lookup(page,'phải làm');
+  await page.locator('[data-result-id="obligation"] button').click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('heading',{name:'～なければならない',exact:true}).waitFor();
+  const romaji = dialog.getByRole('button',{name:'Romaji',exact:true});
+  const firstReading = dialog.locator('[data-grammar-reading="roman"]').first();
+  await firstReading.waitFor();
+  await romaji.click();
+  await firstReading.waitFor({state:'hidden'});
+  await romaji.click();
+  await firstReading.waitFor();
+  const visual = dialog.locator('[data-grammar-visualizer]');
+  await visual.getByRole('button',{name:'Xem ví dụ với 飲む'}).click();
+  await visual.getByText('飲む → 飲まない → 飲まなければ → 飲まなければならない',{exact:true}).waitFor();
+  await visual.locator('input').fill('taberu');
+  await visual.getByRole('button',{name:'Xem từng bước'}).click();
+  await visual.getByText(/食べる → 食べない → 食べなければ → 食べなければならない/).waitFor();
+  await visual.locator('input').fill('車');
+  await visual.getByRole('button',{name:'Xem từng bước'}).click();
+  await visual.getByText(/Chưa xác định/).waitFor();
+
+  const exercise = dialog.locator('[data-closed-id="obligation"]');
+  await exercise.getByRole('button',{name:'行ってはいけない',exact:true}).click();
+  await page.waitForFunction(() => state.mistakes.some(item => item.id === 'obligation' && item.source === 'grammar-review'));
+  assert.match(await exercise.getByRole('status').textContent(),/^Chưa đúng/);
+  assert(await exercise.getByText('行かなくてもいい cho phép không đi.',{exact:false}).isVisible());
+  const writing = dialog.getByRole('textbox',{name:'Đặt một câu tiếng Nhật dùng mẫu trong một tình huống của bạn.'});
+  await writing.fill('駅に行かなければならない。');
+  const practice = dialog.locator('[data-section="practice"]');
+  await practice.getByText('Xem đáp án tham khảo',{exact:true}).last().click();
+  assert.equal(await page.evaluate(() => state.mistakes.length),1);
+  await dialog.getByRole('button',{name:'～なければならない và ～なくてもいい',exact:true}).click();
+  await dialog.getByRole('heading',{name:'Luyện phân biệt'}).waitFor();
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  assert.equal(await writing.inputValue(),'駅に行かなければならない。');
+
+  await dialog.getByRole('button',{name:'Thu gọn tất cả'}).click();
+  assert.equal(await dialog.locator('details[data-section][open]').count(),0);
+  await dialog.getByRole('button',{name:'Mở rộng tất cả'}).click();
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+  await go(page,'mistakes');
+  await dialog.waitFor({state:'hidden'});
+  assert(await page.locator('#mainContainer').getByText(/Chọn cách nói “phải đi”/).isVisible());
+
+  networkAvailable = false;
+  t.after(() => { networkAvailable = true; });
+  await page.reload();
+  await go(page,'grammar');
+  await page.getByRole('button',{name:'Kho câu ví dụ',exact:true}).click();
+  await dialog.getByRole('combobox').selectOption('g12a_2');
+  await dialog.getByRole('button',{name:'Tra từ và Kanji trong câu'}).first().click();
+  await dialog.locator('.n5-grammar-tokens [data-lookup="grammar-word"]').first().click();
+  await dialog.getByRole('button',{name:'Nghe phát âm'}).waitFor();
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await dialog.getByRole('button',{name:'Xác định việc làm trước bằng ～てから',exact:true}).click();
+  await dialog.getByRole('heading',{name:'Hình thành từng bước'}).waitFor();
+  const sorting = dialog.locator('[data-grammar-sort]');
+  for (const part of ['水を','飲んでから、','薬を','飲みます。']) await sorting.getByRole('button',{name:part,exact:true}).click();
+  await sorting.getByRole('button',{name:'Đối chiếu thứ tự'}).click();
+  assert.match(await sorting.getByRole('status').textContent(),/^Đúng/);
 });
 
 test('dictionary imports join Universal Search and remain available after offline reload', {timeout:60_000}, async t => {

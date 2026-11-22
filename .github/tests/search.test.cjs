@@ -128,7 +128,8 @@ test('homophones and ambiguous inflections preserve alternative analyses', async
 test('grammar guides have verified references, examples and keyed exercises', async () => {
   const {GRAMMAR_GUIDES,GRAMMAR_BY_ID} = await import('../../assets/search/grammar-data.js');
   const {generateForms,makeLemma,describeForm} = await import('../../assets/search/morphology.js');
-  const known = new Set([...data.grammar.map(item => item.id),...GRAMMAR_BY_ID.keys()]);
+  const {EXTENSIONS} = await import('../../assets/grammar/extensions.js');
+  const known = new Set([...data.grammar.map(item => item.id),...GRAMMAR_BY_ID.keys(), ...EXTENSIONS.map(row => row[0])]);
   assert.equal(GRAMMAR_BY_ID.size,GRAMMAR_GUIDES.length);
   for (const guide of GRAMMAR_GUIDES) {
     for (const field of ['title','meaning','formula','conditions','principle','contexts','avoid','mistakes','compare']) assert(guide[field],guide.id);
@@ -147,4 +148,59 @@ test('grammar guides have verified references, examples and keyed exercises', as
       assert(describeForm(lemma,forms,form.key).label,form.key);
     }
   }
+});
+
+test('deep grammar covers every old ID, authored answers, examples and learning links', async () => {
+  const [{COURSE},{COMPARISONS},{EXTENSIONS},{APPLY,GUIDE_DISTRACTORS,checkPractice},{GRAMMAR_GUIDES}] = await Promise.all([
+    import('../../assets/grammar/course.js'), import('../../assets/grammar/comparisons.js'),
+    import('../../assets/grammar/extensions.js'), import('../../assets/grammar/practice.js'),
+    import('../../assets/search/grammar-data.js'),
+  ]);
+  assert.deepEqual(COURSE.map(row => row[0]).sort(),data.grammar.map(item => item.id).sort());
+  assert.equal(GRAMMAR_GUIDES.length,34);
+  for (const guide of GRAMMAR_GUIDES) {
+    assert.equal(GUIDE_DISTRACTORS[guide.id]?.length,guide.exercise[1].length - 1,guide.id);
+  }
+  assert.equal(COMPARISONS.length,14);
+  const known = new Set([...COURSE,...EXTENSIONS].map(row => row[0]).concat(GRAMMAR_GUIDES.map(guide => guide.id)));
+  function exercise([prompt,...choices]) {
+    assert(prompt);
+    assert(choices.length > 1 && choices.every(pair => pair.length === 2 && pair.every(Boolean)));
+    assert.equal(new Set(choices.map(pair => pair[0])).size,choices.length);
+  }
+  for (const [id,title,formula,meaning,prerequisites,principle,usage,avoid,examples,quiz] of [...COURSE,...EXTENSIONS]) {
+    assert([title,formula,meaning,principle,usage,avoid].every(Boolean),id);
+    assert(prerequisites.length > 0 && prerequisites.every(key => key !== id && known.has(key)),id);
+    assert(examples.length >= 2 && examples.every(row => row.length === 4 && row.every(Boolean)),id);
+    exercise(quiz);
+  }
+  for (const [id,,,,common,sides,detail,quiz] of COMPARISONS) {
+    assert(common && detail && sides.length > 1 && sides.every(side => side[2].length === 4 && side[2].every(Boolean)),id);
+    exercise(quiz);
+  }
+  for (const [id,drill] of Object.entries(APPLY)) {
+    assert(known.has(id) && drill.prompt && drill.why && drill.answers.length);
+    if (drill.kind === 'input') for (const answer of drill.answers) assert(checkPractice(drill,answer));
+  }
+  assert.equal(checkPractice(APPLY.obligation,'のまなければならない。'),true);
+  assert.equal(checkPractice(APPLY.obligation,'飲まないでください'),false);
+  assert.equal(checkPractice(APPLY.obligation,'　'),null);
+  assert.equal(checkPractice({answers:[APPLY['te-kara'].answers.join('')]},'手を 洗ってから ご飯を 食べます。'),true);
+});
+
+test('deep grammar is searchable by Japanese, intent, Romaji and exact examples', async () => {
+  for (const [query,expected] of [
+    ['phải làm','obligation'], ['không cần làm','optional'], ['vừa làm vừa làm','simultaneous'],
+    ['ながら','simultaneous'], ['nagara','simultaneous'], ['はとが','compare:topic-subject'],
+    ['音楽を聞きながら勉強します。','simultaneous'],['おんがくをききながらべんきょうします','simultaneous'],['授業の後で、先生に会います。','g10a_3'],
+    ['hỏi giá','g1c_6'], ['nomanaidekudasai','negative-request'],
+  ]) {
+    const {results} = await engine.search(query);
+    assert(results.some(item => item.type === 'grammar' && item.id === expected),query);
+  }
+  const {analysis} = await engine.search('nomanaidekudasai');
+  assert.equal(analysis.parts[0].lemma.jp,'飲む');
+  assert(analysis.grammar.includes('negative-request'));
+  const example = (await engine.search('明日でもいいですか。')).analysis;
+  assert.equal(example.translation,'Ngày mai có được không?');
 });

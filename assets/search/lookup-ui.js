@@ -61,6 +61,8 @@ export function createLookupUI(app) {
   workerURL.search = new URL(import.meta.url).search;
   let guides;
   let guideById;
+  let grammarModule;
+  let grammarView;
   let client;
   let revision;
   let serial = 0;
@@ -72,7 +74,7 @@ export function createLookupUI(app) {
   let frames = [];
 
   const getGuides = () => guides ??= import('./grammar-data.js').then(module => guideById = module.GRAMMAR_BY_ID);
-  const grammarTitle = id => guideById?.get(id)?.title ||
+  const grammarTitle = id => grammarModule?.grammarName(id) || guideById?.get(id)?.title ||
     rendered?.model.results.find(entry => entry.type === 'grammar' && entry.id === id)?.title ||
     plain(app.item('grammar',id)?.title) || 'Ngữ pháp liên quan';
   const rubric = (value, reading) => japanese(value, reading, settings.furigana);
@@ -254,14 +256,19 @@ export function createLookupUI(app) {
     control?.focus({preventScroll:true});
   }
 
+  function toggleDisplay(key) {
+    if (key !== 'roman' && key !== 'furigana') return;
+    settings[key] = !settings[key];
+    try { localStorage.setItem(PREFS,JSON.stringify(settings)); } catch {}
+  }
+
   function handlePageAction(event) {
     const control = event.target.closest('button[data-lookup]');
     if (!control) return;
     const {lookup:action, value} = control.dataset;
     if (action === 'filter') { app.setFilter(value); preserveButton(action,value); return; }
     if (action === 'setting') {
-      settings[value] = !settings[value];
-      try { localStorage.setItem(PREFS,JSON.stringify(settings)); } catch {}
+      toggleDisplay(value);
       app.refresh();
       preserveButton(action,value);
       return;
@@ -287,6 +294,14 @@ export function createLookupUI(app) {
     openDetail(action,value,control);
   }
 
+  async function getGrammarView() {
+    grammarModule ??= await import('../grammar/grammar-ui.js');
+    grammarView ??= grammarModule.createGrammarView({esc,button,detailButton,settings,toggleDisplay,app,
+      open:(type,id,payload) => openDetail(type,id,document.activeElement,payload),
+      search:query => getClient().search(query)});
+    return grammarView;
+  }
+
   function makeDialog() {
     dialog = document.createElement('dialog');
     dialog.className = 'n5-lookup-dialog';
@@ -305,6 +320,8 @@ export function createLookupUI(app) {
       const control = event.target.closest('button[data-lookup]');
       if (control) handleDetailAction(control);
     });
+    dialog.addEventListener('submit', event => grammarView?.submit(event));
+    dialog.addEventListener('change', event => grammarView?.change(event));
     dialog.addEventListener('close', () => {
       if (dialog.open) return;
       frames = [];
@@ -317,7 +334,7 @@ export function createLookupUI(app) {
     if (dialog?.open) dialog.close();
   }
 
-  function openDetail(type, id, origin) {
+  function openDetail(type, id, origin, payload) {
     if (!dialog) makeDialog();
     if (!dialog.open) {
       previousFocus = origin || document.activeElement;
@@ -325,8 +342,14 @@ export function createLookupUI(app) {
       dialog.showModal();
     }
     const body = dialog.querySelector('.n5-lookup-detail');
-    if (frames.length) frames.at(-1).scroll = body.scrollTop;
-    const frame = {type,id,scroll:0};
+    if (frames.length) {
+      const previous = frames.at(-1);
+      previous.scroll = body.scrollTop;
+      previous.elements = [...body.childNodes];
+      previous.heading = dialog.querySelector('h2').textContent;
+      previous.control = origin || document.activeElement;
+    }
+    const frame = {type,id,scroll:0,payload};
     frames.push(frame);
     showFrame(frame);
   }
@@ -337,6 +360,14 @@ export function createLookupUI(app) {
     const title = dialog.querySelector('h2');
     const body = dialog.querySelector('.n5-lookup-detail');
     dialog.querySelector('[data-lookup="detail-back"]').hidden = frames.length < 2;
+    if (frame.elements) {
+      title.textContent = frame.heading;
+      body.replaceChildren(...frame.elements);
+      grammarView?.refreshReading(body);
+      body.scrollTop = frame.scroll;
+      frame.control?.focus({preventScroll:true});
+      return;
+    }
     const entry = rendered?.model.results.find(entry => entry.type === frame.type && entry.id === frame.id);
     const parts = rendered?.model.analysis?.parts || [];
     const partIndex = frame.type === 'part' ? Number(frame.id) :
@@ -348,13 +379,10 @@ export function createLookupUI(app) {
       const id = part?.grammar || frame.id;
       title.textContent = grammarTitle(id);
       body.innerHTML = '<p role="status">Đang mở ngữ pháp…</p>';
-      const database = await getGuides().catch(() => null);
+      const view = await getGrammarView().catch(() => null);
       if (frames.at(-1) !== frame || !dialog.open) return;
-      const item = app.item('grammar',id);
-      const guide = database?.get(id);
-      const related = !guide && database ? [...database.values()].filter(candidate => candidate.course.includes(id)) : [];
-      title.textContent = guide?.title || plain(item?.title) || grammarTitle(id);
-      body.innerHTML = guide ? guideDetail(guide) : legacyGrammar(item,related);
+      title.textContent = grammarTitle(id);
+      body.innerHTML = view?.render(id) || legacyGrammar(app.item('grammar',id));
     } else if (frame.type === 'kanji' || frame.type === 'kanji-char') {
       const item = app.item(frame.type,frame.id);
       title.textContent = item?.kanji || frame.id;
@@ -368,7 +396,7 @@ export function createLookupUI(app) {
     } else {
       const [formWord, formKey] = frame.type === 'inflection' ? JSON.parse(frame.id) : [];
       const vocab = app.item('vocab',part?.lemma?.id || option?.lemma?.id || formWord || frame.id);
-      let lemma = part?.lemma || option?.lemma;
+      let lemma = part?.lemma || option?.lemma || frame.payload;
       let form = part?.form || option?.form;
       if (!lemma && vocab && (!entry || formKey)) {
         title.textContent = plain(vocab.kanji || vocab.kana);
@@ -441,33 +469,7 @@ export function createLookupUI(app) {
     return value ? `<section><h3>${title}</h3>${Array.isArray(value) ? list(value) : `<p>${esc(value)}</p>`}</section>` : '';
   }
 
-  function guideDetail(guide) {
-    const [prompt,choices,answer,explanation] = guide.exercise;
-    return `<div class="n5-lookup-word n5-lookup-grammar">
-      ${section('Ý nghĩa',guide.meaning)}
-      ${section('Công thức',guide.formula)}
-      ${section('Điều kiện sử dụng',guide.conditions)}
-      ${section('Bản chất ngữ pháp',guide.principle)}
-      <section><h3>Hình thành từng bước</h3><ol>${guide.formation.map(step => `<li>${esc(step)}</li>`).join('')}</ol></section>
-      ${section('Chia theo từng nhóm',guide.groups)}
-      ${section('Trường hợp sử dụng',guide.contexts)}
-      ${section('Khi nên chọn mẫu khác',guide.avoid)}
-      <section><h3>Ví dụ và phân tích</h3>${guide.examples.map(exampleBlock).join('')}</section>
-      ${section('Lỗi thường gặp',guide.mistakes)}
-      ${section('So sánh với mẫu tương tự',guide.compare)}
-      <section class="n5-lookup-exercise"><h3>Bài tập áp dụng</h3><p>${esc(prompt)}</p>
-        <div class="n5-lookup-actions">${choices.map((label,index) =>
-          button('exercise',index,esc(label),`class="n5-lookup-chip" aria-pressed="false" data-answer="${index === answer}"`)).join('')}</div>
-        <p role="status" data-explanation="${esc(explanation)}"></p>
-      </section>
-      <section><h3>Kiến thức nền và bài học</h3><div class="n5-lookup-actions">
-        ${guide.prerequisites.map(id => detailButton('grammar',id,grammarTitle(id))).join('')}
-        ${guide.course.map(id => detailButton('course-grammar',id,app.item('grammar',id)?.lesson + ' · ' + grammarTitle(id))).join('')}
-      </div></section>
-    </div>`;
-  }
-
-  function legacyGrammar(item, related) {
+  function legacyGrammar(item) {
     if (!item) return '<p>Chưa có bài ngữ pháp cho mẫu này.</p>';
     return `<div class="n5-lookup-word n5-lookup-grammar">
       ${section('Ý nghĩa',plain(item.meaning))}
@@ -476,8 +478,7 @@ export function createLookupUI(app) {
       ${section('Lưu ý',plain(item.notes))}
       <section><h3>Ví dụ trong giáo trình</h3>${(item.examples || []).map(example =>
         exampleBlock([plain(example.jp || example.audio),example.kana,plain(example.vi)])).join('')}</section>
-      <div class="n5-lookup-actions">${related.map(guide => detailButton('grammar',guide.id,guide.title)).join('')}
-        ${detailButton('course-grammar',item.id,'Mở trong giáo trình')}</div>
+      <div class="n5-lookup-actions">${detailButton('course-grammar',item.id,'Mở trong giáo trình')}</div>
     </div>`;
   }
 
@@ -556,13 +557,11 @@ export function createLookupUI(app) {
         closeDetail();
         app.openCourse(() => app.lesson(action.slice(7),value));
         break;
-      case 'exercise': {
-        const block = control.closest('.n5-lookup-exercise');
-        const notice = block.querySelector('[role=status]');
-        for (const choice of block.querySelectorAll('button')) choice.setAttribute('aria-pressed',String(choice === control));
-        notice.textContent = (control.dataset.answer === 'true' ? 'Đúng. ' : 'Chưa đúng. ') + notice.dataset.explanation;
-        break;
-      }
+      default:
+        if (action.startsWith('grammar-')) {
+          Promise.resolve().then(() => grammarView?.click(control)).catch(() => app.message('Chưa mở được nội dung ngữ pháp.'));
+        }
+
     }
   }
 

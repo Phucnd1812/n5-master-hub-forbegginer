@@ -1,4 +1,4 @@
-const RELEASE = '5.49';
+const RELEASE = '5.50';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -19,6 +19,13 @@ const assets = new Set([
   'assets/search/morphology.js',
   'assets/search/grammar-data.js',
   'assets/search/lexicon.js',
+  `assets/grammar/grammar.css?v=${RELEASE}`,
+  'assets/grammar/comparisons.js',
+  'assets/grammar/course.js',
+  'assets/grammar/extensions.js',
+  'assets/grammar/grammar-ui.js',
+  'assets/grammar/practice.js',
+  'assets/grammar/search-data.js',
   'assets/search/builtin-dictionary.json',
   'assets/search/text.js',
   'assets/vendor/lucide-1.77.0.min.js',

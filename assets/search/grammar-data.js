@@ -360,7 +360,7 @@ export const GRAMMAR_GUIDES = [
     ],
     mistakes:'食べるたい cần sửa thành 食べたい. ～たい được gắn vào thân trước ます.',
     compare:'～たい nói muốn làm. 欲しい nói muốn có. ～よう có thể là lời rủ cùng làm.',
-    exercise:['Chọn “muốn học”.',['勉強するたい','勉強したい','勉強してたいです'],1,'勉強します bỏ ます thành 勉強し rồi thêm たい.'],
+    exercise:['Chọn cách nói cơ bản “muốn học” theo mẫu thân + たい.',['勉強するたい','勉強したい','勉強してたいです'],1,'勉強します bỏ ます thành 勉強し rồi thêm たい.'],
   },
   {
     id:'progressive', title:'～ている／～ています', meaning:'Đang làm, có trạng thái hoặc thói quen',
@@ -398,7 +398,7 @@ export const GRAMMAR_GUIDES = [
     ],
     mistakes:'座るもいい cần chuyển thành 座ってもいい.',
     compare:'～てもいい là được phép. ～なくてもいい là không cần làm.',
-    exercise:['Chọn cách xin phép chụp ảnh.',['写真を撮ってはいけませんか','写真を撮ってもいいですか','写真を撮ってください'],1,'撮る → 撮って, rồi dùng もいいですか.'],
+    exercise:['Chọn cách xin phép chụp ảnh dùng ～てもいいですか.',['写真を撮ってはいけませんか','写真を撮ってもいいですか','写真を撮ってください'],1,'撮る → 撮って, rồi dùng もいいですか.'],
   },
   {
     id:'request', title:'～てください', meaning:'Xin hãy làm một việc',

@@ -84,6 +84,7 @@ const FORM_LABELS = {
   causativePolite:'Thể sai khiến lịch sự', causativePolitePast:'Thể sai khiến lịch sự quá khứ',
   causativePassivePolite:'Thể sai khiến bị động lịch sự', causativePassivePolitePast:'Thể sai khiến bị động lịch sự quá khứ',
   duty:'Nghĩa vụ ～なければならない', dutyPolite:'Nghĩa vụ ～なければなりません',
+  simultaneous:'Hai hành động đồng thời ～ながら',
   dutyNaito:'Nghĩa vụ ～ないといけません', dutyNaitoPlain:'Nghĩa vụ ～ないといけない', afterTe:'Trình tự ～てから',
   experience:'Kinh nghiệm ～たことがある', experiencePolite:'Kinh nghiệm ～たことがあります',
   desire:'Mong muốn ～たい', desirePolite:'Mong muốn lịch sự ～たいです', desireNegative:'Mong muốn phủ định ～たくない',
@@ -110,7 +111,7 @@ const FORM_GRAMMAR = {
   causative:'causative', causativeNegative:'causative', causativePast:'causative',
   causativePassive:'causative-passive', causativePassiveNegative:'causative-passive', causativePassivePast:'causative-passive',
   volitional:'volitional', mashou:'volitional', imperative:'imperative', ba:'ba', negativeBa:'ba', tara:'tara',
-  duty:'obligation', dutyPolite:'obligation', dutyNaito:'obligation', dutyNaitoPlain:'obligation', afterTe:'te-kara',
+  simultaneous:'simultaneous', duty:'obligation', dutyPolite:'obligation', dutyNaito:'obligation', dutyNaitoPlain:'obligation', afterTe:'te-kara',
   experience:'experience', experiencePolite:'experience', desire:'desire', desirePolite:'desire', desireNegative:'desire',
   prohibition:'prohibition', prohibitionPolite:'prohibition', progressive:'progressive', progressivePolite:'progressive',
   progressivePast:'progressive', request:'request', negativeRequest:'negative-request',
@@ -242,7 +243,7 @@ export function generateForms(lemma) {
   attach('optionalPolite','optional','です');
   for (const [key, parent, suffix, reading = suffix] of [
     ['afterTe','te','から'], ['experience','past','ことがある'], ['experiencePolite','past','ことがあります'],
-    ['desire','stem','たい'], ['progressive','te','いる'], ['progressivePolite','te','います'], ['progressivePast','te','いました'],
+    ['desire','stem','たい'], ['simultaneous','stem','ながら'], ['progressive','te','いる'], ['progressivePolite','te','います'], ['progressivePast','te','いました'],
     ['prohibition','te','はいけない'], ['prohibitionPolite','te','はいけません'],
     ['request','te','ください'], ['negativeRequest','negative','でください'], ['permit','te','もいい'],
     ['permitPolite','permit','です'], ['permitQuestion','permitPolite','か'], ['before','dictionary','前に','まえに'],
@@ -275,7 +276,7 @@ export function describeForm(lemma, forms, key) {
   const steps = [];
   let node = form;
   while (node) {
-    steps.push({jp:node.jp, kana:node.kana, rule:node.rule});
+    steps.push({jp:node.jp, kana:node.kana, rule:node.rule, key:node.key, label:FORM_LABELS[node.key]});
     node = forms.get(node.parent);
   }
   const gloss = lemma.vi.split(/[;,；]/)[0].trim();

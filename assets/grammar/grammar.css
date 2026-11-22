@@ -1,0 +1,41 @@
+.n5-grammar-links, .n5-grammar-body, .n5-grammar-steps, .n5-grammar-form,
+.n5-grammar-compare, [data-bank-examples] {
+  display: grid;
+  gap: .75rem;
+}
+.n5-grammar-links {
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,12rem),1fr));
+  margin-bottom: .75rem;
+}
+.n5-grammar-links button, .n5-grammar-section {
+  padding: .8rem .95rem;
+  background: var(--n5-surface);
+  color: var(--n5-text);
+  border: 1px solid var(--n5-border);
+  border-radius: 1rem;
+}
+.n5-grammar-links button { font-weight: 720; text-align: start; }
+.n5-grammar-section { scroll-margin: .6rem; }
+.n5-lookup-word .n5-grammar-section summary { cursor: pointer; }
+.n5-lookup-word .n5-grammar-section summary h3 { display: inline; }
+.n5-grammar-body { margin-top: .65rem; overflow-wrap: anywhere; }
+.n5-grammar-form { padding: .7rem; border: 1px solid var(--n5-border); border-radius: .85rem; }
+.n5-grammar-form label, .n5-grammar-chapter > label { display: grid; gap: .3rem; }
+.n5-grammar-form input, .n5-grammar-form textarea, .n5-grammar-chapter select {
+  width: 100%;
+  min-width: 0;
+  background: var(--n5-surface);
+  color: var(--n5-text);
+  border: 1px solid var(--n5-border);
+  border-radius: .6rem;
+  padding: .5rem;
+}
+.n5-grammar-chapter h4, .n5-grammar-chapter legend { font-weight: 700; }
+.n5-grammar-compare { grid-template-columns: repeat(auto-fit,minmax(min(100%,15rem),1fr)); }
+.n5-grammar-steps li { padding: .45rem; margin-block: .2rem; border-bottom: 1px solid var(--n5-border); }
+.n5-grammar-form [data-grammar-order] { min-height: 1.6rem; }
+.n5-grammar-tokens > div { margin-top: .3rem; }
+.n5-grammar-chapter button:disabled { opacity: .48; }
+.n5-grammar-chapter [role="status"]:empty { display: none; }
+.n5-grammar-chain { display: flex; align-items: start; flex-wrap: wrap; gap: .5rem; }
+.n5-grammar-chapter :is(p,div,ul)[hidden] { display: none; }

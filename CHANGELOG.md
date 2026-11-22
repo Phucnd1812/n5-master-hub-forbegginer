@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.50 — Grammar Deep Learning
+
+- Mở bài chuyên sâu theo từng ID của cả 130 mẫu giáo trình. Giữ 34 chuyên đề nền, thêm ～ながら và 14 bài so sánh cách dùng.
+- Thêm sơ đồ chia thể theo từ trong giáo trình, sơ đồ kiến thức và kho ví dụ có cách đọc, Romaji, giải thích, phát âm và tra từ ngay trong cửa sổ.
+- Thêm luyện nhận diện, điền và chia thể, xếp cụm, dịch và đặt câu. Trắc nghiệm giải thích từng lựa chọn. Câu dịch và câu tự đặt dùng đáp án tham khảo. Trắc nghiệm sai lưu vào Sổ tay câu sai.
+- Mở rộng Universal Search theo câu ví dụ và mục đích giao tiếp. Tải nội dung bài khi mở, giữ tra cứu và học ngoại tuyến.
+
 ## v5.49 — Universal Japanese Search & Grammar Intelligence
 
 - Tra Kana, Kanji, Romaji và nghĩa tiếng Việt trong giáo trình và kho từ điển. Xếp hạng theo mục khớp, tiền tố, lỗi gõ nhẹ và thành phần nhận diện. Thêm bộ lọc và danh sách tra gần đây.
