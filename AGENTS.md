@@ -5,6 +5,7 @@
 ## Kiến trúc
 
 - `index.html` chứa giao diện Liquid Glass, các kho dữ liệu giáo trình và logic học. Giữ bố cục sidebar trên PC, điều hướng dưới trên mobile, chế độ sáng/tối/tự động và khoảng đệm safe area của iOS. Ưu tiên sửa đúng khu vực liên quan và tránh viết lại toàn bộ.
+- `assets/ui/premium.css` giữ token và bề mặt Liquid Glass. `assets/ui/effects.js` áp dụng tùy chọn hiệu ứng, kiểu nhập và reduced motion. Chỉ nghiêng thẻ đã chọn bằng chuột. Giữ phần lật Flashcard độc lập. Hiệu ứng bám theo viewport và ưu tiên transform hoặc opacity.
 - `manifest.webmanifest` khai báo URL khởi động, phạm vi, chế độ standalone và biểu tượng. Giữ `id` và `start_url` ổn định để bản mới tiếp tục dùng danh tính ứng dụng đã cài.
 - `sw.js` lưu HTML và danh sách tài nguyên tĩnh công khai theo phiên bản và phạm vi website. Cập nhật tải đủ tài nguyên trước khi kích hoạt, rồi dọn cache cũ của chính ứng dụng. `pwa.js` hiển thị trạng thái, hỗ trợ cài đặt và xin xác nhận trước khi mở lại phiên học.
 - Tailwind CSS 3.4.17 được biên dịch tĩnh từ `index.html` và `assets/smart-study.js` và commit vào `assets/tailwind.css`. Giữ tên đầy đủ của utility class trong template hoặc khai báo safelist khi tạo tên động. Khi thay đổi class hoặc cấu hình, chạy lệnh sau từ thư mục gốc.
@@ -14,8 +15,9 @@
   ```
 
 - Smart Study dùng `assets/study-engine.js` cho đề xuất và biểu diễn dữ liệu, `assets/smart-study.js` cho màn hình và phiên học. Cả hai phải được đưa vào cache theo phiên bản. Giữ các ID giáo trình và ưu tiên dùng trình chấm sẵn có.
-- Universal Search ở `assets/search/`. `search-engine.js` xếp hạng theo mức khớp, `morphology.js` tạo dạng chia từ nhóm đã xác định, `sentence-analyzer.js` phân đoạn, `syntax.js` gợi ý vai trò của cụm và `lookup-ui.js` dựng kết quả. Worker nhận các trường dùng để tra cứu và khởi tạo khi tra lần đầu. Đường dự phòng chia công việc xây chỉ mục thành nhiều lượt nhường giao diện.
+- Universal Search ở `assets/search/`. `search-engine.js` xếp hạng theo mức khớp, `morphology.js` tạo dạng chia từ nhóm đã xác định, `sentence-analyzer.js` phân đoạn, `syntax.js` gợi ý vai trò của cụm và `lookup-ui.js` dựng kết quả. Worker nhận các trường dùng để tra cứu và chuẩn bị chỉ mục khi người dùng tập trung vào ô tìm kiếm hoặc mở tác vụ cần tra. Đường dự phòng xây chỉ mục theo nhiều lượt để nhường giao diện. Khi có truy vấn mới, đưa kết quả về đầu. Khi quay lại, phục hồi vị trí đã lưu.
 - Ngữ pháp chuyên sâu nằm ở `assets/grammar/`. `course.js` dùng đúng ID `GRAMMAR_DATA`, `comparisons.js` chứa các đối chiếu, `practice.js` giữ đáp án và hướng dẫn, `extensions.js` giữ mẫu mở rộng. `grammar-ui.js` chỉ dựng nội dung khi mở cửa sổ. Phần chia thể gọi `assets/search/morphology.js` với từ gốc và nhóm đã xác định.
+- `assets/learning/` chứa Luyện đặt câu và Kiểm tra câu. Cả hai mở trong cửa sổ tra cứu. Bài tự do dùng đối chiếu. Lỗi chắc chắn mới có thể lưu khi người dùng chọn, qua cùng khóa Sổ tay và chốt ghi dữ liệu. Grammar Checker dùng chung chỉ mục và quy tắc chia thể với Worker.
 - Sau khi sửa dữ liệu bài học hoặc ví dụ, chạy `node tools/build-grammar-index.mjs` và commit `assets/grammar/search-data.js`. Worker dùng chỉ mục sinh sẵn. Bộ kiểm thử kiểm tra không lệch dữ liệu. Giữ các module ngữ pháp trong cache PWA. Đọc [rà soát v5.50](docs/v5.50-review.md).
 - `builtin-dictionary.json` giữ kho Wiktionary/Kaikki đã có với CC BY-SA 4.0. Tách kho tích hợp khỏi HTML để tải khi tra cứu. Kho nhập giữ IndexedDB `n5_external_dictionary_v1` và mở khi tra cứu hoặc quản lý từ điển. Khi thêm dữ liệu, ghi nguồn, điều khoản, dung lượng và kết quả kiểm tra ngoại tuyến vào tài liệu phiên bản. Đọc [rà soát v5.49](docs/v5.49-review.md).
 - `jmdict-essentials.json` là kho JP–Việt chọn lọc, gắn ID JMdict và nhóm chia từ bản nguồn. Giữ thông tin nguồn, giấy phép và ràng buộc cách viết/cách đọc. Từ điển nhập thiếu nhóm tin cậy dùng để tra mặt chữ và tách câu. Cửa sổ tra cứu giữ từng khung nội dung và vị trí cuộn khi tra nối tiếp. Đọc [rà soát v5.51](docs/v5.51-review.md).
@@ -24,6 +26,7 @@
 - Đọc [rà soát v5.47](docs/v5.47-review.md) để xem số đo, giới hạn đồng bộ, lộ trình tách module và dữ liệu dùng cho Smart Study.
 - Lucide 1.77.0 được lưu tại `assets/vendor/` cùng giấy phép. Font web là phần bổ sung khi có mạng. Nội dung học dùng được bằng font hệ thống. Phát âm dùng Web Speech API và giọng trên thiết bị. Giọng đã tải là điều kiện để luyện nghe ngoại tuyến.
 - Tiến độ, ôn SRS, câu sai, Flashcard cá nhân, tuỳ chọn và phiên đăng nhập nằm trong Local Storage. Kho từ điển nhập thêm sử dụng IndexedDB. Supabase Authentication và bảng `n5_user_data` cung cấp đồng bộ ảnh chụp có kiểm tra revision. Đồng bộ tự động do người dùng bật và chạy khi ứng dụng mở.
+- `assets/data/kanji-templates.bin` giữ mẫu nhận dạng KanjiVG và `kanji-strokes.json` giữ đường nét. Tải khi mở nhận dạng hoặc xem nét, qua cache PWA. Khi tách hoặc cập nhật tệp, đối chiếu với dữ liệu cũ và thử chữ viết tay ngoại tuyến. Tùy chọn `n5_effects_mode_v1` xuất qua trường `uiEffects` tùy chọn. Bản sao lưu cũ thiếu trường này giữ chế độ trên thiết bị.
 
 ## Bảo toàn dữ liệu và tính năng
 
@@ -39,7 +42,7 @@
 - Với Universal Search, chạy nhóm ca `search.test.cjs` cùng kho tích hợp. Kiểm tra tiền tố, Romaji, lỗi một ký tự, từ gốc, dạng kết hợp, câu mơ hồ/ngoài kho, modal, quay lại trang kết quả, nhập kho, và nạp lại ngoại tuyến. Chỉ hiển thị bản dịch toàn câu khi có bản đối chiếu đã biên soạn. Đừng suy nhóm của động từ đồng âm chỉ từ cách đọc.
 - Khi đổi ngữ pháp, kiểm tra ID, liên kết, đáp án và ví dụ bằng kiểm thử dữ liệu. Rà ngôn ngữ riêng theo bối cảnh và nguồn. Bài dịch và đặt câu dùng bản đối chiếu. Chỉ lựa chọn sai có đáp án phân biệt rõ mới vào Sổ tay câu sai.
 - Chạy `node .github/tests/search-benchmark.cjs <đường-dẫn-bản-gốc>` sau khi cài Playwright để đo hai bản trên cùng tập truy vấn. Giữ cùng CPU giả lập, viewport, trạng thái cache và phạm vi phép đo. Ghi lại truy vấn có khoảng cách khung hình lớn nhất.
-- Với v5.51, chạy `node .github/tests/pwa-migration.cjs <thư-mục-v5.50>` trên Chromium và WebKit. Phép thử đổi tài nguyên trên cùng origin, đối chiếu dữ liệu sao lưu và kiểu hiển thị trước/sau, rồi tra cứu sau khi ngắt mạng.
+- Chạy `node .github/tests/pwa-migration.cjs <thư-mục-bản-trước>` trên Chromium và WebKit. Phép thử đổi tài nguyên trên cùng origin, đối chiếu dữ liệu sao lưu và kiểu hiển thị trước/sau, rồi tra cứu sau khi ngắt mạng.
 - Đo hiệu suất với cùng tập truy vấn, dữ liệu, thiết lập CPU và viewport trước/sau. Ghi rõ phép đo nào gồm dựng chỉ mục lần đầu và phép đo nào chạy sau khi chỉ mục có sẵn.
 
 ## Quy trình nâng cấp

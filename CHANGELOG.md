@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.52 — Ultimate Learning & Experience
+
+- Thêm Luyện đặt câu và Kiểm tra câu trong nhóm Luyện tập, với bài mẫu, tự đối chiếu câu viết tự do và nhận diện lỗi tiếng Nhật theo quy tắc. Lỗi chắc chắn có thể lưu vào Sổ tay và mở bài luyện cùng cấu trúc.
+- Nối tra cứu với luyện đúng từ hoặc mẫu đang học. Thêm sơ đồ kiến thức từ vựng và cải thiện liên kết giữa Kanji, ví dụ, ngữ pháp và dạng chia.
+- Mỗi lượt tra mới đưa trang kết quả về đầu. Mở một động từ sẽ hiện ngay các thể ます, て, た, ない nếu đã xác định được nhóm. Chọn một thể để xem từng bước chia. Nút Quay lại khôi phục vị trí đang đọc.
+- Làm mới Tổng quan, sidebar, thanh tìm kiếm, Flashcard và bề mặt học với Liquid Glass. Thêm bốn chế độ hiệu ứng và tùy chọn sao lưu tương thích ngược. Sửa nhãn phiên bản cũ ở sidebar.
+- Tách mẫu nhận dạng và đường nét Kanji khỏi HTML khởi động. Đưa các tài nguyên mới vào cache PWA và chỉ nạp dữ liệu nhận dạng khi cần.
+
 ## v5.51 — Japanese Language Intelligence
 
 - Universal Search phân biệt khớp chính xác, tiền tố, gần đúng và suy luận. Tra theo mục đích giao tiếp bằng tiếng Việt, nhận dạng Romaji có khoảng trắng và mở lượt tra tiếp ngay trong cùng cửa sổ.

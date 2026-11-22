@@ -81,13 +81,14 @@ export function builtInRows(rows) {
 
 const JMDICT_POS = {
   I:'Động từ nhóm I', II:'Động từ nhóm II', III:'Động từ nhóm III',
-  i:'Tính từ い', na:'Tính từ な', n:'Danh từ',
+  i:'Tính từ い', na:'Tính từ な', n:'Danh từ', adv:'Phó từ', conj:'Liên từ',
 };
+const INFLECTING_TAGS = new Set(['I','II','III','i','na']);
 
 export function jmdictRows(rows) {
   return rows.map(([seq,jp,kana,tag,vi,aliases,examples]) => ({
     id:'jmdict:' + seq + ':' + jp + ':' + kana, jp, kana, vi, aliases, examples,
-    pos:JMDICT_POS[tag], verifiedGroup:tag === 'n' ? '' : tag,
+    pos:JMDICT_POS[tag], verifiedGroup:INFLECTING_TAGS.has(tag) ? tag : '',
     source:'JMdict / EDRDG · Mở rộng', sourceId:seq, card:false,
   }));
 }
@@ -99,8 +100,8 @@ export function loadBuiltInDictionary() {
     if (!response.ok) throw new Error('Dictionary file unavailable');
     return response.json();
   };
-  builtin ??= Promise.all([rows('./builtin-dictionary.json'),rows('./jmdict-essentials.json')])
-    .then(([legacy,verified]) => [...jmdictRows(verified), ...builtInRows(legacy)])
+  builtin ??= Promise.all([rows('./builtin-dictionary.json'),rows('./jmdict-essentials.json'),rows('./jmdict-context.json')])
+    .then(([legacy,verified,context]) => [...jmdictRows(verified),...builtInRows(legacy),...jmdictRows(context)])
     .catch(error => { builtin = null; throw error; });
   return builtin;
 }

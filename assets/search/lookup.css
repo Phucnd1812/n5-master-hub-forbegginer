@@ -243,3 +243,62 @@
     padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
   }
 }
+
+.n5-lookup mark {
+  background: var(--lookup-amber-wash);
+  color: var(--lookup-amber);
+  border-radius: .2em;
+}
+.n5-lookup-card small[data-match] {
+  width: fit-content;
+  padding: .14rem .44rem;
+  border-radius: .36rem;
+  background: var(--lookup-blue-wash);
+  color: var(--lookup-blue);
+}
+.n5-lookup-card small[data-match="inferred"] {
+  background: var(--lookup-violet-wash);
+  color: var(--lookup-violet);
+}
+.n5-lookup-card small[data-match="fuzzy"] {
+  background: var(--lookup-amber-wash);
+  color: var(--lookup-amber);
+}
+.n5-lookup-path { line-height: 1.9; overflow-wrap: anywhere; }
+.n5-lookup-path span {
+  display: inline-block;
+  padding-inline: .24rem;
+  border-radius: .35rem;
+  background: var(--n5-surface);
+}
+.n5-knowledge-map .n5-knowledge-root {
+  padding: .9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--n5-border);
+  background: var(--lookup-blue-wash);
+}
+.n5-knowledge-branches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,11rem),1fr));
+  gap: .45rem;
+}
+.n5-knowledge-branches > div {
+  display: flex;
+  gap: .35rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: .46rem;
+  border-radius: .7rem;
+  border: 1px solid var(--n5-border);
+  background: var(--n5-surface-soft);
+}
+.n5-lookup-dialog button { touch-action: manipulation; }
+.n5-lookup-detail { min-height: 0; }
+@media (max-width: 767px) {
+  .n5-lookup-dialog {
+    bottom: var(--n5-keyboard-inset,0px);
+    max-height: min(87vh,var(--n5-visual-viewport,87vh));
+    max-height: min(87dvh,var(--n5-visual-viewport,87dvh));
+  }
+  .n5-lookup-sheet { max-height: inherit; }
+}

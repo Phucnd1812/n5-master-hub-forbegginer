@@ -9,6 +9,7 @@ const COURSES = new Map(SEARCH_LESSONS.map(item => [item.id,item]));
 const LIMIT_PER_TYPE = 300;
 const ORDER = ['vocab','kanji','grammar','lesson'];
 const SEARCH_LIMIT = 320;
+const ORDER_RANK = new Map(ORDER.map((type,index) => [type,index]));
 const COMPARE_BY_TOPIC = new Map();
 for (const {id,related} of SEARCH_TOPICS) {
   for (const topic of related || []) {
@@ -50,6 +51,7 @@ function indexEntry(entry, japanese, readings, vietnamese, roman = [], secondary
     primaryWritten:entry.type === 'vocab' ? japaneseKey(entry.title) : '',
     primaryReading:entry.type === 'vocab' ? japaneseKey(entry.reading) : '', primaryRoman:romanKey(entry.romaji),
     priority:entry.card ? 3 : entry.sourceId ? 2 : entry.source ? 0 : 1,
+    proper:/^Tên riêng/i.test(entry.pos || ''),
     fuzzy:!/(?:Tên riêng|Ký tự|Romanization)/i.test(entry.pos || '')};
 }
 
@@ -148,6 +150,16 @@ function typoScore(profile, query) {
   return 0;
 }
 
+function projectResults(model, limit) {
+  if (!Number.isFinite(limit) || limit >= LIMIT_PER_TYPE) return model;
+  const counts = {};
+  const cap = Math.max(1,Math.floor(limit));
+  return {...model,results:model.results.filter(({type}) => {
+    counts[type] = (counts[type] || 0) + 1;
+    return counts[type] <= cap;
+  })};
+}
+
 export async function createSearchEngine(data, yieldWork) {
   const analyzer = createSentenceAnalyzer(data.pack.flatMap(row => row.sourceId ? row.examples || [] : []));
   const exactExamples = new Map();
@@ -162,6 +174,14 @@ export async function createSearchEngine(data, yieldWork) {
   const profiles = [];
   const lessons = new Map();
   const knownWords = new Set();
+  const checkerRefs = [];
+  let lastLookup;
+
+  function addRecognizedWord(ref, weight, spellings, pronunciation) {
+    analyzer.addWord(ref,weight,spellings,pronunciation);
+    if (ref.lemma.group && (ref.lemma.card || ref.lemma.sourceId)) checkerRefs.push(ref);
+  }
+
   function addWord(item, weight) {
     const ref = vocabularyProfile(item);
     profiles.push(ref.profile);
@@ -173,11 +193,12 @@ export async function createSearchEngine(data, yieldWork) {
       // readings. A search may use either, but furigana belongs to each pair.
       spellings.forEach((jp,index) => {
         const lemma = index === 0 ? ref.lemma : makeLemma({...item,kanji:jp,kana:readings[index]});
-        analyzer.addWord({lemma,forms:index === 0 ? ref.forms : generateForms(lemma)},weight,[jp]);
+        addRecognizedWord({lemma,forms:index === 0 ? ref.forms : generateForms(lemma)},weight,[jp]);
         knownWords.add(lemma.jp + '\0' + lemma.kana);
       });
     } else {
-      analyzer.addWord(ref,weight,ref.profile.forms,ref.profile.pronunciation);
+      const {lemma,forms} = ref;
+      addRecognizedWord({lemma,forms},weight,ref.profile.forms,ref.profile.pronunciation);
     }
     return ref.lemma;
   }
@@ -223,9 +244,12 @@ export async function createSearchEngine(data, yieldWork) {
         3, profile.forms, profile.pronunciation);
     }
   }
+  analyzer.finish();
 
-  async function search(value) {
+  async function search(value, {signal,limit} = {}) {
+    if (signal?.aborted) return null;
     const text = String(value ?? '').trim().slice(0, SEARCH_LIMIT);
+    if (lastLookup?.text === text) return projectResults(lastLookup.model,limit);
     const normalized = text.normalize('NFKC');
     if (!text) return {results:[], counts:{}, analysis:null};
     const query = {jp:HAS_JAPANESE.test(text) ? japaneseKey(text) : '', latin:fold(text),
@@ -260,7 +284,10 @@ export async function createSearchEngine(data, yieldWork) {
       !query.jp && (query.roman.length >= 4 && query.roman.length <= 20 ||
         !/\s/.test(query.latin) && query.latin.length >= 4 && query.latin.length <= 20);
     for (const [index, profile] of profiles.entries()) {
-      if (yieldWork && index % 512 === 0) await yieldWork();
+      if (yieldWork && index % 512 === 0) {
+        await yieldWork();
+        if (signal?.aborted) return null;
+      }
       const {entry} = profile;
       let score = rank(profile, query);
       let match = score >= 220 ? MATCH.exact : score >= 165 ? MATCH.prefix : MATCH.partial;
@@ -286,32 +313,57 @@ export async function createSearchEngine(data, yieldWork) {
         score = inferred;
         if (match !== MATCH.exact) match = MATCH.inferred;
       }
+      // A name remains an exact match when deliberately looked up. In
+      // prefix or mixed results keep study vocabulary above proper names.
+      if (score && profile.proper) {
+        const explicit = profile.primaryWritten === query.jp ||
+          match === MATCH.exact && (query.jp.length >= 3 || query.roman.length >= 3);
+        score = Math.max(1,score - (explicit ? 22 : 112));
+      }
       if (score >= 180) strong = true;
-      if (score > 0) found.push({entry, score, match, priority:profile.priority});
+      if (score > 0) found.push({entry, score, match, priority:profile.priority, gloss:profile.meanings[0] || ''});
       else if (mayCorrect && !strong && profile.fuzzy && entry.type !== 'lesson') fuzzy.push(profile);
     }
     if (!strong) {
       for (const [index, profile] of fuzzy.entries()) {
-        if (yieldWork && index % 512 === 0) await yieldWork();
+        if (yieldWork && index % 512 === 0) {
+          await yieldWork();
+          if (signal?.aborted) return null;
+        }
         const score = typoScore(profile, query);
-        if (score) found.push({entry:profile.entry, score, match:MATCH.fuzzy, priority:profile.priority});
+        if (score) found.push({entry:profile.entry, score, match:MATCH.fuzzy,
+          priority:profile.priority, gloss:profile.meanings[0] || ''});
       }
     }
 
     found.sort((a, b) => b.score - a.score || b.priority - a.priority ||
-      ORDER.indexOf(a.entry.type) - ORDER.indexOf(b.entry.type) || a.entry.title.length - b.entry.title.length);
+      ORDER_RANK.get(a.entry.type) - ORDER_RANK.get(b.entry.type) || a.entry.title.length - b.entry.title.length);
     const counts = {vocab:0, kanji:0, grammar:0, lesson:0};
     const seen = new Set();
     const results = [];
-    for (const {entry, match} of found) {
-      const key = [entry.type, entry.title, entry.reading, fold(entry.description)].join('\0');
+    const termKey = entry => entry.title.replace(/[。．!?！？]+$/g,'') + '\0' + entry.reading;
+    const definedWords = new Set(found.filter(({entry,gloss}) => entry.type === 'vocab' && gloss)
+      .map(({entry}) => termKey(entry)));
+    for (const {entry, match, gloss} of found) {
+      const spelling = termKey(entry);
+      if (entry.builtin && !gloss && definedWords.has(spelling)) continue;
+      const key = [entry.type,spelling,gloss.replace(/[.!?。]+$/g,'')].join('\0');
       if (seen.has(key)) continue;
       seen.add(key);
       counts[entry.type]++;
       if (counts[entry.type] <= LIMIT_PER_TYPE) results.push({...entry, match, approximate:match === MATCH.fuzzy});
     }
     const kanaSuggestion = !analysis && !intent && query.roman.length >= 3 ? suggestKana(query.roman) : '';
-    return {results, counts, analysis, kanaSuggestion};
+    const model = {results, counts, analysis, kanaSuggestion};
+    lastLookup = {text,model};
+    return projectResults(model,limit);
   }
-  return {search};
+
+  async function check(value, {signal} = {}) {
+    if (signal?.aborted) return null;
+    const {checkJapanese} = await import('../learning/grammar-checker.js');
+    return signal?.aborted ? null : checkJapanese(value,{analyze:analyzer.analyze,refs:checkerRefs});
+  }
+
+  return {search,check};
 }
