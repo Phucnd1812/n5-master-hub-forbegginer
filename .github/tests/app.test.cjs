@@ -352,7 +352,7 @@ test('contextual lookup supports IME and preserves a grammar exercise on return'
   await page.getByRole('button',{name:'Xem toàn bộ phân tích'}).click();
   const analysis = page.locator('[data-lookup-analysis]');
   assert(await analysis.locator('.n5-lookup-phrases').getByText('Tân ngữ',{exact:true}).isVisible());
-  assert(await analysis.getByText('Kho hiện tại chưa có bản dịch đối chiếu cho câu này.').isVisible());
+  await analysis.getByText('Sau khi uống thuốc, phải đi ngủ.',{exact:true}).waitFor();
   await analysis.locator('[data-lookup="grammar"][data-value="obligation"]').click();
   const dialog = page.getByRole('dialog');
   const answer = dialog.locator('textarea[lang="vi"]');
@@ -1179,4 +1179,122 @@ test('Smart Study runs real form, reading, listening and JLPT prompts', {timeout
   assert(plan.items.length > 20 && plan.items.every(item => item.skill === 'jlpt' && item.drill === 'choice'));
   assert(plan.items.some(item => item.title.startsWith('Từ vựng')));
   assert(plan.items.some(item => item.title.startsWith('Ngữ pháp')));
+});
+
+test('hybrid translation preserves local search, memory, and offline history', {timeout:90_000}, async t => {
+  const {page,context}=await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'});
+  await lookup(page,'テレビを見ています。');
+  const inline=page.locator('[data-n5-translation-slot]');
+  await inline.getByText('Đang xem TV.',{exact:true}).waitFor();
+  await inline.getByText('Dịch tham khảo theo quy tắc',{exact:true}).waitFor();
+  await inline.getByRole('button',{name:'Lưu câu',exact:true}).click();
+  await inline.getByText('Đã lưu câu.',{exact:true}).waitFor();
+  await lookup(page,'thuốc');
+  assert.equal(await page.locator('[data-translation-result]').count(),0);
+  await go(page,'translator');
+  const tool=page.locator('[data-n5-translation-tool]');
+  const input=tool.getByRole('textbox',{name:'Câu cần dịch'});
+  await input.fill('Tôi muốn đi Nhật Bản.');
+  await tool.getByRole('button',{name:'Dịch câu',exact:true}).click();
+  await tool.getByText('日本へ行きたいです。',{exact:true}).waitFor();
+  await tool.getByText('Thiết lập AI và lịch sử bản dịch',{exact:true}).click();
+  const history=tool.locator('[data-translation-history]');
+  await history.getByText('テレビを見ています。',{exact:true}).waitFor();
+  await history.getByRole('button',{name:'Đánh dấu',exact:true}).click();
+  await history.getByRole('button',{name:'Bỏ đánh dấu',exact:true}).waitFor();
+  await context.setOffline(true);
+  await history.getByRole('button',{name:'Mở bản dịch',exact:true}).click();
+  await tool.locator('[data-translation-result]').getByText('Đang xem TV.',{exact:true}).waitFor();
+  await history.getByRole('button',{name:'Xóa toàn bộ lịch sử dịch',exact:true}).click();
+  await history.getByText('Chưa có bản dịch đã lưu.',{exact:true}).waitFor();
+  await context.setOffline(false);
+  const backup={format:'n5-translation-memory-v1',rows:[{text:'本を読みます。',direction:'ja-vi',marked:true,
+    result:{translatedText:'Đọc sách.',japaneseText:'本を読みます。'}}]};
+  await tool.locator('[data-translation-import]').setInputFiles({name:'marked.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(backup))});
+  const importStatus=tool.getByRole('status');
+  await tool.getByText(/Đã nhập|Không đọc được/).waitFor();
+  assert.match(await importStatus.textContent(),/Đã nhập 1 câu mới/);
+  await history.getByText('Đọc sách.',{exact:true}).waitFor();
+  await history.getByText(/Bản dịch đã nhập/).waitFor();
+  await history.getByRole('button',{name:'Xóa',exact:true}).click();
+  await history.getByText('Chưa có bản dịch đã lưu.',{exact:true}).waitFor();
+});
+
+test('AI translation is opt-in, cached, cancellable, and renders provider text safely', {timeout:90_000}, async t => {
+  const {page}=await openApp(t);
+  let calls=0, status=200, error='quota', hold=false, releaseHold;
+  let notifyHold;
+  const receivedHeldRequest=new Promise(resolve=>{notifyHold=resolve;});
+  const {translationSchema}=await import('../../assets/translation/protocol.js');
+  const shell=Object.fromEntries(translationSchema.required.map(key=>[
+    key,translationSchema.properties[key].type==='array'?[]:'',
+  ]));
+  mockCloud=async (request,response,url)=>{
+    assert.equal(url.pathname,mockPath+'/functions/v1/smart-translate');
+    calls++;
+    assert.equal(request.headers.authorization,'Bearer session-test');
+    let body='';
+    for await (const chunk of request) body+=chunk;
+    const {text,direction,...extra}=JSON.parse(body);
+    assert.equal(direction,'ja-vi');
+    assert.deepEqual(extra,{});
+    if (hold) await new Promise(resolve=>{releaseHold=resolve;response.once('close',resolve);notifyHold();});
+    if (response.destroyed) return;
+    response.writeHead(status,{'Content-Type':'application/json'}).end(JSON.stringify(status===200?{
+      ...shell,detectedLanguage:'ja',originalText:text,model:'gemini-test',
+      translatedText:'<img src=x onerror=alert(1)>',japaneseText:text,
+    }:{error}));
+  };
+  t.after(()=>{releaseHold?.();mockCloud=null;});
+  const phrase='天体物理学ではブラックホールを研究します。';
+  const inline=page.locator('[data-n5-translation-slot]');
+  await lookup(page,phrase);
+  await inline.getByText(/Chưa đủ căn cứ/).waitFor();
+  assert.equal(calls,0);
+  const ai=inline.getByRole('button',{name:'Dịch chuyên sâu bằng AI'});
+  await ai.click();
+  await inline.getByText(/Đăng nhập trong Sao lưu/).waitFor();
+  await page.evaluate(()=>{
+    n5CloudStoreSession({access_token:'session-test',refresh_token:'refresh-test',user:{id:'test-user'},expires_in:3600});
+  });
+  status=429;
+  await ai.click();
+  await inline.getByText(/Đã chạm giới hạn/).waitFor();
+  status=403;
+  error='forbidden';
+  await ai.click();
+  await inline.getByText(/chưa được cấp quyền/).waitFor();
+  status=503;
+  error='unconfigured';
+  await ai.click();
+  await inline.getByText('Chưa kết nối Gemini.',{exact:true}).waitFor();
+  status=200;
+  await ai.click();
+  await inline.getByText('<img src=x onerror=alert(1)>',{exact:true}).waitFor();
+  assert.equal(await inline.locator('img').count(),0);
+  await inline.getByText(/Bản dịch đã lưu/).waitFor();
+  const used=calls;
+  await ai.click();
+  await inline.getByText(/Bản dịch đã lưu/).waitFor();
+  assert.equal(calls,used);
+  await go(page,'translator');
+  const tool=page.locator('[data-n5-translation-tool]');
+  await tool.getByText('Thiết lập AI và lịch sử bản dịch',{exact:true}).click();
+  await tool.locator('[data-translation-mode]').selectOption('auto');
+  await lookup(page,'毎日、日本語を勉強します。');
+  await inline.getByText(/Bản dịch đối chiếu/).waitFor();
+  assert.equal(calls,used);
+  const search=page.locator('#globalSearchInput');
+  hold=true;
+  await search.fill('世界の天体を観測して分析してください。');
+  await inline.getByText(/Chưa đủ căn cứ/).waitFor();
+  assert.equal(calls,used);
+  await search.press('Enter');
+  await inline.getByText('Đang dịch…',{exact:true}).waitFor();
+  await receivedHeldRequest;
+  await search.fill('テレビを見ています。');
+  await inline.getByText('Đang xem TV.',{exact:true}).waitFor();
+  releaseHold?.();
+  assert.equal(await inline.getByText('<img src=x onerror=alert(1)>',{exact:true}).count(),0);
 });
