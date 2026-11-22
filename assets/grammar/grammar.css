@@ -49,3 +49,46 @@
 }
 .n5-grammar-differences thead { background: var(--n5-surface-soft); }
 .n5-grammar-differences tbody th { width: 28%; }
+
+.n5-formation-card {
+  display: grid;
+  gap: .55rem;
+  padding: .75rem;
+  background: var(--n5-surface-soft);
+  border: 1px solid var(--n5-border);
+  border-radius: .85rem;
+}
+.n5-formation-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: .88rem;
+}
+.n5-formation-table caption {
+  padding: .15rem .25rem .5rem;
+  font-weight: 750;
+  text-align: start;
+}
+.n5-formation-table :is(th,td) {
+  padding: .45rem .35rem;
+  border-bottom: 1px solid var(--n5-border);
+  vertical-align: top;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.n5-formation-table thead th:first-child { width: 24%; }
+.n5-formation-table thead th:nth-child(2) { width: 26%; }
+.n5-formation-reading {
+  display: block;
+  margin-top: .1rem;
+  color: var(--n5-muted);
+  font-size: .78em;
+}
+.n5-formation-reading[hidden] { display: none; }
+.n5-grammar-form :is(input,textarea) { font-size: max(1rem,16px); }
+
+@media (max-width: 480px) {
+  .n5-formation-card { padding: .45rem; }
+  .n5-formation-table { font-size: .82rem; }
+  .n5-formation-table :is(th,td) { padding-inline: .24rem; }
+}

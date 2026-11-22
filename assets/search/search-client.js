@@ -13,7 +13,7 @@ export function createSearchClient(sources, workerURL) {
     for (const request of pending.values()) request.finish(null);
   }
 
-  const {imported} = sources;
+  const {imported = []} = sources;
   // Transfer the search fields only. The study UI keeps the full curriculum.
   const curriculum = {
     vocab:sources.vocab.map(({id,lesson,kanji,kana,pos,vi,_n5Supplement}) =>
@@ -41,28 +41,55 @@ export function createSearchClient(sources, workerURL) {
     stopWorker();
   }
 
-  async function search(query) {
+  async function warm() {
     await started;
-    if (worker && !closed) {
+    if (!worker || closed) return;
+    try { worker.postMessage({type:'warm'}); }
+    catch { stopWorker(); }
+  }
+
+  async function request(type, query, {signal,limit} = {}) {
+    if (closed || signal?.aborted) return null;
+    await started;
+    if (closed || signal?.aborted) return null;
+    if (worker) {
       const result = await new Promise(resolve => {
+        const active = worker;
         const id = ++serial;
         const timer = setTimeout(stopWorker, 20_000);
-        pending.set(id, {finish(value) {
+        const finish = value => {
           clearTimeout(timer);
           pending.delete(id);
+          signal?.removeEventListener('abort', cancel);
           resolve(value);
-        }});
-        try { worker.postMessage({type:'search', id, query}); }
+        };
+        function cancel() {
+          finish(null);
+          try { if (worker === active) active.postMessage({type:'cancel', id}); }
+          catch { stopWorker(); }
+        }
+        pending.set(id,{finish});
+        signal?.addEventListener('abort',cancel,{once:true});
+        try { active.postMessage({type,id,query,limit}); }
         catch { stopWorker(); }
       });
       if (result) return result;
     }
-    if (closed) return null;
+    if (closed || signal?.aborted) return null;
     fallback ??= Promise.all([import('./search-engine.js'),import('./lexicon.js')])
       .then(async ([{createSearchEngine},{loadBuiltInDictionary}]) =>
-        createSearchEngine({...curriculum,pack:[...await loadBuiltInDictionary(), ...imported]}, yieldWork));
-    return (await fallback).search(query);
+        createSearchEngine({...curriculum,pack:[...await loadBuiltInDictionary(), ...imported]}, yieldWork))
+      .catch(error => { fallback = null; throw error; });
+    const engine = await fallback;
+    if (closed || signal?.aborted) return null;
+    const result = await engine[type](query,{signal,limit});
+    return closed || signal?.aborted ? null : result;
   }
 
-  return {search, close() { closed = true; stopWorker(); }};
+  return {
+    search:(query,options) => request('search',query,options),
+    check:(query,options) => request('check',query,options),
+    warm,
+    close() { closed = true; stopWorker(); },
+  };
 }

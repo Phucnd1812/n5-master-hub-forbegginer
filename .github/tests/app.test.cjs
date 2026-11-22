@@ -11,7 +11,8 @@ const project = '/n5-master-hub-forbegginer/';
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const release = index.match(/<meta name="n5-release" content="([^"]+)">/)[1];
 const nextRelease = release + '-test';
-const types = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json'};
+const types = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.png':'image/png',
+  '.webmanifest':'application/manifest+json', '.json':'application/json', '.bin':'application/octet-stream'};
 const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const mockPath = project + 'mock-supabase';
 let mockCloud;
@@ -100,7 +101,7 @@ test('release metadata, scripts and PWA assets match', () => {
     assert(fs.existsSync(path.join(root, icon.src)));
     assert(worker.includes(icon.src.slice(2)));
   }
-  for (const directory of ['assets/search','assets/grammar']) {
+  for (const directory of ['assets/search','assets/grammar','assets/learning','assets/ui','assets/data']) {
     for (const asset of fs.readdirSync(path.join(root,directory))) assert(worker.includes(directory + '/' + asset),asset);
   }
   new vm.Script(worker);
@@ -271,8 +272,9 @@ test('Universal Search connects sentence, dictionary, grammar, Kanji, review and
   await page.getByRole('dialog').getByRole('heading',{name:'Ví dụ và phân tích'}).waitFor();
   await page.getByRole('dialog').getByRole('button',{name:'Đóng',exact:true}).click();
   await page.locator('#handwritingSearchToggle').click();
-  await page.evaluate(() => {
-    handwritingStrokes = [handwritingPathToPoints(N5_KVG_OFFLINE_STROKES['一'][0])];
+  await page.evaluate(async () => {
+    const strokes = await n5OfflineKanjiStrokes('一');
+    handwritingStrokes = [handwritingPathToPoints(strokes[0])];
   });
   await page.locator('#recognizeHandwritingBtn').click();
   await page.locator('#handwritingSearchResults .handwriting-candidate').filter({hasText:'一'}).first().click();
@@ -416,6 +418,214 @@ test('Tổng quan is a standalone active button on desktop and mobile', {timeout
   await bottomHome.click();
   assert.equal(await bottomHome.getAttribute('aria-current'),'page');
   assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+});
+
+test('new lookup returns to the top and a verb immediately shows its conjugations', {timeout:60_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13']});
+  await go(page,'vocab');
+  await page.evaluate(() => window.scrollTo({top:600,behavior:'instant'}));
+  await page.waitForFunction(() => window.scrollY > 0);
+  await page.evaluate(() => n5SmartSearch('飲む'));
+  await page.locator('[data-lookup-state="ready"]').waitFor();
+  assert.equal(await page.evaluate(() => window.scrollY),0);
+  assert.equal(await page.locator('#mainContainer').evaluate(element => element.scrollTop),0);
+  await page.locator('[data-result-id="v6c_028"] button').click();
+  const dialog = page.getByRole('dialog');
+  const forms = dialog.locator('[data-verb-conjugations]');
+  await forms.getByRole('button',{name:'飲みます',exact:true}).waitFor();
+  await forms.getByRole('button',{name:'飲んで',exact:true}).click();
+  await dialog.locator('.n5-lookup-path').getByText('飲む → 飲んで',{exact:true}).waitFor();
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await forms.getByRole('button',{name:'飲まない',exact:true}).waitFor();
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+
+  await go(page,'vocab');
+  await page.evaluate(() => {
+    window.scrollTo({top:600,behavior:'instant'});
+    const input = document.getElementById('globalSearchInput');
+    input.value = '飲む';
+    input.dispatchEvent(new InputEvent('input',{bubbles:true}));
+  });
+  await page.locator('[data-lookup-state="ready"]').waitFor();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.evaluate(() => window.scrollY),0);
+});
+
+async function openPracticeTool(page, view) {
+  const more = page.locator('[data-mobile-tab="more"]');
+  if (await more.isVisible()) await more.click();
+  const group = page.locator('#sidebar details[data-nav-group="practice"]');
+  if (!await group.evaluate(element => element.open)) await group.locator('summary').click();
+  await group.locator('[data-nav="' + view + '"]').click();
+  return page.getByRole('dialog');
+}
+
+test('Sentence Builder accepts alternate answers and keeps open answers for self-comparison', {timeout:60_000}, async t => {
+  const {page} = await openApp(t,{viewport:{width:1280,height:800}});
+  const dialog = await openPracticeTool(page,'sentenceBuilder');
+  const builder = dialog.locator('[data-sentence-builder]');
+  const filter = builder.locator('[data-builder-filter="kind"]');
+  await filter.selectOption('particle');
+  const existence = builder.locator('[data-exercise="particle-existence"]');
+  await existence.getByRole('radio',{name:'で',exact:true}).check();
+  await existence.getByRole('button',{name:'Kiểm tra',exact:true}).click();
+  await existence.locator('[data-builder-feedback][data-result="mismatch"]').waitFor();
+  await existence.locator('[data-builder-action="save"]').click();
+  await page.waitForFunction(() => state.mistakes.some(row => row.source === 'sentence-builder'));
+  await builder.getByRole('button',{name:'Bài tiếp',exact:true}).click();
+  const directions = builder.locator('[data-exercise="particle-station"]');
+  await directions.getByRole('radio',{name:'へ',exact:true}).check();
+  await directions.getByRole('button',{name:'Kiểm tra',exact:true}).click();
+  await directions.locator('[data-builder-feedback][data-result="alternate"]').waitFor();
+  assert.equal(await directions.locator('[data-builder-action="save"]').isVisible(),false);
+
+  await filter.selectOption('translate');
+  const translation = builder.locator('[data-exercise="translate-student"]');
+  const answer = translation.locator('[name="builder-answer"]');
+  await answer.fill('学生です。');
+  await translation.getByRole('button',{name:'Đối chiếu câu',exact:true}).click();
+  await translation.locator('[data-builder-feedback][data-result="alternate"]').waitFor();
+  await answer.fill('自分は大学生です。');
+  await translation.getByRole('button',{name:'Đối chiếu câu',exact:true}).click();
+  await translation.locator('[data-builder-feedback][data-result="review"]').waitFor();
+  assert.equal(await translation.locator('[data-builder-action="save"]').isVisible(),false);
+
+  await translation.locator('[data-builder-action="grammar"]').first().click();
+  await dialog.locator('.n5-grammar-chapter').waitFor();
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  assert.equal(await answer.inputValue(),'自分は大学生です。');
+  assert.equal(await filter.inputValue(),'translate');
+  assert.equal(await translation.locator('[data-builder-feedback]').getAttribute('data-result'),'review');
+});
+
+test('Grammar Checker separates rule errors from uncertainty and reopens the saved practice', {timeout:90_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'});
+  const dialog = await openPracticeTool(page,'grammarChecker');
+  const checker = dialog.locator('[data-n5-checker]');
+  const input = checker.locator('textarea[name="sentence"]');
+  const check = async (sentence, status) => {
+    await input.fill(sentence);
+    await checker.locator('form button[type="submit"]').click();
+    await checker.locator('[data-checker-status="' + status + '"]').waitFor();
+  };
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+  await check('毎日、日本語を勉強します。','clean');
+  assert.equal(await checker.locator('[data-checker-save]').count(),0);
+  await check('学校で行きます。','uncertain');
+  assert.equal(await checker.locator('[data-checker-save]').count(),0);
+  await check('毎日、日本語を勉強するます。','error');
+  const issue = checker.locator('mark[data-n5-issue]');
+  assert.match(await issue.first().textContent(),/するます/);
+  await checker.getByText('毎日、日本語を勉強します。',{exact:true}).waitFor();
+
+  await checker.locator('[data-checker-save]').first().click();
+  await page.waitForFunction(() => state.mistakes.some(row => row.source === 'grammar-checker'));
+  await checker.locator('[data-checker-practice]').first().click();
+  await dialog.locator('[data-sentence-builder] .n5-builder-card').waitFor();
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  assert.equal(await input.inputValue(),'毎日、日本語を勉強するます。');
+  await checker.locator('[data-checker-status="error"]').waitFor();
+
+  await input.focus();
+  await page.setViewportSize({width:390,height:475});
+  await page.waitForFunction(() => {
+    const rect = document.querySelector('.n5-lookup-dialog').getBoundingClientRect();
+    return rect.width <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
+  });
+  await input.scrollIntoViewIfNeeded();
+  const inputArea = await input.boundingBox();
+  assert(inputArea.y >= 0 && inputArea.y + inputArea.height <= 475);
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+  await go(page,'mistakes');
+  await page.getByRole('button',{name:'Luyện cấu trúc',exact:true}).click();
+  await dialog.locator('[data-sentence-builder] .n5-builder-card').waitFor();
+});
+
+test('Spotlight keyboard navigation opens the knowledge map and a contextual conjugation', {timeout:60_000}, async t => {
+  const {page} = await openApp(t,{viewport:{width:1280,height:800}});
+  await page.keyboard.press('Control+k');
+  await page.waitForFunction(() => document.activeElement?.id === 'globalSearchInput');
+  await lookup(page,'飲む');
+  await page.locator('#globalSearchInput').press('ArrowDown');
+  await page.waitForFunction(() => document.activeElement?.matches('[data-result-id] button.n5-lookup-title'));
+  await page.locator('[data-result-id="v6c_028"] button.n5-lookup-title').click();
+  const dialog = page.getByRole('dialog');
+  await dialog.locator('[data-lookup="word-knowledge"]').click();
+  const knowledge = dialog.locator('[data-knowledge-word="飲む"]');
+  await knowledge.getByRole('button',{name:'飲んで',exact:true}).waitFor();
+  await knowledge.getByRole('button',{name:'飲まない',exact:true}).waitFor();
+  await knowledge.getByRole('button',{name:'飲',exact:true}).click();
+  await dialog.getByText('Âm On',{exact:true}).waitFor();
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await knowledge.locator('[data-lookup="word-drill"]').click();
+  const builder = dialog.locator('[data-sentence-builder]');
+  await builder.locator('[data-builder-filter="form"]').selectOption('te');
+  const drill = builder.locator('[data-exercise="lemma-te"]');
+  await drill.locator('[name="builder-answer"]').fill('のんで');
+  await drill.getByRole('button',{name:'Kiểm tra',exact:true}).click();
+  await drill.locator('[data-builder-feedback]:is([data-result="match"],[data-result="alternate"])').waitFor();
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await knowledge.waitFor();
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({state:'hidden'});
+  assert.equal(await page.locator('#globalSearchInput').inputValue(),'飲む');
+});
+
+test('effect settings, light and dark surfaces, desktop tilt and Flashcard faces', {timeout:90_000}, async t => {
+  const {page} = await openApp(t,{viewport:{width:1280,height:800},colorScheme:'light',reducedMotion:'no-preference'});
+  const settings = page.locator('#n5-effects-select');
+  const html = page.locator('html');
+  assert.equal(await settings.inputValue(),'auto');
+  assert.equal(await html.getAttribute('data-n5-effect-mode'),'auto');
+  assert.equal(await page.evaluate(() => Object.hasOwn(n5BackupPayload(),'uiEffects')),false);
+  for (const mode of ['full','balanced','performance','auto']) {
+    await settings.selectOption(mode);
+    assert.equal(await html.getAttribute('data-n5-effect-mode'),mode);
+    if (mode !== 'auto') assert.equal(await html.getAttribute('data-n5-effects'),mode);
+    assert.equal(await page.evaluate(() => localStorage.getItem('n5_effects_mode_v1')),mode);
+  }
+  await settings.selectOption('full');
+  const card = page.locator('.dashboard-feature-card[data-n5-tilt]').first();
+  await card.scrollIntoViewIfNeeded();
+  await card.hover({position:{x:40,y:35}});
+  await card.and(page.locator('[data-n5-tilting]')).waitFor();
+  assert.match(await card.evaluate(el => el.style.getPropertyValue('--n5-tilt')),/deg$/);
+  await page.mouse.move(4,4);
+  await page.waitForFunction(() => !document.querySelector('[data-n5-tilting]'));
+  assert.equal(await card.evaluate(el => el.style.getPropertyValue('--n5-tilt')),'');
+
+  await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});
+  await page.waitForFunction(() => document.documentElement.classList.contains('dark') &&
+    document.documentElement.dataset.n5Effects === 'performance');
+  assert.equal(await settings.inputValue(),'full');
+  await go(page,'flashcard');
+  const flashcard = page.locator('#flashcardElement');
+  const faces = await flashcard.locator('.flashcard-face').evaluateAll(elements => elements.map(element => {
+    const style = getComputedStyle(element);
+    return [style.backfaceVisibility || style.webkitBackfaceVisibility,style.pointerEvents];
+  }));
+  assert.deepEqual(faces,[['hidden','auto'],['hidden','none']]);
+  await flashcard.click();
+  await page.waitForFunction(() => document.querySelector('#flashcardElement').classList.contains('rotate-y-180'));
+  assert.deepEqual(await flashcard.locator('.flashcard-face').evaluateAll(elements =>
+    elements.map(element => getComputedStyle(element).pointerEvents)),['none','auto']);
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+});
+
+test('touch layout preserves full depth without pointer tilt or horizontal overflow', {timeout:60_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'light',reducedMotion:'no-preference'});
+  await page.locator('[data-mobile-tab="more"]').tap();
+  await page.locator('#n5-effects-select').selectOption('full');
+  await page.locator('#sidebarOverlay').tap({position:{x:page.viewportSize().width - 8,y:100}});
+  await page.waitForFunction(() => document.documentElement.dataset.n5Effects === 'full');
+  const stat = page.locator('.dashboard-stat-card[data-n5-tilt]').first();
+  await stat.tap();
+  await stat.dispatchEvent('pointermove',{pointerType:'touch',clientX:12,clientY:34,bubbles:true});
+  assert.equal(await page.locator('[data-n5-tilting]').count(),0);
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  assert.match(await page.locator('meta[name="viewport"]').getAttribute('content'),/viewport-fit=cover/);
+  await page.reload();
+  assert.equal(await page.locator('html').getAttribute('data-n5-effect-mode'),'full');
 });
 
 test('new comparison headings and verified dictionary links work offline', {timeout:60_000}, async t => {
@@ -585,6 +795,47 @@ async function cloudLogin(page,user) {
   await page.getByRole('button', {name:'Đồng bộ ngay'}).click();
 }
 
+test('effect preferences round-trip through backup and mock cloud and survive older snapshots', {timeout:90_000}, async t => {
+  const {page} = await openApp(t,{viewport:{width:1280,height:800}});
+  await page.waitForFunction(() => Boolean(n5SmartStudy.snapshot()?.plan));
+  const settings = page.locator('#n5-effects-select');
+  const prepare = await page.evaluate(() => {
+    toggleBookmark(VOCAB_DATA[0].id);
+    return VOCAB_DATA.slice(0,3).map(item => item.id);
+  });
+  await settings.selectOption('balanced');
+  const backup = await page.evaluate(() => n5BackupPayload());
+  assert.equal(backup.uiEffects,'balanced');
+  assert(backup.bookmarks.includes(prepare[0]));
+  const legacy = {...backup,version:'N5Hub-5.51'};
+  delete legacy.uiEffects;
+  await settings.selectOption('full');
+  await importFixture(page,legacy);
+  assert.equal(await settings.inputValue(),'full');
+  await importFixture(page,backup);
+  await page.waitForFunction(() => document.querySelector('#n5-effects-select').value === 'balanced');
+  assert.deepEqual(await page.evaluate(() => state.bookmarks),backup.bookmarks);
+
+  const db = cloudFixture(t);
+  await cloudLogin(page,db.user);
+  const status = page.locator('#n5-cloud-status');
+  await status.getByText(/Đã gửi dữ liệu/).waitFor();
+  assert.equal(db.row.data.uiEffects,'balanced');
+  db.row = {...db.row,revision:2,data:{...db.row.data,uiEffects:'performance',bookmarks:prepare.slice(0,2)}};
+  await page.getByRole('button',{name:'Đồng bộ ngay'}).click();
+  await page.waitForFunction(() => document.querySelector('#n5-effects-select').value === 'performance');
+  assert.deepEqual(await page.evaluate(() => state.bookmarks),prepare.slice(0,2));
+
+  const legacyCloud = {...db.row.data,version:'N5Hub-5.51',bookmarks:prepare};
+  delete legacyCloud.uiEffects;
+  db.row = {...db.row,revision:3,data:legacyCloud};
+  await page.getByRole('button',{name:'Đồng bộ ngay'}).click();
+  await page.waitForFunction(() => state.bookmarks.length === 3);
+  assert.equal(await settings.inputValue(),'performance');
+  assert.deepEqual(await page.evaluate(() => state.bookmarks),prepare);
+  assert.equal(db.pushes,1);
+});
+
 test('mock Supabase: revision conflicts and a concurrent tab cannot overwrite progress', {timeout: 90_000}, async t => {
   const {context, page} = await openApp(t);
   await page.waitForFunction(() => Boolean(n5SmartStudy.snapshot()?.plan));
@@ -701,10 +952,12 @@ async function setStudySettings(page, duration, focus, {method, mix = [], custom
 
 async function importFixture(page, backup) {
   await go(page,'backup');
+  const restored = page.getByText('Đã khôi phục dữ liệu học',{exact:true}).first();
+  await restored.waitFor({state:'detached'});
   await page.locator('input[onchange="importHubData(event)"]').setInputFiles({
     name:'backup.json', mimeType:'application/json', buffer:Buffer.from(JSON.stringify(backup))
   });
-  await page.getByText('Đã khôi phục dữ liệu học').first().waitFor();
+  await restored.waitFor();
 }
 
 test('Smart Study saves settings, resumes offline, grades shared SRS and restores history', {timeout:90_000}, async t => {
@@ -807,13 +1060,14 @@ test('Smart Study saves settings, resumes offline, grades shared SRS and restore
   assert.equal((await smartSnapshot(page)).history[0].id,backup.smartStudy.history[0].id);
 
   networkAvailable = true;
-  const desktop = await browser.newContext({viewport:{width:1280,height:800}});
-  t.after(() => desktop.close());
-  const d = await desktop.newPage();
-  await d.goto(site);
-  await smartButton(d,'Bắt đầu học 5 phút').waitFor();
-  const bounds = await d.locator('#smartStudyHome').boundingBox();
-  assert(bounds && bounds.x >= 0 && bounds.x + bounds.width <= 1280);
+  const {page:desktop} = await openApp(t,{viewport:{width:1280,height:800}});
+  // The daily plan replaces its home section asynchronously. Resolve the
+  // current node and check its geometry in one browser turn.
+  await desktop.waitForFunction(() => {
+    const bounds = document.getElementById('smartStudyHome')?.getBoundingClientRect();
+    return bounds && bounds.width > 0 && bounds.height > 0 && bounds.left >= 0 && bounds.right <= innerWidth;
+  });
+  await smartButton(desktop,'Bắt đầu học 5 phút').waitFor();
 });
 
 test('Smart Study refuses a stale answer from another tab', {timeout:90_000}, async t => {

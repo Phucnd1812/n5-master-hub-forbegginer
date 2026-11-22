@@ -1,4 +1,4 @@
-const RELEASE = '5.51';
+const RELEASE = '5.52';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -10,6 +10,10 @@ const assets = new Set([
   `assets/study-engine.js?v=${RELEASE}`,
   `assets/smart-study.js?v=${RELEASE}`,
   `assets/tailwind.css?v=${RELEASE}`,
+  `assets/ui/premium.css?v=${RELEASE}`,
+  `assets/ui/effects.js?v=${RELEASE}`,
+  `assets/learning/builder.css?v=${RELEASE}`,
+  `assets/learning/checker.css?v=${RELEASE}`,
   `assets/search/lookup.css?v=${RELEASE}`,
   `assets/search/lookup-ui.js?v=${RELEASE}`,
   `assets/search/search-worker.js?v=${RELEASE}`,
@@ -24,14 +28,23 @@ const assets = new Set([
   'assets/grammar/comparisons.js',
   'assets/grammar/course.js',
   'assets/grammar/extensions.js',
+  'assets/grammar/formation.js',
   'assets/grammar/grammar-ui.js',
   'assets/grammar/practice.js',
   'assets/grammar/search-data.js',
+  'assets/learning/builder.js',
+  'assets/learning/builder-data.js',
+  'assets/learning/checker-view.js',
+  'assets/learning/grammar-checker.js',
+  'assets/data/kanji-templates.bin',
+  'assets/data/kanji-strokes.json',
   'assets/search/builtin-dictionary.json',
   'assets/search/jmdict-essentials.json',
+  'assets/search/jmdict-context.json',
   'assets/search/text.js',
   'assets/vendor/lucide-1.77.0.min.js',
   'assets/icons/favicon.png',
+  'assets/icons/brand.png',
   'assets/icons/apple-touch.png',
   'assets/icons/app-192.png',
   'assets/icons/app-512.png',

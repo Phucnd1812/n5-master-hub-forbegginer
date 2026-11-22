@@ -2,7 +2,7 @@
   "name": "n5-master-hub-tests",
   "private": true,
   "scripts": {
-    "test": "node ../../tools/build-grammar-index.mjs --check && node --test app.test.cjs search.test.cjs"
+    "test": "node ../../tools/build-grammar-index.mjs --check && node --test"
   },
   "devDependencies": {
     "playwright": "1.62.1"

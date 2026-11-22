@@ -1,0 +1,125 @@
+.n5-builder {
+  display: grid;
+  gap: .8rem;
+  min-width: 0;
+  color: var(--n5-text);
+  overflow-wrap: anywhere;
+}
+.n5-builder [hidden] { display: none !important; }
+.n5-builder-filters {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: .6rem;
+}
+.n5-builder-field {
+  display: grid;
+  gap: .3rem;
+  min-width: 0;
+  color: var(--n5-text);
+  font-size: .875rem;
+  font-weight: 650;
+}
+.n5-builder-field :is(select,input,textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: .48rem .6rem;
+  border: 1px solid var(--n5-border);
+  border-radius: .7rem;
+  background: var(--n5-surface-soft);
+  color: var(--n5-text);
+  font: inherit;
+  font-size: 1rem;
+}
+.n5-builder-field textarea { min-height: 5rem; resize: vertical; }
+.n5-builder-card,
+.n5-builder-solution {
+  min-width: 0;
+}
+.n5-builder-card {
+  display: grid;
+  gap: .75rem;
+  padding: clamp(.8rem,3vw,1.25rem);
+  background: var(--n5-surface);
+  border: 1px solid var(--n5-border);
+  border-radius: var(--n5-radius,20px);
+  box-shadow: var(--n5-shadow);
+}
+.n5-builder :is(h3,h4,p,dl,dd) { margin: 0; }
+.n5-builder .n5-builder-prompt {
+  font-size: clamp(1.025rem,2.5vw,1.23rem);
+  line-height: 1.5;
+}
+.n5-builder form { display: grid; justify-items: start; gap: .6rem; }
+.n5-builder form > .n5-builder-field { width: 100%; }
+.n5-builder fieldset {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem;
+  border: 0;
+}
+.n5-builder fieldset legend { margin-bottom: .4rem; font-weight: 650; }
+.n5-builder-option {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: .4rem;
+  padding: .35rem .65rem;
+  background: var(--n5-surface-soft);
+  border: 1px solid var(--n5-border);
+  border-radius: .75rem;
+  cursor: pointer;
+}
+.n5-builder-option:has(input:checked) { border-color: #38bdf8; }
+.n5-builder-option input { accent-color: #0284c7; }
+.n5-builder button { min-height: 44px; max-width: 100%; white-space: normal; }
+.n5-builder button:disabled { opacity: .58; cursor: default; }
+.n5-builder :is(button,summary,select,input,textarea):focus-visible {
+  outline: 2px solid #0284c7;
+  outline-offset: 2px;
+}
+.dark .n5-builder :is(button,summary,select,input,textarea):focus-visible { outline-color: #7dd3fc; }
+.n5-builder [type="submit"] {
+  background: #0369a1;
+  border-color: #0369a1;
+  color: #fff;
+}
+.n5-builder [type="submit"]:hover:not(:disabled) { background: #075985; border-color: #075985; }
+.n5-builder :is(.n5-builder-actions,.n5-builder-navigation) { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; }
+.n5-builder-navigation { justify-content: space-between; }
+.n5-builder .n5-builder-order { display: grid; }
+.n5-builder-order-value {
+  min-height: 2.4rem;
+  padding: .4rem .55rem;
+  border-radius: .65rem;
+  background: var(--n5-surface-soft);
+}
+.n5-builder details {
+  min-width: 0;
+  padding: .55rem .7rem;
+  border: 1px solid var(--n5-border);
+  border-radius: .85rem;
+}
+.n5-builder summary { font-weight: 650; cursor: pointer; }
+.n5-builder details[open] > summary { margin-bottom: .5rem; }
+.n5-builder-solution { display: grid; justify-items: start; gap: .5rem; }
+.n5-builder-model, .n5-builder-chain { font-size: 1.12rem; font-weight: 700; line-height: 1.55; }
+.n5-builder-solution dt { margin-top: .4rem; font-size: .9rem; font-weight: 700; }
+.n5-builder-links { display: grid; gap: .4rem; }
+.n5-builder [data-builder-feedback]:not(:empty) {
+  padding: .55rem .65rem;
+  border-inline-start: 3px solid #0284c7;
+  background: var(--n5-surface-soft);
+  border-radius: .28rem;
+}
+.n5-builder [data-builder-feedback]:is([data-result="match"],[data-result="alternate"]) { border-color: #059669; }
+.n5-builder [data-builder-feedback][data-result="mismatch"] { border-color: #d97706; }
+@media (max-width: 40rem) {
+  .n5-builder-filters { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 22rem) {
+  .n5-builder-filters { grid-template-columns: minmax(0,1fr); }
+}

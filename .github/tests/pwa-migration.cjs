@@ -8,8 +8,23 @@ const scope = '/n5-master-hub-forbegginer/';
 const candidate = resolve(__dirname,'../..');
 const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png',
-  '.webmanifest':'application/manifest+json','.json':'application/json'};
+  '.webmanifest':'application/manifest+json','.json':'application/json','.bin':'application/octet-stream'};
 const release = root => readFileSync(join(root,'index.html'),'utf8').match(/name="n5-release" content="([^"]+)"/)[1];
+const previousRelease = '5.51';
+const savedMistake = 'Câu sai đã lưu trên v' + previousRelease;
+
+function checkExtractedKanji(baseline) {
+  const html = readFileSync(join(baseline,'index.html'),'utf8');
+  const template = html.match(/const N5_KVG_TEMPLATE_BASE64 = \[([\s\S]+?)\s*\]\.join\(''\)/);
+  assert(template,'The baseline contains the inline Kanji templates.');
+  const chunks = [...template[1].matchAll(/['"]([A-Za-z0-9+/=]+)['"]/g)].map(match => match[1]);
+  assert(chunks.length > 0);
+  assert(readFileSync(join(candidate,'assets/data/kanji-templates.bin')).equals(Buffer.from(chunks.join(''),'base64')));
+  const strokes = JSON.parse(html.match(/const N5_KVG_OFFLINE_STROKES = (\{[^\n]+?\});/)[1]);
+  const supplement = JSON.parse(html.match(/Object.assign\(N5_KVG_OFFLINE_STROKES, (\{[^\n]+?\})\);/)[1]);
+  assert.deepEqual(JSON.parse(readFileSync(join(candidate,'assets/data/kanji-strokes.json'),'utf8')),
+    {...strokes,...supplement});
+}
 
 async function snapshot(page) {
   return page.evaluate(() => {
@@ -19,11 +34,12 @@ async function snapshot(page) {
 }
 
 async function checkUpgrade() {
-  if (!process.argv[2]) throw new Error('Provide a directory with the published v5.50 tree.');
+  if (!process.argv[2]) throw new Error('Provide a directory with the published v' + previousRelease + ' tree.');
   const baseline = resolve(process.argv[2]);
   const current = release(candidate);
-  assert.equal(release(baseline),'5.50');
-  assert.notEqual(current,'5.50');
+  assert.equal(release(baseline),previousRelease);
+  assert.notEqual(current,previousRelease);
+  checkExtractedKanji(baseline);
   let source = baseline;
   let networkAvailable = true;
   const server = createServer((request,response) => {
@@ -49,7 +65,7 @@ async function checkUpgrade() {
     page.on('dialog',dialog => dialog.accept());
     await page.goto(site,{waitUntil:'domcontentloaded'});
     await page.waitForFunction(() => navigator.serviceWorker.controller);
-    assert.match(await page.title(),/v5\.50$/);
+    assert.equal(await page.title(),'N5 Master Hub v' + previousRelease);
     await page.evaluate(() => {
       toggleBookmark('v6c_028');
       saveFlashcardKnowledge('v6c_028',true);
@@ -59,18 +75,18 @@ async function checkUpgrade() {
     await page.getByRole('button',{name:'Bắt đầu học 5 phút'}).click();
     await page.locator('[data-study-action="reveal"]').click();
     await page.waitForFunction(() => n5SmartStudy.snapshot().plan.revealed);
-    await page.evaluate(async () => {
+    await page.evaluate(async question => {
       navigateTo('backup');
       await n5SmartStudy.withLock(() => addStudyMistake({
-        id:'g1a_1',contentId:'g1a_1',type:'grammar',question:'Câu sai đã lưu trên v5.50',
+        id:'g1a_1',contentId:'g1a_1',type:'grammar',question,
         chosenAnswer:'を',correctAnswer:'は',explanation:'は nêu chủ đề.',
       }));
-    });
+    },savedMistake);
     const before = await snapshot(page);
     assert(before.data.bookmarks.includes('v6c_028'));
     assert(before.data.reviewData.v6c_028);
     assert(before.data.smartStudy.plan.revealed);
-    assert(before.data.mistakes.some(item => item.question === 'Câu sai đã lưu trên v5.50'));
+    assert(before.data.mistakes.some(item => item.question === savedMistake));
 
     source = candidate;
     await page.getByRole('button',{name:'Kiểm tra cập nhật'}).click();
@@ -79,10 +95,12 @@ async function checkUpgrade() {
     assert.deepEqual(await snapshot(page),before);
     await page.evaluate(() => navigateTo('backup'));
     await page.getByText('Phiên bản đang chạy v' + current,{exact:true}).waitFor();
+    await page.evaluate(() => n5Effects.setMode('balanced'));
 
     networkAvailable = false;
     await page.goto(site,{waitUntil:'domcontentloaded'});
-    assert.deepEqual(await snapshot(page),before);
+    assert.deepEqual(await snapshot(page),{...before,data:{...before.data,uiEffects:'balanced'}});
+    assert.equal(await page.locator('html').getAttribute('data-n5-effect-mode'),'balanced');
     const input = page.locator('#globalSearchInput');
     await input.fill('またがされました');
     await input.press('Enter');
@@ -91,9 +109,18 @@ async function checkUpgrade() {
     await input.fill('chậm nhất vào ngày mai');
     await input.press('Enter');
     await page.locator('[data-result-id="compare:deadline"] button').click();
-    await page.getByRole('dialog').getByRole('rowheader',{name:'までに',exact:true}).waitFor();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('rowheader',{name:'までに',exact:true}).waitFor();
+    await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+    await page.evaluate(() => n5OpenLearningTool('checker',document.getElementById('globalSearchInput'),{
+      sentence:'毎日、日本語を勉強するます。',
+    }));
+    await dialog.locator('[data-checker-status="error"]').waitFor();
+    await dialog.locator('[data-checker-practice]').click();
+    await dialog.locator('[data-sentence-builder] .n5-builder-card').first().waitFor();
     assert.deepEqual(errors,[]);
-    console.log(engine + ': v5.50 → v' + current + ', backup and preferences preserved, offline lookup passed.');
+    console.log(engine + ': v' + previousRelease + ' → v' + current +
+      ', Kanji bytes verified, backup and preferences preserved, offline lookup and practice passed.');
   } finally {
     await browser?.close();
     server.close();

@@ -9,6 +9,9 @@ const JAPANESE_LIMIT = 240;
 const KATAKANA_RUN = /[ァ-ヺー]+/g;
 const HAS_KATAKANA = /[ァ-ヺ]/;
 const PREVIEW_ALTERNATIVES = 4;
+const ALTERNATIVE_CAP = 10;
+const CASE_MARKERS = new Set(['は','が','を','に','へ','で','と','の','も','までに']);
+const PERSONAL_CONTEXT = /^(?:Danh từ|Đại từ|Phó từ|Số|Từ \/ cụm từ)/i;
 const PARTICLE_NOTES = {
   は:'Nêu chủ đề của vế. Đọc wa.',
   が:'Gắn thành phần đứng trước với vị ngữ. Có thể là chủ thể hoặc đối tượng của một số vị ngữ.',
@@ -77,14 +80,20 @@ function tokenize(source, isRoman, lexicon, lengths, original) {
       const key = source.slice(i, end);
       const matches = lexicon.get(key);
       if (!matches) continue;
-      for (const token of matches.slice(0, 4)) {
+      for (let rank = 0; rank < matches.length && rank < PREVIEW_ALTERNATIVES; rank++) {
+        const token = matches[rank];
         if (run && (token.kind === 'function' || !HAS_KATAKANA.test(token.jp) &&
             !(romanOnlyReading && i === 0 && end === run[1]))) continue;
+        const previous = best[i].part;
+        const anchoredMarker = CASE_MARKERS.has(token.jp) && previous?.kind === 'word' &&
+          !previous.form && PERSONAL_CONTEXT.test(previous.pos);
+        const contextualGreeting = !isRoman && end < source.length && /^(?:今日は|今晩は)$/.test(key) && token.jp === key;
         const cost = token.kind === 'function'
-          ? (i > 0 ? .79 : 2.25)
+          ? (anchoredMarker ? .25 : i > 0 ? .79 : 2.25)
           : Math.max(.30, 1.80 - token.weight / 5) - Math.min(10, length) * 0.025 -
             (!isRoman && token.written === key && HAS_HAN.test(key) ? .18 : 0) +
-            (token.form?.key.endsWith('Te') && token.form.key !== 'negativeTe' ? .30 : 0);
+            (token.form?.key.endsWith('Te') && token.form.key !== 'negativeTe' ? .30 : 0) +
+            (contextualGreeting ? 1.25 : 0);
         consider(i, end, token, cost, key, matches);
       }
     }
@@ -119,34 +128,42 @@ export function createSentenceAnalyzer(wordExamples = []) {
   const roman = new Map();
   const jpLengths = new Set();
   const romanLengths = new Set();
+  const romanForms = new Map();
   const maximum = 64;
   let lengthsJP;
   let lengthsRoman;
-  function put(map, lengths, key, token) {
+
+  function put(map,lengths,key,token) {
     if (!key || key.length > maximum) return;
     const matches = map.get(key);
-    if (!matches) { map.set(key, [token]); lengths.add(key.length); return; }
-    if (matches.some(current => current.signature === token.signature)) return;
-    if (matches.length === 10 && matches.at(-1).weight >= token.weight) return;
-    matches.push(token);
-    matches.sort((a, b) => b.weight - a.weight);
-    if (matches.length > 10) matches.length = 10;
+    if (!matches) { map.set(key,[token]); lengths.add(key.length); return; }
+    if (matches.length === ALTERNATIVE_CAP && matches.at(-1).weight >= token.weight) return;
+    let position = matches.length;
+    for (let index = 0; index < matches.length; index++) {
+      const current = matches[index];
+      if (current.signature === token.signature) return;
+      if (position === matches.length && current.weight < token.weight) position = index;
+    }
+    if (position === matches.length) matches.push(token);
+    else matches.splice(position,0,token);
+    if (matches.length > ALTERNATIVE_CAP) matches.pop();
   }
-  function add(token, spellings = [], extraRoman = []) {
+
+  function add(token,spellings,readings) {
     token.written = japaneseKey(token.jp);
     put(japanese,jpLengths,token.written,token);
-    for (const spelling of [token.kana, ...spellings]) {
+    const reading = japaneseKey(token.kana);
+    if (reading !== token.written) put(japanese,jpLengths,reading,token);
+    for (const spelling of spellings) {
       const key = japaneseKey(spelling);
-      if (key !== token.written) put(japanese,jpLengths,key,token);
+      if (key !== token.written && key !== reading) put(japanese,jpLengths,key,token);
     }
-    const readings = romanAliases(token.romaji);
     for (const spelling of readings) put(roman,romanLengths,spelling,token);
-    for (const spelling of extraRoman) {
-      if (!readings.includes(spelling)) put(roman,romanLengths,spelling,token);
-    }
   }
+
   for (const [jp, spelling, grammar, vi, aliases] of FUNCTION_WORDS) {
-    add({kind:'function', jp, kana:jp, romaji:spelling, grammar, vi, weight:3, signature:'function:' + jp}, [], aliases);
+    add({kind:'function',jp,kana:jp,romaji:spelling,grammar,vi,weight:3,signature:'function:' + jp},
+      [],[...romanAliases(spelling),...(aliases || [])]);
   }
 
   const curatedJP = new Map();
@@ -164,18 +181,33 @@ export function createSentenceAnalyzer(wordExamples = []) {
     for (const spelling of romanAliases(romanize(kana))) addReading(curatedRoman,spelling,example);
   }
 
-  function addWord(ref, weight, spellings = [], extraRoman = []) {
+  function addWord(ref,weight,spellings = [],extraRoman = []) {
     const {lemma} = ref;
     if (!lemma.jp || lemma.jp.length > 36 || /Tên riêng|Romanization|Ký tự|Phụ tố|Tiền tố|Hậu tố/i.test(lemma.pos)) return;
-    add({kind:'word', jp:lemma.jp, kana:lemma.kana, romaji:lemma.romaji, id:lemma.id, pos:lemma.pos, vi:lemma.vi,
-      signature:lemma.jp + ':' + lemma.kana, ref, weight}, spellings, extraRoman);
+    const signature = lemma.jp + ':' + lemma.kana;
+    const token = {kind:'word',jp:lemma.jp,kana:lemma.kana,romaji:lemma.romaji,id:lemma.id,pos:lemma.pos,vi:lemma.vi,
+      signature,ref,weight};
+    const readings = extraRoman.length ? extraRoman : romanAliases(lemma.romaji);
+    add(token,spellings,readings);
     for (const form of ref.forms.values()) {
       if (form.key === 'dictionary' || form.key === 'stem') continue;
-      const romaji = formRomaji(form);
-      const aliases = /^(?:prohibition|dutyNakute)/.test(form.key) ? romanAliases(romanize(form.kana)) : [];
-      add({kind:'word', jp:form.jp, kana:form.kana, romaji, id:lemma.id, pos:lemma.pos, vi:lemma.vi,
-        form, grammar:form.grammar, signature:lemma.jp + ':' + lemma.kana + ':' + form.key, ref, weight:weight + 0.35},
-      inflectedSpellings(lemma,form), aliases);
+      const hasParticle = /^(?:prohibition|dutyNakute)/.test(form.key);
+      // Homophones and alternate analyses share pronunciation keys during build.
+      const readingKey = hasParticle ? form.kana + '!' : form.kana;
+      let pronunciation = romanForms.get(readingKey);
+      if (!pronunciation) {
+        const romaji = formRomaji(form);
+        const keys = romanAliases(romaji);
+        if (hasParticle) for (const alternate of romanAliases(romanize(form.kana))) {
+          if (!keys.includes(alternate)) keys.push(alternate);
+        }
+        pronunciation = {romaji,keys};
+        romanForms.set(readingKey,pronunciation);
+      }
+      add({kind:'word',jp:form.jp,kana:form.kana,romaji:pronunciation.romaji,
+        id:lemma.id,pos:lemma.pos,vi:lemma.vi,signature:signature + ':' + form.key,ref,weight:weight + .35,
+        form,grammar:form.grammar},
+      inflectedSpellings(lemma,form),pronunciation.keys);
     }
   }
 
@@ -190,8 +222,8 @@ export function createSentenceAnalyzer(wordExamples = []) {
       return isJapanese ? {original, parts:[], grammar:[], readings:'', romaji:'', translation:'',
         notes:['Hãy chia văn bản thành từng câu tối đa ' + JAPANESE_LIMIT + ' ký tự để phân tích.']} : null;
     }
-    lengthsJP ??= [...jpLengths].sort((a, b) => a - b);
-    lengthsRoman ??= [...romanLengths].sort((a, b) => a - b);
+    lengthsJP ??= [...jpLengths].sort((a,b) => a - b);
+    lengthsRoman ??= [...romanLengths].sort((a,b) => a - b);
     const parts = [];
     let unknownUnits = 0;
     let totalUnits = 0;
@@ -249,19 +281,19 @@ export function createSentenceAnalyzer(wordExamples = []) {
         (!HAS_HAN.test(part.text) || candidate.written === part.written ||
           candidate.ref.lemma.jp === part.ref.lemma.jp)).slice(0, PREVIEW_ALTERNATIVES);
       for (const option of options) if (option.form?.grammar) detections.add(option.form.grammar);
+      const form = part.form ? describeForm(part.ref.lemma,part.ref.forms,part.form.key) : null;
       return {
-        kind:part.kind, text:part.text, jp:part.jp, kana:part.kana, romaji:part.romaji, vi:part.vi,
+        kind:part.kind, text:part.text, jp:part.jp, kana:part.kana, romaji:part.romaji ?? form?.romaji, vi:part.vi,
         pos:part.pos, id:part.id, grammar, ending:part.form?.ending,
         role:part.kind === 'function' ? grammarForPart(part, parts, i) : '',
         lemma:part.ref?.lemma,
-        form:part.form ? describeForm(part.ref.lemma, part.ref.forms, part.form.key) : null,
+        form,
         alternatives:options.map(candidate => ({
           lemma:candidate.ref.lemma,
           form:candidate.form ? describeForm(candidate.ref.lemma, candidate.ref.forms, candidate.form.key) : null
         })),
       };
     });
-    const wordForms = publicParts.filter(part => part.form);
     if (detections.has('te-kara') && wordCount > 1) notes.push('Vế có ～てから nêu hành động trước. Vị ngữ ở vế sau nêu hành động tiếp theo.');
     if (detections.has('tara') || detections.has('ba')) notes.push('Vế điều kiện đặt mốc cho kết quả hoặc hành động ở vế còn lại.');
     if (detections.has('compare:state')) notes.push('Vて theo sau bởi ある có thể mô tả kết quả của việc đã làm có chủ ý. Cần xem động từ và hoàn cảnh để xác nhận.');
@@ -284,5 +316,5 @@ export function createSentenceAnalyzer(wordExamples = []) {
       readings:reading('kana').join(''), romaji:reading('romaji').join(' ').replace(/\s+([。、,.!?])/g,'$1').trim(),
       coverage, parts:publicParts, phrases, grammar:[...detections], notes, translation:example?.vi || ''};
   }
-  return {addWord, analyze};
+  return {addWord, analyze, finish() { romanForms.clear(); }};
 }
