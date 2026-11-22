@@ -1,10 +1,11 @@
-import {GRAMMAR_GUIDES,COURSE_ALIASES} from './grammar-data.js';
+import {SEARCH_TOPICS,SEARCH_LESSONS} from '../grammar/search-data.js';
 import {EXTRA_WORDS} from './lexicon.js';
 import {makeLemma, generateForms} from './morphology.js';
 import {createSentenceAnalyzer} from './sentence-analyzer.js';
 import {HAS_HAN, HAS_JAPANESE, IS_KANA, IS_ROMAN, fold, hiragana, japaneseKey, oneEdit, plain,
   romanize, romanAliases, romanKey, suggestKana, wordPieces} from './text.js';
 
+const COURSES = new Map(SEARCH_LESSONS.map(item => [item.id,item]));
 const LIMIT_PER_TYPE = 300;
 const ORDER = ['vocab','kanji','grammar','lesson'];
 const SEARCH_LIMIT = 320;
@@ -50,18 +51,20 @@ function grammarProfile(item, guide = false) {
   const titleReading = plain(item.title || item.formula, true);
   const formula = plain(item.formula);
   const formulaReading = plain(item.formula, true);
-  const aliases = item.aliases || COURSE_ALIASES[item.id] || [];
+  const lesson = COURSES.get(item.id);
+  const aliases = item.aliases || lesson?.aliases || [];
   const headings = [title, formula].flatMap(value => value.split(/[／/]/).map(part => part.trim()));
-  const japanese = [...headings, ...aliases.filter(value => HAS_JAPANESE.test(value))];
+  const japanese = [...headings, lesson?.formula || '', ...aliases.filter(value => HAS_JAPANESE.test(value))];
   const kana = [titleReading, formulaReading, ...japanese].map(japaneseKey).filter(value => IS_KANA.test(value));
-  const vietnamese = [item.meaning, item.brief, ...aliases.filter(value => !HAS_JAPANESE.test(value))];
+  const vietnamese = [item.meaning, lesson?.meaning, lesson?.title, item.brief, ...aliases.filter(value => !HAS_JAPANESE.test(value))];
   const roman = aliases.filter(value => IS_ROMAN.test(value));
-  const examples = guide ? [] : (item.examples || []).flatMap(example => {
+  const examples = guide || item.id.startsWith('compare:') ? [] : (item.examples || []).flatMap(example => {
     const jp = plain(example.jp || example.audio);
     const reading = plain(example.jp || example.audio, true);
     return [jp, reading, IS_KANA.test(japaneseKey(reading)) ? romanKey(romanize(reading)) : '', plain(example.vi)];
   });
-  return indexEntry({type:'grammar', id:item.id, title, reading:'', description:plain(item.meaning || item.brief),
+  return indexEntry({type:'grammar', id:item.id, title:lesson?.title || title, reading:'',
+    description:plain(lesson?.meaning || item.meaning || item.brief),
     location:item.lesson || '', guide}, japanese, kana, vietnamese, roman, examples);
 }
 
@@ -114,6 +117,15 @@ function typoScore(profile, query) {
 
 export async function createSearchEngine(data, yieldWork) {
   const analyzer = createSentenceAnalyzer();
+  const exactExamples = new Map();
+  for (const {id,examples} of [...SEARCH_TOPICS,...SEARCH_LESSONS]) {
+    for (const [jp,kana,vi] of examples) {
+      for (const key of [japaneseKey(jp),japaneseKey(kana),...romanAliases(romanize(kana)),fold(vi)]) {
+        if (!exactExamples.has(key)) exactExamples.set(key,new Set());
+        exactExamples.get(key).add(id);
+      }
+    }
+  }
   const profiles = [];
   const lessons = new Map();
   const knownWords = new Set();
@@ -141,7 +153,9 @@ export async function createSearchEngine(data, yieldWork) {
     if (!lessons.has(item.lesson)) lessons.set(item.lesson, {vocab:0, grammar:0});
     lessons.get(item.lesson).grammar++;
   }
-  for (const guide of GRAMMAR_GUIDES) profiles.push(grammarProfile(guide, true));
+  for (const guide of SEARCH_TOPICS) {
+    profiles.push(grammarProfile(guide,!guide.id.startsWith('compare:')));
+  }
   for (const [title, counts] of lessons) {
     const description = [counts.vocab && counts.vocab + ' từ vựng', counts.grammar && counts.grammar + ' mẫu ngữ pháp'].filter(Boolean).join(' · ');
     profiles.push(indexEntry({type:'lesson', id:title, title, description}, [], [], [title]));
@@ -169,6 +183,8 @@ export async function createSearchEngine(data, yieldWork) {
       roman:IS_ROMAN.test(normalized) ? romanKey(normalized) : ''};
     if (!query.jp && !/[a-z0-9]/.test(query.latin)) return {results:[], counts:{}, analysis:null};
     const analysis = analyzer.analyze(text);
+    const exactLessons = exactExamples.get(query.jp || query.roman);
+    const vietnameseExamples = exactExamples.get(query.latin);
     const lexicalBoosts = new Map();
     const grammarBoosts = new Set(analysis?.grammar || []);
     const kanjiBoosts = new Set();
@@ -195,6 +211,7 @@ export async function createSearchEngine(data, yieldWork) {
       let score = rank(profile, query);
       if (entry.type === 'vocab') score = Math.max(score, lexicalBoosts.get(entry.id) || 0);
       if (entry.type === 'grammar') {
+        if (exactLessons?.has(entry.id) || vietnameseExamples?.has(entry.id)) score = Math.max(score,295);
         if (grammarBoosts.has(entry.id)) score = Math.max(score,270);
         if (entry.guide && (query.jp && profile.forms.includes(query.jp) ||
             query.roman && profile.pronunciation.includes(query.roman) || profile.meanings.includes(query.latin))) {

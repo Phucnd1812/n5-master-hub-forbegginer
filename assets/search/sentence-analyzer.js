@@ -1,5 +1,5 @@
 import {FUNCTION_WORDS, CURATED_SENTENCES} from './lexicon.js';
-import {GRAMMAR_GUIDES} from './grammar-data.js';
+import {SEARCH_TOPICS,SEARCH_LESSONS} from '../grammar/search-data.js';
 import {describeForm,formRomaji} from './morphology.js';
 import {HAS_JAPANESE, IS_ROMAN, hiragana, japaneseKey, romanize, romanAliases, romanKey} from './text.js';
 
@@ -121,15 +121,18 @@ export function createSentenceAnalyzer() {
   }
 
   const curatedJP = new Map();
+  const curatedKana = new Map();
   const curatedRoman = new Map();
-  for (const [jp, kana, vi] of [...CURATED_SENTENCES, ...GRAMMAR_GUIDES.flatMap(guide => guide.examples)]) {
+  function addReading(readings, key, example) {
+    if (!readings.has(key)) readings.set(key,example);
+    else if (phraseKey(readings.get(key)?.jp) !== phraseKey(example.jp)) readings.set(key,null);
+  }
+  for (const [jp, kana, vi] of [...CURATED_SENTENCES, ...[...SEARCH_TOPICS,...SEARCH_LESSONS].flatMap(guide => guide.examples)]) {
     const key = phraseKey(jp);
-    if (!curatedJP.has(key)) curatedJP.set(key, {jp, kana, vi});
-    const transliteration = romanize(kana);
-    for (const spelling of romanAliases(transliteration)) {
-      if (!curatedRoman.has(spelling)) curatedRoman.set(spelling, {jp, kana, vi});
-      else if (curatedRoman.get(spelling)?.jp !== jp) curatedRoman.set(spelling, null);
-    }
+    const example = {jp,kana,vi};
+    if (!curatedJP.has(key)) curatedJP.set(key,example);
+    addReading(curatedKana,phraseKey(kana),example);
+    for (const spelling of romanAliases(romanize(kana))) addReading(curatedRoman,spelling,example);
   }
 
   function addWord(ref, weight, spellings = [], extraRoman = []) {
@@ -225,7 +228,7 @@ export function createSentenceAnalyzer() {
     if (parts.some(part => part.jp === 'を') && !parts.some(part => part.jp === 'は' || part.jp === 'が') && wordForms.length) {
       notes.push('Câu không nêu rõ chủ thể bằng は hoặc が. Có thể cần ngữ cảnh để biết ai thực hiện.');
     }
-    const example = isJapanese ? curatedJP.get(phraseKey(source)) :
+    const example = isJapanese ? curatedJP.get(phraseKey(source)) || curatedKana.get(phraseKey(source)) :
       (/[?？]$/.test(source) ? undefined : curatedRoman.get(romanKey(source)));
     if (unknownUnits || publicParts.some(part => part.kind === 'word' && !part.kana)) {
       notes.push('Một số đoạn nằm ngoài kho dữ liệu hoặc chưa có cách đọc. Phần nhận diện được chỉ mang tính tham khảo.');
