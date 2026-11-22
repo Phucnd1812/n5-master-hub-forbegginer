@@ -81,6 +81,8 @@ export function createLookupUI(app) {
   let guideById;
   let grammarModule;
   let grammarView;
+  let translationView;
+  let translationModule;
   let client;
   let revision;
   let serial = 0;
@@ -121,17 +123,39 @@ export function createLookupUI(app) {
     </article>`;
   }
 
+  function translationSlot() { return '<div data-n5-translation-slot></div>'; }
+
+  function mountTranslation(container,text,analysis,submitted) {
+    const slot=container.querySelector('[data-n5-translation-slot]');
+    if (!slot || text.length<3) return;
+    const candidate=analysis?.translation || analysis?.parts.some(part=>part.form) ||
+      /[。！？!?]$/.test(text) || text.trim().split(/\s+/).length>=5;
+    if (!candidate) return;
+    getTranslationView().then(view=>{
+      if (slot.isConnected && (container!==activeArea || app.current(text))) view.inline(slot,{text,analysis,submitted});
+    }).catch(()=>{});
+  }
+
+  function getTranslationView() {
+    return translationModule ??= import('../translation/view.js').then(({createTranslationView})=>translationView=createTranslationView({
+      analyze:async (text,signal)=>(await getClient().search(text,{signal,limit:1}))?.analysis,
+      send:app.translateAI,audio:app.audio,open:(text,direction)=>{
+        closeDetail();app.openTranslation(text,direction);
+      },check:(text,origin)=>openDetail('checker',text,origin,{sentence:text}),
+    })).catch(error=>{translationModule=undefined;throw error;});
+  }
+
   function analysisPanel(analysis, expanded, kanaSuggestion) {
     if (!analysis) {
       if (kanaSuggestion) return `<section class="n5-lookup-card">
         <p>Gợi ý cách gõ Kana</p>${button('search',kanaSuggestion,rubric(kanaSuggestion,''),'class="n5-lookup-chip"')}
-        <p class="n5-lookup-meta">Chưa xác định được từ hoặc nghĩa từ cách gõ này.</p></section>`;
-      return expanded ? '<section class="n5-lookup-card"><p>Nhập từ đã chia hoặc một câu tiếng Nhật để xem các thành phần nhận diện được.</p></section>' : '';
+        <p class="n5-lookup-meta">Chưa xác định được từ hoặc nghĩa từ cách gõ này.</p>${translationSlot()}</section>`;
+      return translationSlot()+(expanded ? '<section class="n5-lookup-card"><p>Nhập từ đã chia hoặc một câu tiếng Nhật để xem các thành phần nhận diện được.</p></section>' : '');
     }
     const {parts, grammar, phrases, original, notes, japanese:written, readings, romaji, translation} = analysis;
     const words = parts.filter(part => part.kind === 'word' || part.kind === 'function');
     if (!expanded && !words.some(part => part.form || part.alternatives.length) &&
-        !grammar.length && !translation && !notes.length && words.length <= 1) return '';
+        !grammar.length && !translation && !notes.length && words.length <= 1) return translationSlot();
     const terms = parts.map((part, index) => {
       if (part.kind === 'punct') return `<span class="n5-lookup-punct">${esc(part.text)}</span>`;
       if (part.kind === 'unknown') return `<span class="n5-lookup-unknown" lang="ja">${esc(part.text)}</span>`;
@@ -156,8 +180,7 @@ export function createLookupUI(app) {
       ${written && written !== original ? `<p class="n5-lookup-sentence" lang="ja">${esc(written)}</p>` : ''}
       ${settings.furigana && readings ? labelLine('Cách đọc',readings) : ''}
       ${settings.roman && romaji ? labelLine('Romaji',romaji) : ''}
-      ${translation ? labelLine('Nghĩa theo câu đối chiếu',translation) :
-        (expanded && words.length > 1 ? '<p class="n5-lookup-meta">Kho hiện tại chưa có bản dịch đối chiếu cho câu này.</p>' : '')}
+      ${translationSlot()}
       ${written && (words.length || HAS_JAPANESE.test(original)) ? `<div class="n5-lookup-actions">
         ${words.length ? button('sentence-audio','','Nghe tiếng Nhật','class="n5-lookup-chip"') : ''}
         ${HAS_JAPANESE.test(original) ? detailButton('checker',original,'Kiểm tra câu') : ''}
@@ -252,6 +275,7 @@ export function createLookupUI(app) {
         </div>
       </footer>
     </div>`;
+    mountTranslation(container,query,analysis,app.consumeTranslation?.(query));
   }
 
   function moreButton(type, count, limit) {
@@ -439,7 +463,7 @@ export function createLookupUI(app) {
       if (!event.target.matches('[data-dialog-search]')) { grammarView?.submit(event); return; }
       event.preventDefault();
       const query = input.value.trim();
-      if (!composing && query) openDetail('dialog-search',query,input);
+      if (!composing && query) openDetail('dialog-search',query,input,{translationSubmitted:true});
     });
     dialog.addEventListener('change', event => grammarView?.change(event));
     dialog.addEventListener('close', () => {
@@ -465,6 +489,7 @@ export function createLookupUI(app) {
       dialog.showModal();
     }
     const body = dialog.querySelector('.n5-lookup-detail');
+    translationView?.cancelScope(body);
     const previous = frames.at(-1);
     const input = dialog.querySelector('[data-dialog-search] input');
     if (previous) {
@@ -516,6 +541,7 @@ export function createLookupUI(app) {
         frame.model = model;
         frame.shown = DIALOG_RESULTS;
         body.innerHTML = model ? dialogResults(model,frame.id) : '<p>Chưa mở được công cụ tra cứu.</p>';
+        if (model) mountTranslation(body,frame.id,model.analysis,frame.payload?.translationSubmitted);
       } catch {
         if (frames.at(-1) !== frame || !dialog.open) return;
         body.innerHTML = '<p role="status">Chưa tải được kết quả. Hãy thử tra lại.</p>';
@@ -608,7 +634,7 @@ export function createLookupUI(app) {
   }
 
   function dialogResults(model, query) {
-    const panel = model.analysis || model.kanaSuggestion ? analysisPanel(model.analysis,true,model.kanaSuggestion) : '';
+    const panel = model.analysis || model.kanaSuggestion ? analysisPanel(model.analysis,true,model.kanaSuggestion) : translationSlot();
     const entries = model.results.slice(0,DIALOG_RESULTS);
     return `<div class="n5-lookup">
       ${panel}
@@ -865,6 +891,10 @@ export function createLookupUI(app) {
       return true;
     },
     warm() { return getClient().warm?.(); },
-    cancelPending() { searchController?.abort(); },
+    cancelPending() { searchController?.abort(); translationView?.cancelScope(activeArea); },
+    async translateInto(root,options) {
+      const view=await getTranslationView();
+      if (root.isConnected) view.full(root,options);
+    },
   };
 }

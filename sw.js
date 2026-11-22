@@ -1,4 +1,4 @@
-const RELEASE = '5.52';
+const RELEASE = '5.52.1';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -42,6 +42,12 @@ const assets = new Set([
   'assets/search/jmdict-essentials.json',
   'assets/search/jmdict-context.json',
   'assets/search/text.js',
+  `assets/translation/translation.css?v=${RELEASE}`,
+  'assets/translation/protocol.js',
+  'assets/translation/rules.js',
+  'assets/translation/client.js',
+  'assets/translation/memory.js',
+  'assets/translation/view.js',
   'assets/vendor/lucide-1.77.0.min.js',
   'assets/icons/favicon.png',
   'assets/icons/brand.png',

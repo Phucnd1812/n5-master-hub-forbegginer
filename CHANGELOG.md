@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.52.1 — Smart Translation Engine
+
+- Thêm dịch Nhật, Kana và Romaji từ câu đối chiếu và quy tắc ngoại tuyến. Giữ chủ ngữ lược và hiển thị nghĩa cụm khi câu chưa đủ căn cứ. Thêm các câu đối chiếu Việt–Nhật trong công cụ Dịch hiện có.
+- Thêm tùy chọn dịch chuyên sâu bằng Gemini qua Supabase Edge Function có xác thực, giới hạn lượt gọi và kiểm tra kết quả. Mặc định gọi theo yêu cầu, có chế độ ngoại tuyến và tự động sau khi bật.
+- Lưu lịch sử dịch bằng IndexedDB, cho phép đánh dấu, tra lại offline và sao lưu riêng theo lựa chọn. Giữ định dạng sao lưu tiến độ học.
+
 ## v5.52 — Ultimate Learning & Experience
 
 - Thêm Luyện đặt câu và Kiểm tra câu trong nhóm Luyện tập, với bài mẫu, tự đối chiếu câu viết tự do và nhận diện lỗi tiếng Nhật theo quy tắc. Lỗi chắc chắn có thể lưu vào Sổ tay và mở bài luyện cùng cấu trúc.

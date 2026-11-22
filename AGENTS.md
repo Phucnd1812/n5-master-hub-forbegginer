@@ -28,6 +28,8 @@
 - Tiến độ, ôn SRS, câu sai, Flashcard cá nhân, tuỳ chọn và phiên đăng nhập nằm trong Local Storage. Kho từ điển nhập thêm sử dụng IndexedDB. Supabase Authentication và bảng `n5_user_data` cung cấp đồng bộ ảnh chụp có kiểm tra revision. Đồng bộ tự động do người dùng bật và chạy khi ứng dụng mở.
 - `assets/data/kanji-templates.bin` giữ mẫu nhận dạng KanjiVG và `kanji-strokes.json` giữ đường nét. Tải khi mở nhận dạng hoặc xem nét, qua cache PWA. Khi tách hoặc cập nhật tệp, đối chiếu với dữ liệu cũ và thử chữ viết tay ngoại tuyến. Tùy chọn `n5_effects_mode_v1` xuất qua trường `uiEffects` tùy chọn. Bản sao lưu cũ thiếu trường này giữ chế độ trên thiết bị.
 
+- `assets/translation/` chứa bản dịch tham khảo, lịch sử IndexedDB riêng, schema dùng chung và giao diện nạp khi cần. Trình duyệt gửi câu và chiều dịch tới `supabase/functions/smart-translate` khi được yêu cầu hoặc khi chế độ tự động đã bật. Chỉ secrets phía máy chủ giữ khóa Gemini. RPC hạn mức riêng có migration trong `supabase/migrations/`. Đọc [rà soát v5.52.1](docs/v5.52.1-review.md).
+
 ## Bảo toàn dữ liệu và tính năng
 
 - Giữ các kho từ vựng, Kanji, ngữ pháp, Flashcard Nhật–Việt, SRS, danh sách chưa nhớ, sổ tay câu sai, luyện chia thể, luyện viết Kanji, tìm kiếm toàn cục/Romaji/biến thể, nghe/đọc/Shadowing, thi JLPT, thống kê và Backup & Restore. Giữ tương thích với dữ liệu cũ và sao lưu JSON đã tạo.
@@ -39,7 +41,8 @@
 - Chạy Playwright tại `.github/tests`. Chạy `npm ci`, `npx playwright install chromium webkit`, rồi `npm test`. Biến `N5_TEST_BROWSER=webkit` chọn WebKit. GitHub Actions chạy cả hai engine khi PR vào `main` và khi cập nhật `main`.
 - Bộ kiểm thử phục vụ website theo đường dẫn con như Pages và mô phỏng Supabase trong trình duyệt. Khi sửa đồng bộ, giữ kiểm tra revision, chốt cho dữ liệu thay đổi trong tab khác và bước chọn lại khi revision cloud đã đổi. Khi sửa PWA, kiểm tra cả cache bị thu hồi và tài nguyên phát hành không đồng nhất.
 - Khi đổi Smart Study, kiểm tra cùng một buổi qua reload và ngoại tuyến, trạng thái lật/đã trả lời, sao lưu cũ và xung đột snapshot giữa thiết bị. Tách tự đánh giá khỏi đúng/sai và kiểm tra xóa phân tích độc lập với tiến độ.
-- Với Universal Search, chạy nhóm ca `search.test.cjs` cùng kho tích hợp. Kiểm tra tiền tố, Romaji, lỗi một ký tự, từ gốc, dạng kết hợp, câu mơ hồ/ngoài kho, modal, quay lại trang kết quả, nhập kho, và nạp lại ngoại tuyến. Chỉ hiển thị bản dịch toàn câu khi có bản đối chiếu đã biên soạn. Đừng suy nhóm của động từ đồng âm chỉ từ cách đọc.
+- Với Universal Search, chạy nhóm ca `search.test.cjs` cùng kho tích hợp. Kiểm tra tiền tố, Romaji, lỗi một ký tự, từ gốc, dạng kết hợp, câu mơ hồ/ngoài kho, modal, quay lại trang kết quả, nhập kho, và nạp lại ngoại tuyến. Gắn nguồn cho bản đối chiếu, bản theo quy tắc và Gemini. Giữ nghĩa cụm khi câu chưa đủ căn cứ. Đừng suy nhóm của động từ đồng âm chỉ từ cách đọc.
+- Khi đổi dịch thuật, kiểm thử câu ngoài kho, câu lược chủ ngữ, Romaji mơ hồ, kết quả cục bộ khi mất mạng, cache, hủy lượt cũ, quyền, quota và dữ liệu AI sai schema. CI dùng provider mô phỏng.
 - Khi đổi ngữ pháp, kiểm tra ID, liên kết, đáp án và ví dụ bằng kiểm thử dữ liệu. Rà ngôn ngữ riêng theo bối cảnh và nguồn. Bài dịch và đặt câu dùng bản đối chiếu. Chỉ lựa chọn sai có đáp án phân biệt rõ mới vào Sổ tay câu sai.
 - Chạy `node .github/tests/search-benchmark.cjs <đường-dẫn-bản-gốc>` sau khi cài Playwright để đo hai bản trên cùng tập truy vấn. Giữ cùng CPU giả lập, viewport, trạng thái cache và phạm vi phép đo. Ghi lại truy vấn có khoảng cách khung hình lớn nhất.
 - Chạy `node .github/tests/pwa-migration.cjs <thư-mục-bản-trước>` trên Chromium và WebKit. Phép thử đổi tài nguyên trên cùng origin, đối chiếu dữ liệu sao lưu và kiểu hiển thị trước/sau, rồi tra cứu sau khi ngắt mạng.

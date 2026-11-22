@@ -1,0 +1,27 @@
+.n5-translation:not(:empty) {
+  background: var(--n5-surface-soft, #f3f9fc);
+  color: var(--n5-text);
+  border: 1px solid var(--n5-border);
+  border-radius: var(--n5-radius,18px);
+  padding: .85rem;
+  display: grid;
+  gap: .65rem;
+  overflow-wrap: anywhere;
+}
+.n5-translation p { margin: 0; }
+.n5-translation-output { font-size: 1.12rem; font-weight: 700; }
+.n5-translation label, .n5-translation summary { font-size: .92rem; font-weight: 600; }
+.n5-translation label { display: block; }
+.n5-translation textarea, .n5-translation select {
+  background: var(--n5-surface);
+  border: 1px solid var(--n5-border);
+  border-radius: .7rem;
+  padding: .5rem;
+  color: var(--n5-text);
+  font-size: 1rem;
+}
+.n5-translation textarea { display: block; width: 100%; margin: .35rem 0; resize: vertical; }
+.n5-translation [data-translation-history] article { border-top: 1px solid var(--n5-border); padding: .65rem 0; }
+.n5-translation [data-translation-result]:empty, .n5-translation [role=status]:empty { display: none; }
+.n5-translation-result, .n5-translation details[open] { display: grid; gap: .42rem; }
+.n5-translation .n5-lookup-chip:disabled { opacity: .6; }

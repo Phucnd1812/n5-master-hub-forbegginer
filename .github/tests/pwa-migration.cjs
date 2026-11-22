@@ -10,20 +10,14 @@ const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png',
   '.webmanifest':'application/manifest+json','.json':'application/json','.bin':'application/octet-stream'};
 const release = root => readFileSync(join(root,'index.html'),'utf8').match(/name="n5-release" content="([^"]+)"/)[1];
-const previousRelease = '5.51';
+const previousRelease = '5.52';
 const savedMistake = 'Câu sai đã lưu trên v' + previousRelease;
 
-function checkExtractedKanji(baseline) {
-  const html = readFileSync(join(baseline,'index.html'),'utf8');
-  const template = html.match(/const N5_KVG_TEMPLATE_BASE64 = \[([\s\S]+?)\s*\]\.join\(''\)/);
-  assert(template,'The baseline contains the inline Kanji templates.');
-  const chunks = [...template[1].matchAll(/['"]([A-Za-z0-9+/=]+)['"]/g)].map(match => match[1]);
-  assert(chunks.length > 0);
-  assert(readFileSync(join(candidate,'assets/data/kanji-templates.bin')).equals(Buffer.from(chunks.join(''),'base64')));
-  const strokes = JSON.parse(html.match(/const N5_KVG_OFFLINE_STROKES = (\{[^\n]+?\});/)[1]);
-  const supplement = JSON.parse(html.match(/Object.assign\(N5_KVG_OFFLINE_STROKES, (\{[^\n]+?\})\);/)[1]);
-  assert.deepEqual(JSON.parse(readFileSync(join(candidate,'assets/data/kanji-strokes.json'),'utf8')),
-    {...strokes,...supplement});
+function checkKanjiAssets(baseline) {
+  for (const asset of ['kanji-templates.bin','kanji-strokes.json']) {
+    const before=readFileSync(join(baseline,'assets/data',asset));
+    assert(readFileSync(join(candidate,'assets/data',asset)).equals(before),asset);
+  }
 }
 
 async function snapshot(page) {
@@ -39,7 +33,7 @@ async function checkUpgrade() {
   const current = release(candidate);
   assert.equal(release(baseline),previousRelease);
   assert.notEqual(current,previousRelease);
-  checkExtractedKanji(baseline);
+  checkKanjiAssets(baseline);
   let source = baseline;
   let networkAvailable = true;
   const server = createServer((request,response) => {
@@ -102,6 +96,9 @@ async function checkUpgrade() {
     assert.deepEqual(await snapshot(page),{...before,data:{...before.data,uiEffects:'balanced'}});
     assert.equal(await page.locator('html').getAttribute('data-n5-effect-mode'),'balanced');
     const input = page.locator('#globalSearchInput');
+    await input.fill('テレビを見ています。');
+    await input.press('Enter');
+    await page.locator('[data-n5-translation-slot]').getByText('Đang xem TV.',{exact:true}).waitFor();
     await input.fill('またがされました');
     await input.press('Enter');
     await page.locator('[data-lookup-state="ready"]').waitFor();
