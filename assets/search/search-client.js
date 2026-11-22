@@ -13,7 +13,16 @@ export function createSearchClient(sources, workerURL) {
     for (const request of pending.values()) request.finish(null);
   }
 
-  const {vocab,kanji,grammar,imported} = sources;
+  const {imported} = sources;
+  // Transfer the search fields only. The study UI keeps the full curriculum.
+  const curriculum = {
+    vocab:sources.vocab.map(({id,lesson,kanji,kana,pos,vi,_n5Supplement}) =>
+      ({id,lesson,kanji,kana,pos,vi,_n5Supplement})),
+    kanji:sources.kanji.map(({id,group,kanji,hanviet,meaning,onyomi,kunyomi,compounds}) =>
+      ({id,group,kanji,hanviet,meaning,onyomi,kunyomi,compounds})),
+    grammar:sources.grammar.map(({id,lesson,title,formula,meaning,brief,examples}) =>
+      ({id,lesson,title,formula,meaning,brief,examples:examples?.map(({jp,audio,vi}) => ({jp,audio,vi}))})),
+  };
   let started = Promise.resolve();
   try {
     worker = new Worker(workerURL, {type:'module'});
@@ -21,7 +30,7 @@ export function createSearchClient(sources, workerURL) {
     worker.onerror = stopWorker;
     worker.onmessageerror = stopWorker;
     const active = worker;
-    active.postMessage({type:'init', sources:{vocab,kanji,grammar,pack:[]}});
+    active.postMessage({type:'init', sources:{...curriculum,pack:[]}});
     started = (async () => {
       for (let offset = 0; offset < imported.length && worker === active; offset += 2000) {
         await yieldWork();
@@ -51,7 +60,7 @@ export function createSearchClient(sources, workerURL) {
     if (closed) return null;
     fallback ??= Promise.all([import('./search-engine.js'),import('./lexicon.js')])
       .then(async ([{createSearchEngine},{loadBuiltInDictionary}]) =>
-        createSearchEngine({vocab,kanji,grammar,pack:[...await loadBuiltInDictionary(), ...imported]}, yieldWork));
+        createSearchEngine({...curriculum,pack:[...await loadBuiltInDictionary(), ...imported]}, yieldWork));
     return (await fallback).search(query);
   }
 

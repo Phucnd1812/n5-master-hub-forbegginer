@@ -183,7 +183,7 @@ test('Universal Search connects sentence, dictionary, grammar, Kanji, review and
   assert(await summary.getByText('飲む → 飲まない → 飲まなければ → 飲まなければならない', {exact:true}).isVisible());
   await main.locator('[data-result-id="v6c_028"] button').click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByText('Hiragana', {exact:true}).waitFor();
+  await dialog.getByText('Cách đọc', {exact:true}).waitFor();
   assert.equal(await main.getAttribute('data-n5-page'),'global-search');
   const box = await dialog.boundingBox();
   const {width,height} = page.viewportSize();
@@ -342,6 +342,98 @@ test('deep grammar builds forms, compares usage, saves a closed error and opens 
   for (const part of ['水を','飲んでから、','薬を','飲みます。']) await sorting.getByRole('button',{name:part,exact:true}).click();
   await sorting.getByRole('button',{name:'Đối chiếu thứ tự'}).click();
   assert.match(await sorting.getByRole('status').textContent(),/^Đúng/);
+});
+
+test('contextual lookup supports IME and preserves a grammar exercise on return', {timeout:90_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'});
+  await lookup(page,'薬を飲んでから寝なければなりません。');
+  await page.getByRole('button',{name:'Xem toàn bộ phân tích'}).click();
+  const analysis = page.locator('[data-lookup-analysis]');
+  assert(await analysis.locator('.n5-lookup-phrases').getByText('Tân ngữ',{exact:true}).isVisible());
+  assert(await analysis.getByText('Kho hiện tại chưa có bản dịch đối chiếu cho câu này.').isVisible());
+  await analysis.locator('[data-lookup="grammar"][data-value="obligation"]').click();
+  const dialog = page.getByRole('dialog');
+  const answer = dialog.locator('textarea[lang="vi"]');
+  await answer.fill('Bài dịch đang làm.');
+  const detail = dialog.locator('.n5-lookup-detail');
+  const savedScroll = await detail.evaluate(el => {
+    el.scrollTop = Math.min(620,el.scrollHeight - el.clientHeight);
+    return el.scrollTop;
+  });
+  const dialogInput = dialog.getByRole('searchbox');
+  const searchForm = dialog.locator('[data-dialog-search]');
+  await dialogInput.dispatchEvent('compositionstart');
+  await dialogInput.fill('跨');
+  await searchForm.dispatchEvent('submit');
+  assert.equal(await answer.inputValue(),'Bài dịch đang làm.');
+  await dialogInput.fill('跨がせられませんでした');
+  await dialogInput.dispatchEvent('compositionend');
+  await dialogInput.press('Enter');
+  const result = dialog.locator('[data-result-id^="jmdict:1267830:"]');
+  await result.locator('button').click();
+  await dialog.getByRole('link',{name:'Giấy phép JMdict · CC BY-SA 4.0'}).waitFor();
+  assert(await dialog.locator('.n5-lookup-steps').getByText('跨がせられませんでした',{exact:false}).count() > 0);
+  await dialog.getByRole('button',{name:'Xem các dạng chia'}).click();
+  await dialog.getByRole('button',{name:/跨いで · Thể て/}).click();
+  await dialog.locator('.n5-lookup-path').getByText('跨ぐ → 跨いで',{exact:true}).waitFor();
+  const back = dialog.getByRole('button',{name:'Quay lại',exact:true});
+  await back.click();
+  await back.click();
+  await back.click();
+  assert.equal(await dialogInput.inputValue(),'薬を飲んでから寝なければなりません。');
+  assert.equal(await answer.inputValue(),'Bài dịch đang làm.');
+  assert(Math.abs((await detail.evaluate(el => el.scrollTop)) - savedScroll) <= 2);
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+  assert.equal(await page.locator('#globalSearchInput').inputValue(),'薬を飲んでから寝なければなりません。');
+  await analysis.locator('.n5-lookup-phrases [data-lookup="part"]').filter({hasText:'飲んでから'}).first().click();
+  await dialog.getByRole('button',{name:'飲',exact:true}).click();
+  await dialog.getByText(/Thứ tự nét ·/).click();
+  assert(await dialog.locator('svg.n5-lookup-strokes path').count() > 0);
+});
+
+test('Tổng quan is a standalone active button on desktop and mobile', {timeout:60_000}, async t => {
+  const {page} = await openApp(t,{viewport:{width:1280,height:800}});
+  const sidebarHome = page.locator('#sidebar nav > [data-nav="dashboard"]');
+  assert.equal(await sidebarHome.innerText(),'Tổng quan');
+  assert.equal(await sidebarHome.getAttribute('aria-current'),'page');
+  assert.equal(await sidebarHome.getAttribute('aria-expanded'),null);
+  assert.equal(await sidebarHome.locator('svg.lucide-house').count(),1);
+  assert.equal(await page.locator('#sidebar nav details summary').count(),4);
+  await go(page,'analytics');
+  assert.equal(await sidebarHome.getAttribute('aria-current'),null);
+  await sidebarHome.click();
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+  await page.locator('#desktopSidebarToggleBtn').click();
+  assert(await page.locator('body').evaluate(body => body.classList.contains('sidebar-collapsed')));
+  await page.locator('#desktopSidebarToggleBtn').click();
+  await page.setViewportSize({width:390,height:844});
+  const bottomHome = page.locator('[data-mobile-tab="home"]');
+  assert.equal(await bottomHome.getAttribute('aria-current'),'page');
+  await page.locator('[data-mobile-tab="learn"]').click();
+  assert(await page.locator('#sidebar details[data-nav-group="learn"]').evaluate(group => group.open));
+  await page.locator('#sidebar [data-nav="grammar"]').click();
+  assert.equal(await bottomHome.getAttribute('aria-current'),null);
+  await bottomHome.click();
+  assert.equal(await bottomHome.getAttribute('aria-current'),'page');
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+});
+
+test('new comparison headings and verified dictionary links work offline', {timeout:60_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13']});
+  networkAvailable = false;
+  t.after(() => { networkAvailable = true; });
+  await page.goto(site,{waitUntil:'domcontentloaded'});
+  await lookup(page,'chậm nhất vào thứ Sáu');
+  await page.locator('[data-result-id="compare:deadline"] button').click();
+  const dialog = page.getByRole('dialog');
+  const table = dialog.getByRole('table');
+  await table.getByRole('rowheader',{name:'までに',exact:true}).waitFor();
+  await dialog.getByRole('button',{name:'Phân tích câu',exact:true}).last().click();
+  await dialog.locator('[data-lookup-analysis]').getByText('Hạn cuối',{exact:true}).waitFor();
+  await dialog.getByRole('searchbox').fill('申込みました');
+  await dialog.getByRole('searchbox').press('Enter');
+  await dialog.locator('[data-result-id^="jmdict:1362890:"] button').click();
+  await dialog.getByText('Cách viết khác',{exact:true}).waitFor();
 });
 
 test('dictionary imports join Universal Search and remain available after offline reload', {timeout:60_000}, async t => {

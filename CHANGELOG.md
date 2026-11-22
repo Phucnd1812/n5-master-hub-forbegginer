@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.51 — Japanese Language Intelligence
+
+- Universal Search phân biệt khớp chính xác, tiền tố, gần đúng và suy luận. Tra theo mục đích giao tiếp bằng tiếng Việt, nhận dạng Romaji có khoảng trắng và mở lượt tra tiếp ngay trong cùng cửa sổ.
+- Mở rộng dạng phủ định quá khứ, lịch sự, tiếp diễn, sai khiến bị động và nghĩa vụ hội thoại. Hiển thị phần đổi, quy tắc và ý nghĩa từng bước. Thêm 74 mục chọn lọc từ JMdict, có cách đọc, nhóm đã đối chiếu, nghĩa Việt và giấy phép.
+- Phân tích cụm, trợ từ, thành phần câu, cách hiểu khác và đường chia thể. Tra từ, Kanji, thứ tự nét có sẵn và ngữ pháp trong cùng cửa sổ. Bản dịch dựa trên câu đối chiếu.
+- Chuẩn hóa cách đọc 130 bài chuyên sâu và mở rộng lên 19 bài so sánh có bảng lựa chọn. Thêm đối chiếu về hạn cuối, thứ tự và đồng thời, nối phủ định, sắc thái lịch sự, khả năng và bị động.
+- Tổng quan là nút Home độc lập trên desktop và trong menu mobile. Bổ sung kiểm thử bộ gõ tiếng Nhật, lịch sử cửa sổ, tra ngoại tuyến và nâng PWA từ v5.50.
+
 ## v5.50 — Grammar Deep Learning
 
 - Mở bài chuyên sâu theo từng ID của cả 130 mẫu giáo trình. Giữ 34 chuyên đề nền, thêm ～ながら và 14 bài so sánh cách dùng.

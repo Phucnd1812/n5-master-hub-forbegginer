@@ -812,7 +812,7 @@ export const COURSE = [
  'Dùng khi nhắc tránh làm, giữ giọng yêu cầu. Vないで có thể dùng với người thân.',
  'Cấm theo nội quy thường nói ～てはいけません. ～なくてもいい là không bắt buộc.',
  [['ここで走らないでください。','ここではしらないでください。','Xin đừng chạy ở đây.','走る → 走らない + でください.'],
- ['その本を開けないでください。','そのほんをあけないでください。','Xin đừng mở cuốn sách đó.','本を là tân ngữ; 開けない là phủ định thường.']],
+ ['その箱を開けないでください。','そのはこをあけないでください。','Xin đừng mở chiếc hộp đó.','箱を là tân ngữ; 開けない là phủ định thường của 開ける.']],
  ['Chọn “xin đừng uống”.',['飲まないでください','Giữ dạng ない trước でください.'],['飲まなくてください','Không dùng なくて trong yêu cầu phủ định này.']]],
 ['g13b_6','Nhờ người nghe với ～てくれますか','Vて + くれますか／くれる？','Bạn làm V giúp tôi được không?',['request','g13c_9'],
  'くれる chỉ việc người khác làm hướng lợi ích về người nói hoặc nhóm của người nói. か hỏi người nghe sẵn lòng không.',

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="application-name" content="N5 Master Hub">
-  <meta name="n5-release" content="5.50">
+  <meta name="n5-release" content="5.51">
   <meta name="description" content="Học tiếng Nhật JLPT N5 với từ vựng, Kanji, ngữ pháp và Flashcard ngoại tuyến.">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,12 +15,12 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch.png">
-  <title>N5 Master Hub v5.50</title>
+  <title>N5 Master Hub v5.51</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <script src="./assets/vendor/lucide-1.77.0.min.js" defer></script>
-  <script src="./assets/study-engine.js?v=5.50" defer></script>
-  <script src="./assets/smart-study.js?v=5.50" defer></script>
-  <script src="./pwa.js?v=5.50" defer></script>
+  <script src="./assets/study-engine.js?v=5.51" defer></script>
+  <script src="./assets/smart-study.js?v=5.51" defer></script>
+  <script src="./pwa.js?v=5.51" defer></script>
   <style>
     /* v5.18: TP Han Zi embedded locally; Japanese glyphs fall back to Noto Sans JP. */
     @font-face {
@@ -344,10 +344,10 @@
       transition: filter .15s ease, background .15s ease;
     }
     #sidebar nav .nav-group > summary:hover { filter: brightness(.97); }
-    #sidebar nav .nav-group:nth-of-type(2) > summary { color: #5b21b6 !important; background: #ede9fe; border-left-color: #7c3aed; }
-    #sidebar nav .nav-group:nth-of-type(3) > summary { color: #166534 !important; background: #dcfce7; border-left-color: #16a34a; }
-    #sidebar nav .nav-group:nth-of-type(4) > summary { color: #92400e !important; background: #fef3c7; border-left-color: #d97706; }
-    #sidebar nav .nav-group:nth-of-type(5) > summary { color: #9f1239 !important; background: #ffe4e6; border-left-color: #e11d48; }
+    #sidebar nav .nav-group[data-nav-group="learn"] > summary { color: #5b21b6 !important; background: #ede9fe; border-left-color: #7c3aed; }
+    #sidebar nav .nav-group[data-nav-group="practice"] > summary { color: #166534 !important; background: #dcfce7; border-left-color: #16a34a; }
+    #sidebar nav .nav-group[data-nav-group="tools"] > summary { color: #92400e !important; background: #fef3c7; border-left-color: #d97706; }
+    #sidebar nav .nav-group[data-nav-group="personal"] > summary { color: #9f1239 !important; background: #ffe4e6; border-left-color: #e11d48; }
     #sidebar nav .nav-group > div {
       margin-top: 0 !important;
       padding: .38rem;
@@ -384,10 +384,10 @@
       box-shadow: none;
     }
     html.dark #sidebar nav .nav-group > summary { color: #bfdbfe !important; background: #172554; border-left-color: #60a5fa; }
-    html.dark #sidebar nav .nav-group:nth-of-type(2) > summary { color: #ddd6fe !important; background: #2e1065; border-left-color: #a78bfa; }
-    html.dark #sidebar nav .nav-group:nth-of-type(3) > summary { color: #bbf7d0 !important; background: #052e16; border-left-color: #4ade80; }
-    html.dark #sidebar nav .nav-group:nth-of-type(4) > summary { color: #fde68a !important; background: #451a03; border-left-color: #fbbf24; }
-    html.dark #sidebar nav .nav-group:nth-of-type(5) > summary { color: #fecdd3 !important; background: #4c0519; border-left-color: #fb7185; }
+    html.dark #sidebar nav .nav-group[data-nav-group="learn"] > summary { color: #ddd6fe !important; background: #2e1065; border-left-color: #a78bfa; }
+    html.dark #sidebar nav .nav-group[data-nav-group="practice"] > summary { color: #bbf7d0 !important; background: #052e16; border-left-color: #4ade80; }
+    html.dark #sidebar nav .nav-group[data-nav-group="tools"] > summary { color: #fde68a !important; background: #451a03; border-left-color: #fbbf24; }
+    html.dark #sidebar nav .nav-group[data-nav-group="personal"] > summary { color: #fecdd3 !important; background: #4c0519; border-left-color: #fb7185; }
     html.dark #sidebar nav .nav-group > div { background: #111827; border-top-color: #334155; }
     html.dark #sidebar nav .nav-group .nav-item {
       background: #1e293b;
@@ -793,19 +793,19 @@
       box-shadow: inset 0 1px rgba(255,255,255,.58), inset 0 -1px rgba(255,255,255,.12);
       text-shadow: 0 1px rgba(255,255,255,.28);
     }
-    #sidebar nav .nav-group:nth-of-type(2) > summary {
+    #sidebar nav .nav-group[data-nav-group="learn"] > summary {
       background: linear-gradient(115deg, rgba(167,139,250,.26), rgba(221,214,254,.13)) !important;
       border-left-color: rgba(124,58,237,.82) !important;
     }
-    #sidebar nav .nav-group:nth-of-type(3) > summary {
+    #sidebar nav .nav-group[data-nav-group="practice"] > summary {
       background: linear-gradient(115deg, rgba(74,222,128,.24), rgba(187,247,208,.13)) !important;
       border-left-color: rgba(22,163,74,.82) !important;
     }
-    #sidebar nav .nav-group:nth-of-type(4) > summary {
+    #sidebar nav .nav-group[data-nav-group="tools"] > summary {
       background: linear-gradient(115deg, rgba(251,191,36,.25), rgba(253,230,138,.13)) !important;
       border-left-color: rgba(217,119,6,.82) !important;
     }
-    #sidebar nav .nav-group:nth-of-type(5) > summary {
+    #sidebar nav .nav-group[data-nav-group="personal"] > summary {
       background: linear-gradient(115deg, rgba(251,113,133,.24), rgba(253,164,175,.13)) !important;
       border-left-color: rgba(225,29,72,.82) !important;
     }
@@ -948,10 +948,10 @@
     }
     html.dark #sidebar nav .nav-group { background: rgba(15,23,42,.24) !important; border-color: rgba(148,163,184,.24) !important; }
     html.dark #sidebar nav .nav-group > summary { background: rgba(30,64,175,.32) !important; color: #dbeafe !important; }
-    html.dark #sidebar nav .nav-group:nth-of-type(2) > summary { background: rgba(91,33,182,.32) !important; color: #ede9fe !important; }
-    html.dark #sidebar nav .nav-group:nth-of-type(3) > summary { background: rgba(22,101,52,.32) !important; color: #dcfce7 !important; }
-    html.dark #sidebar nav .nav-group:nth-of-type(4) > summary { background: rgba(146,64,14,.32) !important; color: #fef3c7 !important; }
-    html.dark #sidebar nav .nav-group:nth-of-type(5) > summary { background: rgba(159,18,57,.32) !important; color: #ffe4e6 !important; }
+    html.dark #sidebar nav .nav-group[data-nav-group="learn"] > summary { background: rgba(91,33,182,.32) !important; color: #ede9fe !important; }
+    html.dark #sidebar nav .nav-group[data-nav-group="practice"] > summary { background: rgba(22,101,52,.32) !important; color: #dcfce7 !important; }
+    html.dark #sidebar nav .nav-group[data-nav-group="tools"] > summary { background: rgba(146,64,14,.32) !important; color: #fef3c7 !important; }
+    html.dark #sidebar nav .nav-group[data-nav-group="personal"] > summary { background: rgba(159,18,57,.32) !important; color: #ffe4e6 !important; }
     html.dark #sidebar nav .nav-group > div { background: rgba(2,6,23,.18) !important; border-top-color: rgba(148,163,184,.18) !important; }
     html.dark #sidebar nav .nav-group .nav-item { background: rgba(30,41,59,.34) !important; border-color: rgba(148,163,184,.18) !important; }
     html.dark #sidebar nav .nav-group .nav-item:hover { background: rgba(51,65,85,.58) !important; }
@@ -1375,6 +1375,20 @@ button { -webkit-tap-highlight-color: transparent; }
 html.dark #mainContainer { background:var(--n5-bg) !important; }
 
 /* Mobile is a distinct app shell: top search, single-column content, bottom tabs */
+#sidebar nav > [data-nav="dashboard"] {
+  min-height:44px;
+  border:1px solid var(--n5-border);
+  color:var(--n5-text);
+  background:var(--n5-surface-soft);
+  box-shadow:none;
+}
+#sidebar nav > [data-nav="dashboard"]:hover { background:var(--n5-surface); }
+#sidebar nav > [data-nav="dashboard"][aria-current="page"] {
+  background:linear-gradient(115deg,#0369a1,#0f766e);
+  border-color:transparent;
+  color:#fff;
+  font-weight:700;
+}
 .mobile-bottom-nav { display:none; }
 @media (max-width: 767px) {
   html, body { background:var(--n5-bg) !important; }
@@ -1899,9 +1913,9 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 .n5-personal-dialog{width:min(100%,550px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;color:#142437;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 25px 80px #0005;}
 .dark .n5-personal-dialog{background:#142337;color:#e5eef7}.n5-personal-dialog label{display:flex;flex-direction:column;gap:6px;font:600 13px/1.4 system-ui}.n5-personal-dialog input,.n5-personal-dialog select,.n5-personal-dialog textarea,.n5-p-actions select,.n5-p-actions input{width:100%;box-sizing:border-box;border:1px solid #94a3b877;background:#94a3b812;color:inherit;border-radius:12px;padding:10px;font:400 16px/1.4 system-ui;min-width:0}.n5-personal-dialog textarea{resize:vertical}.n5-p-button{padding:10px 13px;border-radius:12px;border:1px solid #94a3b855;background:#94a3b816;color:inherit;font-weight:700;font-size:13px;line-height:1.35;cursor:pointer;min-height:40px}.n5-p-button.primary{background:#0579b5;color:#fff;border-color:transparent}.n5-p-button.retry{background:#fef3c7;color:#92400e;border-color:#fbbf24}.n5-p-button:disabled{opacity:.4;cursor:default}.n5-p-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.n5-p-actions select,.n5-p-actions input{flex:1 1 140px;width:auto}.n5-p-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-top:1px solid #94a3b855;overflow-wrap:anywhere}.n5-p-row>div:first-child{min-width:0;flex:1}.n5-p-study{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:290px;padding:24px;border:1px solid #7dd3fc;border-radius:24px;background:linear-gradient(145deg,#eefaff,#e6fcf4);color:#16344c;text-align:center;overflow-wrap:anywhere;animation:n5PEnter .2s ease-out}.n5-p-study strong{font-size:clamp(24px,6vw,38px);line-height:1.5}.n5-p-study.answer{background:linear-gradient(140deg,#123449,#075b55);color:#fff}.dark .n5-p-study:not(.answer){background:#193347;color:#eff9ff}.n5-p-add{font-size:12px;white-space:nowrap}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto}.n5-smart-row>.n5-p-actions{justify-content:end}.n5-smart-row>.n5-p-add{grid-column:1/-1;justify-self:end}.n5-smart-row>.n5-p-actions .n5-p-add{white-space:normal}@keyframes n5PEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.n5-p-study{animation:none}}@media(max-width:600px){.n5-personal-overlay{align-items:flex-end;padding:8px}.n5-personal-dialog{max-height:85dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.n5-smart-row>.n5-p-actions{grid-column:1/-1}.n5-p-row{align-items:flex-start}.n5-p-row .n5-p-actions{flex-direction:column}}
 </style>
-  <link rel="stylesheet" href="./assets/tailwind.css?v=5.50">
-  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.50">
-  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.50">
+  <link rel="stylesheet" href="./assets/tailwind.css?v=5.51">
+  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.51">
+  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.51">
 </head>
 <body class="h-full bg-slate-50 dark:bg-jpdark-950 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
   <div id="app" class="flex h-screen overflow-hidden">
@@ -1924,13 +1938,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 
       <!-- Navigation Menu: grouped to keep the sidebar compact -->
       <nav class="flex-1 px-3 py-4 space-y-3 overflow-y-auto" aria-label="Điều hướng chính">
-        <details class="nav-group">
-          <summary class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none">Tổng quan</summary>
-          <div class="space-y-1 mt-1">
-            <button onclick="navigateTo('dashboard')" data-nav="dashboard" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i><span>Tổng quan & Tiến độ</span></button>
-          </div>
-        </details>
-        <details class="nav-group">
+        <button type="button" onclick="navigateTo('dashboard')" data-nav="dashboard" aria-current="page" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="house" class="w-5 h-5 mr-3" aria-hidden="true"></i><span>Tổng quan</span></button>
+        <details class="nav-group" data-nav-group="learn">
           <summary class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none">Học kiến thức</summary>
           <div class="space-y-1 mt-1">
             <button onclick="navigateTo('grammar')" data-nav="grammar" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="book-open" class="w-5 h-5 mr-3"></i><span>Ngữ pháp</span></button>
@@ -1940,7 +1949,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
             <button onclick="navigateTo('numberGuide')" data-nav="numberGuide" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="calculator" class="w-5 h-5 mr-3"></i><span>Số đếm & Cách đếm</span></button>
           </div>
         </details>
-        <details class="nav-group">
+        <details class="nav-group" data-nav-group="practice">
           <summary class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none">Luyện tập</summary>
           <div class="space-y-1 mt-1">
             <button onclick="navigateTo('srs')" data-nav="srs" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="calendar-clock" class="w-5 h-5 mr-3"></i><span>Ôn tập đến hạn (SRS)</span></button>
@@ -1954,14 +1963,14 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
             <button onclick="navigateTo('shadowing')" data-nav="shadowing" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="mic" class="w-5 h-5 mr-3"></i><span>Nghe & Shadowing</span></button>
           </div>
         </details>
-        <details class="nav-group">
+        <details class="nav-group" data-nav-group="tools">
           <summary class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none">Công cụ hỗ trợ</summary>
           <div class="space-y-1 mt-1">
             <button onclick="navigateTo('translator')" data-nav="translator" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="languages" class="w-5 h-5 mr-3"></i><span>Google Dịch Nhật – Việt</span></button>
             <button onclick="openGeminiProWindow()" title="Mở ứng dụng Gemini bằng tài khoản Google của bạn" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-jpdark-800 rounded-xl transition-all"><i data-lucide="sparkles" class="w-5 h-5 mr-3 text-violet-500"></i><span>Gemini Pro (ứng dụng)</span><i data-lucide="external-link" class="w-3.5 h-3.5 ml-auto opacity-60"></i></button>
           </div>
         </details>
-        <details class="nav-group">
+        <details class="nav-group" data-nav-group="personal">
           <summary class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none">Cá nhân & Dữ liệu</summary>
           <div class="space-y-1 mt-1">
             <button onclick="navigateTo('bookmarks')" data-nav="bookmarks" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl"><i data-lucide="bookmark" class="w-5 h-5 mr-3"></i><span>Đã đánh dấu</span></button>
@@ -2073,13 +2082,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
   <button type="button" class="mobile-tab" data-mobile-tab="search" onclick="focusN5Search()" aria-label="Tra cứu">
     <i data-lucide="search"></i><span>Tra cứu</span>
   </button>
-  <button type="button" class="mobile-tab" data-mobile-tab="learn" onclick="openMobileNavGroup(1)" aria-label="Học kiến thức">
+  <button type="button" class="mobile-tab" data-mobile-tab="learn" onclick="openMobileNavGroup('learn')" aria-label="Học kiến thức">
     <i data-lucide="book-open"></i><span>Học</span>
   </button>
   <button type="button" class="mobile-tab" data-mobile-tab="review" onclick="navigateTo('flashcard')" aria-label="Ôn tập flashcard">
     <i data-lucide="layers"></i><span>Ôn tập</span>
   </button>
-  <button type="button" class="mobile-tab" data-mobile-tab="more" onclick="openMobileNavGroup(4)" aria-label="Các chức năng khác">
+  <button type="button" class="mobile-tab" data-mobile-tab="more" onclick="openMobileNavGroup('more')" aria-label="Các chức năng khác">
     <i data-lucide="grid-2x2"></i><span>Khác</span>
   </button>
 </nav>
@@ -2478,6 +2487,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         </div>
         <details class="n5-smart-history"><summary>Định dạng và nguồn dữ liệu</summary>
           <p class="n5-smart-note">Chọn tệp JSONL từ Kaikki hoặc JSON gồm các mục jp, kana, vi, pos. Tên riêng tra được như mục từ, ngoài phạm vi phân tích câu. Kho tích hợp lấy từ Wiktionary tiếng Việt qua Wiktextract / Kaikki, theo <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>. Xem mục gốc và lịch sử tác giả trong kết quả từ điển. Ngoại trừ giáo trình, việc biên tập nghĩa của từng mục phụ thuộc nguồn tệp.</p>
+          <p class="n5-smart-note">Kho mở rộng chọn lọc từ JMdict của Electronic Dictionary Research and Development Group và William Breen, có nghĩa tiếng Việt do N5 Master Hub biên soạn. <a href="https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project" target="_blank" rel="noopener noreferrer">Tài liệu JMdict</a> · <a href="https://www.edrdg.org/edrdg/licence.html" target="_blank" rel="noopener noreferrer">Giấy phép CC BY-SA 4.0</a></p>
         </details>
       </section>`;
     }
@@ -2661,7 +2671,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5LoadLookup() {
-      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.50'),n5EnsurePack()]).then(([{createLookupUI}]) => {
+      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.51'),n5EnsurePack()]).then(([{createLookupUI}]) => {
         n5LookupUI = createLookupUI({
           sources: () => ({vocab:N5_ALL_VOCAB,kanji:N5_ALL_KANJI,grammar:GRAMMAR_DATA,imported:n5PackRows}),
           dictionaryRevision: () => n5PackRevision,
@@ -2681,7 +2691,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
           findVocab:word => N5_ALL_VOCAB.find(item => [item.kanji,item.audio,item.kana].includes(word)),
           related:(id,reading) => reading ? N5_ALL_VOCAB.filter(item => item.id !== id &&
             item.kana === reading).slice(0,5) : [],
-          examples:n5LookupExamples, vocab:() => N5_ALL_VOCAB, mistake:n5GrammarMistake,
+          examples:n5LookupExamples, strokes:character => N5_KVG_OFFLINE_STROKES[character],
+          mistake:n5GrammarMistake,
           review:n5LookupQueueReview,
           isDue:id => { const record = state.reviewData[id]; return !!record && (!record.remembered || !record.due || record.due <= n5LocalDateKey()); },
           addCard:term => n5POpen(term.title,term.reading,term.description,term.pos,term.source || 'N5 Master Hub'),
@@ -3546,7 +3557,6 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       document.getElementById('sidebarOverlay').classList.add('hidden');
       document.body.classList.remove('sidebar-drawer-open');
       renderCurrentView();
-      if (typeof syncMobileBottomNav === 'function') syncMobileBottomNav();
       if (window.matchMedia('(max-width: 767px)').matches) window.scrollTo({top:0,behavior:'instant'});
     }
 
@@ -3559,7 +3569,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       syncMobileBottomNav('search');
     }
 
-    function openMobileNavGroup(index) {
+    function openMobileNavGroup(key) {
       // Drawer controller is scoped inside window.onload in the legacy app shell,
       // so the new global mobile tabs open the same drawer through its DOM contract.
       const sidebar = document.getElementById('sidebar');
@@ -3567,21 +3577,24 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       if (sidebar) sidebar.classList.remove('-translate-x-full');
       if (overlay) overlay.classList.remove('hidden');
       document.body.classList.add('sidebar-drawer-open');
-      const groups = document.querySelectorAll('#sidebar nav details');
-      const isMoreTab = index === 4;
-      // Tab "Khác": hiện mục lục với tất cả nhóm đều đóng; tab "Học": mở nhóm tương ứng
-      groups.forEach((group, i) => { group.open = isMoreTab ? false : i === index; });
-      const active = document.querySelector('#sidebar nav details:nth-of-type(' + (index + 1) + ')');
-      if (isMoreTab) { const navEl = document.querySelector('#sidebar nav'); if (navEl) navEl.scrollTop = 0; }
-      else if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      syncMobileBottomNav(index === 1 ? 'learn' : 'more');
+      const nav = sidebar?.querySelector('nav');
+      const groups = [...(nav?.querySelectorAll('[data-nav-group]') || [])];
+      const active = groups.find(group => group.dataset.navGroup === key);
+      groups.forEach(group => { group.open = group === active; });
+      if (active) active.scrollIntoView({block:'nearest',behavior:'smooth'});
+      else if (nav) nav.scrollTop = 0;
+      syncMobileBottomNav(key);
     }
 
     function syncMobileBottomNav(forcedTab) {
       const view = (typeof state !== 'undefined' && state) ? state.currentView : 'dashboard';
+      const dashboard = document.querySelector('#sidebar [data-nav="dashboard"]');
+      if (view === 'dashboard' && !state.globalSearchActive) dashboard?.setAttribute('aria-current','page');
+      else dashboard?.removeAttribute('aria-current');
       let tab = forcedTab || 'more';
       if (!forcedTab) {
-        if (view === 'dashboard') tab = 'home';
+        if (state.globalSearchActive) tab = 'search';
+        else if (view === 'dashboard') tab = 'home';
         else if (['grammar','vocab','kanji','formPractice','numberGuide'].includes(view)) tab = 'learn';
         else if (['flashcard','review','srs'].includes(view)) tab = 'review';
       }
@@ -4381,6 +4394,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       trackNavHistory();
       // v5.29: page-aware presentation layer; existing renderers and state stay untouched.
       main.dataset.n5Page = (state.globalSearchActive && state.searchQuery.trim()) ? 'global-search' : (state.currentView || 'dashboard');
+      syncMobileBottomNav();
       window.n5SmartStudy?.setView(main.dataset.n5Page);
       const mobileScrollY = preserveScroll && window.matchMedia('(max-width: 767px)').matches ? window.scrollY : 0;
       const mainScrollTop = preserveScroll ? main.scrollTop : 0;
@@ -6295,7 +6309,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 
     function n5BackupPayload(){
       const smartStudy = window.n5SmartStudy?.snapshot();
-      return {version:'N5Hub-5.50',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
+      return {version:'N5Hub-5.51',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
         completedItems:[...state.completedItems],ttsRate:state.ttsRate,reviewData:state.reviewData,
         mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition,
         ...(smartStudy === undefined ? {} : {smartStudy})};
@@ -7323,7 +7337,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const history=p.searchHistory===undefined?[]:p.searchHistory;
       if(!Array.isArray(history)||history.length>15||history.some(x=>typeof x!=='string'||x.length>2000))throw Error('Lịch sử tìm kiếm không hợp lệ.');
       if(JSON.stringify(p).length>5*1024*1024)throw Error('Bản đồng bộ vượt giới hạn 5 MB.');
-      return {version:'N5Hub-5.50',...validated,searchHistory:history};
+      return {version:'N5Hub-5.51',...validated,searchHistory:history};
     }
     function n5CloudRememberBase(row,p){
       n5CloudBase={uid:n5CloudSession.user.id,revision:Number(row.revision),sig:n5CloudSignature(p),updated:row.updated_at||new Date().toISOString(),auto:n5CloudEnabled};
@@ -7506,7 +7520,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CloudPanel(){
       const esc=studyEscape,button='rounded-xl px-4 py-3 text-sm font-bold';
       return `<section id="n5-cloud-panel" class="rounded-3xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 space-y-3">
-        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.50</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
+        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.51</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
         <p id="n5-cloud-status" role="status" class="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-3 text-sm leading-relaxed">${esc(n5CloudText)}</p>
         ${n5CloudSession?`<p class="text-sm break-all">Đăng nhập: <b>${esc(n5CloudSession.user.email||'Tài khoản của bạn')}</b></p>
         <button type="button" onclick="n5CloudSync()" class="w-full ${button} bg-sky-600 text-white">Đồng bộ ngay</button>

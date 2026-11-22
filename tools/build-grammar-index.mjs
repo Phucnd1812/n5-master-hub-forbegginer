@@ -11,8 +11,8 @@ const topics = [
     ({id,title,meaning,formula,aliases,examples:stripExamples(examples)})),
   ...EXTENSIONS.map(([id,title,formula,meaning,,,,,examples]) =>
     ({id,title,formula,meaning,aliases:EXTENSION_ALIASES[id],examples:stripExamples(examples)})),
-  ...COMPARISONS.map(([key,title,aliases,,meaning,sides]) =>
-    ({id:'compare:' + key,title,meaning,
+  ...COMPARISONS.map(([key,title,aliases,related,meaning,sides]) =>
+    ({id:'compare:' + key,title,meaning,related,
       aliases:[...aliases,sides.map(side => side[0]).join('と'),sides.map(side => side[0]).join(' ')],
       examples:stripExamples(sides.map(side => side[2]))})),
 ];
