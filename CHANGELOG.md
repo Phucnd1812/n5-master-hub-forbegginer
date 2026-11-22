@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.52.2 — Search Experience & Visual Clarity
+
+- Đưa câu gốc và bản dịch lên đầu, gom thao tác dịch vào một thanh và chia phần kiến thức thành bốn tab giữ trạng thái.
+- Gắn nguồn Kana và Romaji, dùng cách đọc Gemini khi bản ngoại tuyến thiếu và câu khớp. Chuyển cách đọc khác về phần đối chiếu.
+- Chuẩn hóa bề mặt từ vựng, Kanji, ngữ pháp, chia thể và Kiểm tra câu. Cập nhật PWA và kiểm tra giữ lịch sử dịch đã lưu qua nâng cấp.
+
 ## v5.52.1 — Smart Translation Engine
 
 - Thêm dịch Nhật, Kana và Romaji từ câu đối chiếu và quy tắc ngoại tuyến. Giữ chủ ngữ lược và hiển thị nghĩa cụm khi câu chưa đủ căn cứ. Thêm các câu đối chiếu Việt–Nhật trong công cụ Dịch hiện có.

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="application-name" content="N5 Master Hub">
-  <meta name="n5-release" content="5.52.1">
+  <meta name="n5-release" content="5.52.2">
   <meta name="description" content="Học tiếng Nhật JLPT N5 với từ vựng, Kanji, ngữ pháp và Flashcard ngoại tuyến.">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,13 +15,13 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch.png">
-  <title>N5 Master Hub v5.52.1</title>
+  <title>N5 Master Hub v5.52.2</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <script src="./assets/vendor/lucide-1.77.0.min.js" defer></script>
-  <script src="./assets/study-engine.js?v=5.52.1" defer></script>
-  <script src="./assets/smart-study.js?v=5.52.1" defer></script>
-  <script src="./assets/ui/effects.js?v=5.52.1" defer></script>
-  <script src="./pwa.js?v=5.52.1" defer></script>
+  <script src="./assets/study-engine.js?v=5.52.2" defer></script>
+  <script src="./assets/smart-study.js?v=5.52.2" defer></script>
+  <script src="./assets/ui/effects.js?v=5.52.2" defer></script>
+  <script src="./pwa.js?v=5.52.2" defer></script>
   <style>
     :root {
       --n5-heading-font: Inter, "Noto Sans JP", "Hiragino Sans", Meiryo, system-ui, sans-serif;
@@ -1906,13 +1906,14 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 .n5-personal-dialog{width:min(100%,550px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;color:#142437;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 25px 80px #0005;}
 .dark .n5-personal-dialog{background:#142337;color:#e5eef7}.n5-personal-dialog label{display:flex;flex-direction:column;gap:6px;font:600 13px/1.4 system-ui}.n5-personal-dialog input,.n5-personal-dialog select,.n5-personal-dialog textarea,.n5-p-actions select,.n5-p-actions input{width:100%;box-sizing:border-box;border:1px solid #94a3b877;background:#94a3b812;color:inherit;border-radius:12px;padding:10px;font:400 16px/1.4 system-ui;min-width:0}.n5-personal-dialog textarea{resize:vertical}.n5-p-button{padding:10px 13px;border-radius:12px;border:1px solid #94a3b855;background:#94a3b816;color:inherit;font-weight:700;font-size:13px;line-height:1.35;cursor:pointer;min-height:40px}.n5-p-button.primary{background:#0579b5;color:#fff;border-color:transparent}.n5-p-button.retry{background:#fef3c7;color:#92400e;border-color:#fbbf24}.n5-p-button:disabled{opacity:.4;cursor:default}.n5-p-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.n5-p-actions select,.n5-p-actions input{flex:1 1 140px;width:auto}.n5-p-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-top:1px solid #94a3b855;overflow-wrap:anywhere}.n5-p-row>div:first-child{min-width:0;flex:1}.n5-p-study{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:290px;padding:24px;border:1px solid #7dd3fc;border-radius:24px;background:linear-gradient(145deg,#eefaff,#e6fcf4);color:#16344c;text-align:center;overflow-wrap:anywhere;animation:n5PEnter .2s ease-out}.n5-p-study strong{font-size:clamp(24px,6vw,38px);line-height:1.5}.n5-p-study.answer{background:linear-gradient(140deg,#123449,#075b55);color:#fff}.dark .n5-p-study:not(.answer){background:#193347;color:#eff9ff}.n5-p-add{font-size:12px;white-space:nowrap}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto}.n5-smart-row>.n5-p-actions{justify-content:end}.n5-smart-row>.n5-p-add{grid-column:1/-1;justify-self:end}.n5-smart-row>.n5-p-actions .n5-p-add{white-space:normal}@keyframes n5PEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.n5-p-study{animation:none}}@media(max-width:600px){.n5-personal-overlay{align-items:flex-end;padding:8px}.n5-personal-dialog{max-height:85dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.n5-smart-row>.n5-p-actions{grid-column:1/-1}.n5-p-row{align-items:flex-start}.n5-p-row .n5-p-actions{flex-direction:column}}
 </style>
-  <link rel="stylesheet" href="./assets/tailwind.css?v=5.52.1">
-  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.52.1">
-  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.52.1">
-  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.52.1">
-  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.52.1">
-  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.52.1">
-  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.52.1">
+  <link rel="stylesheet" href="./assets/tailwind.css?v=5.52.2">
+  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.52.2">
+  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.52.2">
+  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.52.2">
+  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.52.2">
+  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.52.2">
+  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.52.2">
+  <link rel="stylesheet" href="./assets/search/result.css?v=5.52.2">
 </head>
 <body class="h-full bg-slate-50 dark:bg-jpdark-950 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
   <div id="app" class="flex h-screen overflow-hidden">
@@ -2694,7 +2695,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5LoadLookup() {
-      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.52.1'),n5EnsurePack()]).then(([{createLookupUI}]) => {
+      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.52.2'),n5EnsurePack()]).then(([{createLookupUI}]) => {
         n5LookupUI = createLookupUI({
           sources: () => ({vocab:N5_ALL_VOCAB,kanji:N5_ALL_KANJI,grammar:GRAMMAR_DATA,imported:n5PackRows}),
           dictionaryRevision: () => n5PackRevision,
@@ -6198,7 +6199,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5BackupPayload(){
       const smartStudy = window.n5SmartStudy?.snapshot();
       const uiEffects = n5SavedEffects();
-      return {version:'N5Hub-5.52.1',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
+      return {version:'N5Hub-5.52.2',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
         completedItems:[...state.completedItems],ttsRate:state.ttsRate,reviewData:state.reviewData,
         mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition,
         ...(uiEffects === undefined ? {} : {uiEffects}),
@@ -7159,6 +7160,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const updateMobileNavByScroll = () => {
         if (!mobileBottomNav || !isMobileViewport()) { mobileBottomNav?.classList.remove('is-scroll-hidden'); lastMobileScrollY = window.scrollY || 0; mobileScrollTicking = false; return; }
         const currentY = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+        document.documentElement.toggleAttribute('data-n5-result-scrolled',currentY>=80);
         const delta = currentY - lastMobileScrollY;
         if (currentY < 48) mobileBottomNav.classList.remove('is-scroll-hidden');
         else if (delta > 7) mobileBottomNav.classList.add('is-scroll-hidden');
@@ -7169,7 +7171,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       window.addEventListener('resize', () => { if (!isMobileViewport()) mobileBottomNav?.classList.remove('is-scroll-hidden'); lastMobileScrollY = window.scrollY || 0; }, { passive:true });
 
       // Desktop sidebar visibility remains manually controlled.
-      // The back-to-top button remains available at all scroll positions.
+      // The result surface hides the mobile button until the reader scrolls.
       document.getElementById('backToTopBtn').addEventListener('click', () => {
         if (isMobileViewport()) window.scrollTo({ top: 0, behavior: 'smooth' });
         else mainScroll.scrollTo({ top: 0, behavior: 'smooth' });
@@ -7276,7 +7278,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const history=p.searchHistory===undefined?[]:p.searchHistory;
       if(!Array.isArray(history)||history.length>15||history.some(x=>typeof x!=='string'||x.length>2000))throw Error('Lịch sử tìm kiếm không hợp lệ.');
       if(JSON.stringify(p).length>5*1024*1024)throw Error('Bản đồng bộ vượt giới hạn 5 MB.');
-      return {version:'N5Hub-5.52.1',...validated,searchHistory:history};
+      return {version:'N5Hub-5.52.2',...validated,searchHistory:history};
     }
     function n5CloudRememberBase(row,p){
       n5CloudBase={uid:n5CloudSession.user.id,revision:Number(row.revision),sig:n5CloudSignature(p),updated:row.updated_at||new Date().toISOString(),auto:n5CloudEnabled};
@@ -7489,7 +7491,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CloudPanel(){
       const esc=studyEscape,button='rounded-xl px-4 py-3 text-sm font-bold';
       return `<section id="n5-cloud-panel" class="rounded-3xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 space-y-3">
-        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.52.1</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
+        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.52.2</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
         <p id="n5-cloud-status" role="status" class="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-3 text-sm leading-relaxed">${esc(n5CloudText)}</p>
         ${n5CloudSession?`<p class="text-sm break-all">Đăng nhập: <b>${esc(n5CloudSession.user.email||'Tài khoản của bạn')}</b></p>
         <button type="button" onclick="n5CloudSync()" class="w-full ${button} bg-sky-600 text-white">Đồng bộ ngay</button>

@@ -314,7 +314,8 @@ export function createSentenceAnalyzer(wordExamples = []) {
     const reading = name => publicParts.map(part => part.kind === 'punct' ? part.text : part[name] || '[…]');
     return {original, japanese:isRoman ? example?.jp || publicParts.map(part => part.jp || part.text).join('') : original,
       readings:reading('kana').join(''), romaji:reading('romaji').join(' ').replace(/\s+([。、,.!?])/g,'$1').trim(),
-      coverage, parts:publicParts, phrases, grammar:[...detections], notes, translation:example?.vi || ''};
+      coverage, parts:publicParts, phrases, grammar:[...detections], notes, translation:example?.vi || '',
+      ...(example?.kana ? {referenceReading:{kana:example.kana}} : {})};
   }
   return {addWord, analyze, finish() { romanForms.clear(); }};
 }

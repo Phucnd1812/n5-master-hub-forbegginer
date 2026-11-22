@@ -10,7 +10,7 @@ const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png',
   '.webmanifest':'application/manifest+json','.json':'application/json','.bin':'application/octet-stream'};
 const release = root => readFileSync(join(root,'index.html'),'utf8').match(/name="n5-release" content="([^"]+)"/)[1];
-const previousRelease = '5.52';
+const previousRelease = '5.52.1';
 const savedMistake = 'Câu sai đã lưu trên v' + previousRelease;
 
 function checkKanjiAssets(baseline) {
@@ -76,6 +76,13 @@ async function checkUpgrade() {
         chosenAnswer:'を',correctAnswer:'は',explanation:'は nêu chủ đề.',
       }));
     },savedMistake);
+    const savedText='天体物理学ではブラックホールを研究します。';
+    const savedTranslation='Vật lý thiên văn nghiên cứu lỗ đen.';
+    await page.evaluate(async ({text,translatedText})=>{
+      const {saveTranslation}=await import('./assets/translation/memory.js');
+      await saveTranslation(text,'ja-vi',{source:'ai',version:'test',direction:'ja-vi',
+        japaneseText:text,translatedText,kanaReading:'てんたいぶつりがくではブラックホールをけんきゅうします。'},{mark:true});
+    },{text:savedText,translatedText:savedTranslation});
     const before = await snapshot(page);
     assert(before.data.bookmarks.includes('v6c_028'));
     assert(before.data.reviewData.v6c_028);
@@ -99,6 +106,14 @@ async function checkUpgrade() {
     await input.fill('テレビを見ています。');
     await input.press('Enter');
     await page.locator('[data-n5-translation-slot]').getByText('Đang xem TV.',{exact:true}).waitFor();
+    await input.fill(savedText);
+    await input.press('Enter');
+    await page.locator('[data-n5-translation-slot]').getByText(savedTranslation,{exact:true}).waitFor();
+    assert(await page.locator('[data-n5-translation-slot]').getByText(/Bản dịch đã lưu/).isVisible());
+    assert(await page.evaluate(async text=>{
+      const {findTranslation}=await import('./assets/translation/memory.js');
+      return (await findTranslation(text,'ja-vi'))?.marked;
+    },savedText));
     await input.fill('またがされました');
     await input.press('Enter');
     await page.locator('[data-lookup-state="ready"]').waitFor();

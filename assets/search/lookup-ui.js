@@ -1,5 +1,7 @@
 import {HAS_HAN, HAS_JAPANESE, IS_KANA, fold, hiragana, plain} from './text.js';
 import {createSearchClient} from './search-client.js';
+import {looksLikeSentence} from '../translation/rules.js';
+import {escapeResult as esc, sentenceHeader, sentenceReading, readingDifferences} from './result-ui.js';
 
 const TYPES = {vocab:'Từ vựng', kanji:'Kanji', grammar:'Ngữ pháp', lesson:'Giáo trình'};
 const MATCH_LABELS = {
@@ -14,10 +16,8 @@ const GROUP_LABELS = {
   I:'Động từ nhóm I (godan)', II:'Động từ nhóm II (ichidan)', III:'Động từ nhóm III (bất quy tắc)',
   i:'Tính từ い', na:'Tính từ な',
 };
-const BASIC_VERB_FORMS = ['masu','te','negative','past'];
-const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
-  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
-})[char]);
+const BASIC_VERB_FORMS = ['masu','te','past','negative'];
+const KNOWLEDGE_TABS = [['overview','Tổng hợp'],['vocab','Từ vựng'],['grammar','Ngữ pháp'],['detail','Phân tích chi tiết']];
 
 function button(action, value, label, attributes = '') {
   return `<button type="button" data-lookup="${action}" data-value="${esc(value)}" ${attributes}>${label}</button>`;
@@ -94,6 +94,7 @@ export function createLookupUI(app) {
   let previousFocus;
   let frames = [];
   let composing = false;
+  let nextTabsId = 0;
 
   const getGuides = () => guides ??= import('./grammar-data.js').then(module => guideById = module.GRAMMAR_BY_ID);
   const grammarTitle = id => grammarModule?.grammarName(id) || guideById?.get(id)?.title ||
@@ -113,27 +114,41 @@ export function createLookupUI(app) {
 
   function resultCard(entry, query) {
     const {type, id, title, reading, romaji, description, location, source} = entry;
-    return `<article class="n5-lookup-card" data-result-type="${type}" data-result-id="${esc(id)}">
-      ${source || location ? '<div class="n5-lookup-meta">' + esc(source || location) + '</div>' : ''}
+    return `<article class="n5-lookup-card n5-result-card" data-result-tone="${type}" data-result-type="${type}" data-result-id="${esc(id)}">
       <h3>${button(type,id,type === 'lesson' ? highlighted(title,query) : rubric(title,reading,query), 'class="n5-lookup-title"')}</h3>
       ${settings.furigana && reading && reading !== title ? `<p class="n5-lookup-meta" lang="ja">${highlighted(reading,query)}</p>` : ''}
       ${settings.roman && romaji ? `<p class="n5-lookup-meta">${highlighted(romaji,query)}</p>` : ''}
-      ${description ? `<p>${highlighted(description,query)}</p>` : ''}
+      ${description ? `<p class="n5-result-meaning">${highlighted(description,query)}</p>` : ''}
+      ${entry.pos || entry.group ? `<p class="n5-lookup-meta">${esc(entry.pos || GROUP_LABELS[entry.group])}</p>` : ''}
+      ${source || location ? '<div class="n5-lookup-meta">' + esc(source || location) + '</div>' : ''}
       ${entry.match ? '<small class="n5-lookup-meta" data-match="' + entry.match + '">' + MATCH_LABELS[entry.match] + '</small>' : ''}
     </article>`;
   }
 
-  function translationSlot() { return '<div data-n5-translation-slot></div>'; }
-
   function mountTranslation(container,text,analysis,submitted) {
     const slot=container.querySelector('[data-n5-translation-slot]');
-    if (!slot || text.length<3) return;
-    const candidate=analysis?.translation || analysis?.parts.some(part=>part.form) ||
-      /[。！？!?]$/.test(text) || text.trim().split(/\s+/).length>=5;
-    if (!candidate) return;
+    if (!slot) return;
+    if (submitted) slot.dataset.translationSubmitted='true';
+    if (slot.dataset.translationMounted) {
+      if (submitted && translationView?.submit(slot)) delete slot.dataset.translationSubmitted;
+      return;
+    }
+    slot.dataset.translationMounted='true';
     getTranslationView().then(view=>{
-      if (slot.isConnected && (container!==activeArea || app.current(text))) view.inline(slot,{text,analysis,submitted});
-    }).catch(()=>{});
+      if (slot.isConnected && (container!==activeArea || app.current(text))) {
+        const sentence=slot.closest('[data-result-sentence]');
+        const commit=slot.dataset.translationSubmitted==='true';
+        delete slot.dataset.translationSubmitted;
+        view.inline(slot,{text,analysis,submitted:commit,settings,technical:(reading,sections)=>{
+          sentence.querySelector('[data-result-reading-detail]').innerHTML=readingDifferences(reading);
+          for (const [key,html] of Object.entries(sections)) {
+            sentence.querySelector('[data-result-ai-'+key+']').innerHTML=html;
+          }
+        }});
+      } else {
+        delete slot.dataset.translationMounted;
+      }
+    }).catch(()=>{delete slot.dataset.translationMounted;});
   }
 
   function getTranslationView() {
@@ -142,20 +157,84 @@ export function createLookupUI(app) {
       send:app.translateAI,audio:app.audio,open:(text,direction)=>{
         closeDetail();app.openTranslation(text,direction);
       },check:(text,origin)=>openDetail('checker',text,origin,{sentence:text}),
+      addCard:analysis=>{
+        closeDetail();
+        app.addCard({title:analysis.japanese,reading:analysis.readings,description:analysis.translation,
+          pos:'Câu mẫu',source:'N5 Master Hub'});
+      },
     })).catch(error=>{translationModule=undefined;throw error;});
   }
 
-  function analysisPanel(analysis, expanded, kanaSuggestion) {
+  function sentencePanel(analysis,query,selected='overview') {
+    const id='n5-knowledge-'+ ++nextTabsId;
+    const parts=analysis?.parts || [];
+    const term=(part,index)=>part.lemma || part.grammar ?
+      button('part',index,rubric(part.jp,part.kana),'class="n5-token '+tokenClass(part)+'"') :
+      '<span lang="ja">'+esc(part.text || part.jp)+'</span>';
+    const phrases=(analysis?.phrases || []).map(({label,indices,tentative,gloss})=>
+      '<div><strong>'+esc(label)+'</strong>'+(tentative?' <small>theo ngữ cảnh</small>':'')+
+      '<div>'+indices.map(index=>term(parts[index],index)).join('')+'</div>'+
+      (gloss?'<p>'+esc(gloss)+'</p>':'')+'</div>').join('');
+    const grammar=(analysis?.grammar || []).map(key=>detailButton('grammar',key,grammarTitle(key))).join('');
+    const forms=parts.map((part,index)=>part.form ?
+      '<div>'+formSummary(part.form)+detailButton('part',index,'Xem từng bước chia')+'</div>':'').join('');
+    const vocabulary=parts.map((part,index)=>part.kind==='word'?
+      '<article class="n5-result-surface" data-result-tone="vocab">'+term(part,index)+labelLine('',part.vi)+
+      labelLine('Từ loại',part.pos)+'</article>':'').join('');
+    const details=parts.map((part,index)=>part.kind==='punct'?'':part.kind==='unknown'?
+      '<div class="n5-lookup-term"><span lang="ja">'+esc(part.text)+'</span><p>Chưa nhận diện</p></div>':
+      '<div class="n5-lookup-term">'+term(part,index)+'<div>'+labelLine('Vai trò',part.role)+
+      labelLine('Cấu trúc',part.ending)+labelLine('Dạng chia',part.form?.label)+
+      (part.alternatives?.length?detailButton('part',index,'Xem cách phân tích khác'):'')+'</div></div>').join('');
+    const overview=phrases?'<div class="n5-lookup-phrases">'+phrases+'</div>':(parts.length?
+      '<div class="n5-lookup-terms">'+parts.map(term).join('')+'</div>':'');
+    const quickForm=parts.filter(part=>part.kind==='word').length===1 && forms ?
+      forms+(grammar?'<div class="n5-lookup-actions">'+grammar+'</div>':''):'';
+    const sections={
+      overview:overview+quickForm+'<div data-result-ai-overview></div>',
+      vocab:'<div class="n5-result-knowledge-grid">'+vocabulary+'</div><div data-result-ai-vocab></div>',
+      grammar:(grammar?'<div class="n5-lookup-actions">'+grammar+'</div>':'')+
+        '<div class="n5-result-knowledge-grid">'+forms+'</div><div data-result-ai-grammar></div>',
+      detail:'<div data-result-reading-detail>'+readingDifferences(sentenceReading(query,analysis))+'</div>'+
+        details+(analysis?.notes || []).map(note=>'<p class="n5-lookup-meta">'+esc(note)+'</p>').join('')+
+        '<div data-result-ai-detail></div>',
+    };
+    return `<section class="n5-result-composite" data-lookup-analysis data-result-sentence="${esc(query)}">
+      <div data-n5-translation-slot>${sentenceHeader(sentenceReading(query,analysis),settings)}</div>
+      <section class="n5-result-surface n5-result-knowledge">
+        <div class="n5-result-tabs" role="tablist" aria-label="Kiến thức liên quan">${KNOWLEDGE_TABS.map(([key,label])=>
+          `<button type="button" class="n5-lookup-chip" role="tab" id="${id}-${key}" aria-controls="${id}-${key}-panel"
+            aria-selected="${key===selected}" tabindex="${key===selected?0:-1}" data-result-tab="${key}">${label}</button>`).join('')}</div>
+        ${KNOWLEDGE_TABS.map(([key])=>`<div class="n5-result-tabpanel" role="tabpanel" tabindex="0" data-result-panel="${key}"
+          id="${id}-${key}-panel" aria-labelledby="${id}-${key}" ${key===selected?'':'hidden'}>${sections[key]}</div>`).join('')}
+      </section>
+    </section>`;
+  }
+
+  function selectKnowledge(tab,focus=false) {
+    const sentence=tab.closest('[data-result-sentence]');
+    for (const item of sentence.querySelectorAll('[data-result-tab]')) {
+      item.setAttribute('aria-selected',String(item===tab));
+      item.tabIndex=item===tab?0:-1;
+    }
+    for (const panel of sentence.querySelectorAll('[data-result-panel]')) {
+      panel.hidden=panel.dataset.resultPanel!==tab.dataset.resultTab;
+    }
+    if (focus) tab.focus({preventScroll:true});
+  }
+
+  function analysisPanel(analysis, expanded, kanaSuggestion, query, selected) {
+    if (looksLikeSentence(query,analysis)) return sentencePanel(analysis,query,selected);
     if (!analysis) {
       if (kanaSuggestion) return `<section class="n5-lookup-card">
         <p>Gợi ý cách gõ Kana</p>${button('search',kanaSuggestion,rubric(kanaSuggestion,''),'class="n5-lookup-chip"')}
-        <p class="n5-lookup-meta">Chưa xác định được từ hoặc nghĩa từ cách gõ này.</p>${translationSlot()}</section>`;
-      return translationSlot()+(expanded ? '<section class="n5-lookup-card"><p>Nhập từ đã chia hoặc một câu tiếng Nhật để xem các thành phần nhận diện được.</p></section>' : '');
+        <p class="n5-lookup-meta">Chưa xác định được từ hoặc nghĩa từ cách gõ này.</p></section>`;
+      return expanded ? '<section class="n5-lookup-card"><p>Nhập từ đã chia hoặc một câu tiếng Nhật để xem các thành phần nhận diện được.</p></section>' : '';
     }
     const {parts, grammar, phrases, original, notes, japanese:written, readings, romaji, translation} = analysis;
     const words = parts.filter(part => part.kind === 'word' || part.kind === 'function');
     if (!expanded && !words.some(part => part.form || part.alternatives.length) &&
-        !grammar.length && !translation && !notes.length && words.length <= 1) return translationSlot();
+        !grammar.length && !translation && !notes.length && words.length <= 1) return '';
     const terms = parts.map((part, index) => {
       if (part.kind === 'punct') return `<span class="n5-lookup-punct">${esc(part.text)}</span>`;
       if (part.kind === 'unknown') return `<span class="n5-lookup-unknown" lang="ja">${esc(part.text)}</span>`;
@@ -180,7 +259,6 @@ export function createLookupUI(app) {
       ${written && written !== original ? `<p class="n5-lookup-sentence" lang="ja">${esc(written)}</p>` : ''}
       ${settings.furigana && readings ? labelLine('Cách đọc',readings) : ''}
       ${settings.roman && romaji ? labelLine('Romaji',romaji) : ''}
-      ${translationSlot()}
       ${written && (words.length || HAS_JAPANESE.test(original)) ? `<div class="n5-lookup-actions">
         ${words.length ? button('sentence-audio','','Nghe tiếng Nhật','class="n5-lookup-chip"') : ''}
         ${HAS_JAPANESE.test(original) ? detailButton('checker',original,'Kiểm tra câu') : ''}
@@ -210,7 +288,7 @@ export function createLookupUI(app) {
   }
 
   function formSummary(form) {
-    return `<div class="n5-lookup-form">
+    return `<div class="n5-lookup-form n5-result-surface" data-result-tone="grammar">
       <h3>${esc(form.label)}</h3>
       <p class="n5-lookup-path" lang="ja">${form.steps.map(step => '<span>' + esc(step.jp) + '</span>').join(' → ')}</p>
       ${labelLine('Nghĩa của dạng chia',form.meaning)}
@@ -244,18 +322,24 @@ export function createLookupUI(app) {
     const filters = [['all','Tất cả',total],['vocab','Từ vựng',counts.vocab],['kanji','Kanji',counts.kanji],
       ['grammar','Ngữ pháp',counts.grammar],['sentence','Phân tích câu']];
     const rankedTypes = [...new Set(results.map(entry => entry.type))];
-    const visible = filter === 'sentence' ? analysisPanel(analysis,true,kanaSuggestion) :
-      filter === 'all' ? analysisPanel(analysis,false,results.length ? '' : kanaSuggestion) + rankedTypes.map(group).join('') : group(filter);
+    const previous=rendered?.sentence;
+    const selected=previous?.querySelector('[aria-selected="true"][data-result-tab]')?.dataset.resultTab;
+    const sentence=looksLikeSentence(query,analysis);
+    const preview=sentence && ['all','sentence'].includes(filter) ? sentencePanel(analysis,query,selected) : '';
+    const legacy=expanded=>sentence?'':analysisPanel(analysis,expanded,results.length && !expanded?'':kanaSuggestion,query);
+    const visible = filter === 'sentence' ? legacy(true) :
+      filter === 'all' ? legacy(false) + rankedTypes.map(group).join('') : group(filter);
     const history = app.saved();
     const recent = app.recent().filter(entry => entry !== query);
-    container.innerHTML = `<div class="n5-lookup" data-lookup-state="ready">
+    container.innerHTML = `<div class="n5-lookup" data-lookup-state="ready" data-lookup-query="${esc(query)}">
       <header class="n5-lookup-heading">
-        <h1>Kết quả cho “${esc(query)}”</h1>
+        <h1>${sentence?"Kết quả tra cứu":`Kết quả cho “${esc(query)}”`}</h1>
         <div class="n5-lookup-actions">
           ${button('save','','Lưu tra cứu','class="n5-lookup-chip"')}
           ${button('clear','','Xóa tìm kiếm','class="n5-lookup-chip"')}
         </div>
       </header>
+      ${preview}
       <div class="n5-lookup-actions n5-lookup-filters" aria-label="Lọc loại kết quả" role="group">
         ${filters.map(([key,title,count]) => button('filter',key,
           title + (count ? ` <small>${count}</small>` : ''),`class="n5-lookup-chip" aria-pressed="${filter === key}"`)).join('')}
@@ -264,7 +348,7 @@ export function createLookupUI(app) {
         ${button('setting','roman','Romaji',`class="n5-lookup-chip" aria-pressed="${settings.roman}"`)}
         ${button('setting','furigana','Furigana',`class="n5-lookup-chip" aria-pressed="${settings.furigana}"`)}
       </div>
-      ${visible || '<p class="n5-lookup-status">Chưa thấy kết quả phù hợp. Thử cách đọc, nghĩa hoặc một phần của từ.</p>'}
+      ${visible || (preview?'':'<p class="n5-lookup-status">Chưa thấy kết quả phù hợp. Thử cách đọc, nghĩa hoặc một phần của từ.</p>')}
       <footer class="n5-lookup-footer">
         ${recent.length ? historyList('Tra cứu gần đây',recent,'clear-recent') : ''}
         ${history.length ? historyList('Lịch sử đã lưu',history,'clear-history') : ''}
@@ -275,6 +359,15 @@ export function createLookupUI(app) {
         </div>
       </footer>
     </div>`;
+    const displayed=container.querySelector('[data-result-sentence]');
+    if (displayed) {
+      const preferences=JSON.stringify(settings);
+      if (previous && preferences===rendered.sentencePreferences) displayed.replaceWith(previous);
+      else {
+        rendered.sentence=displayed;
+        rendered.sentencePreferences=preferences;
+      }
+    }
     mountTranslation(container,query,analysis,app.consumeTranslation?.(query));
   }
 
@@ -357,6 +450,13 @@ export function createLookupUI(app) {
   }
 
   function resultKeys(event) {
+    const tab=event.target.closest?.('[data-result-tab]');
+    if (tab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
+      const tabs=[...tab.parentElement.querySelectorAll('[data-result-tab]')];
+      const index=event.key==='Home'?0:event.key==='End'?tabs.length-1:
+        (tabs.indexOf(tab)+tabs.length+(event.key==='ArrowLeft'?-1:1))%tabs.length;
+      event.preventDefault();selectKnowledge(tabs[index],true);return;
+    }
     if (event.isComposing || !['ArrowDown','ArrowUp'].includes(event.key) ||
         !event.target.matches('button.n5-lookup-title')) return;
     const buttons = [...event.currentTarget.querySelectorAll('button.n5-lookup-title')];
@@ -386,6 +486,8 @@ export function createLookupUI(app) {
   }
 
   function handlePageAction(event) {
+    const tab=event.target.closest('[data-result-tab]');
+    if (tab) {selectKnowledge(tab);return;}
     const control = event.target.closest('button[data-lookup]');
     if (!control) return;
     const {lookup:action, value} = control.dataset;
@@ -443,6 +545,8 @@ export function createLookupUI(app) {
     </div>`;
     document.body.append(dialog);
     dialog.addEventListener('click', event => {
+      const tab=event.target.closest('[data-result-tab]');
+      if (tab) {selectKnowledge(tab);return;}
       if (event.target === dialog) { closeDetail(); return; }
       const control = event.target.closest('button[data-lookup]');
       if (control) handleDetailAction(control);
@@ -587,7 +691,8 @@ export function createLookupUI(app) {
       body.innerHTML = kanjiDetail(item,char);
       const paths = await app.strokes(char);
       if (frames.at(-1) !== frame || !dialog.open) return;
-      if (paths?.length) body.querySelector('[data-kanji-paths]').innerHTML = strokeDiagram(char,paths);
+      if (paths?.length) body.querySelector('[data-kanji-paths]').innerHTML =
+        `<section class="n5-result-surface" data-result-tone="kanji" aria-label="Nét viết">${strokeDiagram(char,paths)}</section>`;
     } else if (frame.type === 'lesson') {
       title.textContent = frame.id;
       body.innerHTML = `<div class="n5-lookup-actions">
@@ -634,7 +739,7 @@ export function createLookupUI(app) {
   }
 
   function dialogResults(model, query) {
-    const panel = model.analysis || model.kanaSuggestion ? analysisPanel(model.analysis,true,model.kanaSuggestion) : translationSlot();
+    const panel = analysisPanel(model.analysis,!!model.analysis,model.kanaSuggestion,query);
     const entries = model.results.slice(0,DIALOG_RESULTS);
     return `<div class="n5-lookup">
       ${panel}
@@ -685,20 +790,23 @@ export function createLookupUI(app) {
     const readings = [...new Set([term.reading,...(term.readings || [])].filter(Boolean))];
     const source = term.sourceId ? term.source + ' · #' + term.sourceId : term.source || term.location || 'Kho học liệu N5 Master Hub';
     return `<div class="n5-lookup-word">
-      <p class="n5-lookup-big">${rubric(term.title,term.reading)}</p>
+      <header class="n5-result-surface n5-result-word" data-result-tone="vocab">
+        <p class="n5-lookup-big">${rubric(term.title,term.reading)}</p>
+        ${term.description?`<p class="n5-result-meaning">${esc(senses[0] || term.description)}</p>`:''}
+        <div class="n5-result-word-meta">
+          ${labelLine('Từ loại',term.pos)}${labelLine('Nhóm',GROUP_LABELS[group])}
+          ${settings.furigana ? labelLine('Cách đọc',readings.join(' · ')) : ''}
+          ${settings.roman ? labelLine('Romaji',term.romaji) : ''}
+        </div>
+      </header>
       ${form ? formSummary(form) + labelLine('Ngữ cảnh',form.context) + formSteps(form) +
         (form.grammar ? detailButton('grammar',form.grammar,grammarTitle(form.grammar)) : '') : ''}
-      ${basicForms.length ? `<section data-verb-conjugations><h3>Cách chia động từ</h3>
+      ${basicForms.length ? `<section class="n5-result-surface" data-result-tone="grammar" data-verb-conjugations><h3>Cách chia động từ</h3>
         <div class="n5-knowledge-branches">${basicForms.map(item => `<div>
           ${detailButton('inflection',JSON.stringify([term.id,item.key]),item.jp)}
           <span class="n5-lookup-meta">${esc(item.label)}</span>
         </div>`).join('')}</div></section>` : ''}
-      ${settings.furigana ? labelLine('Cách đọc',readings.join(' · ')) : ''}
-      ${settings.roman && term.romaji ? `<div class="n5-lookup-actions"><strong>Romaji</strong>
-        ${detailButton('audio',term.reading,term.romaji)}</div>` : ''}
-      ${senses.length > 1 ? section('Các nghĩa',senses) : labelLine('Nghĩa',term.description)}
-      ${labelLine('Từ loại',term.pos)}
-      ${labelLine('Nhóm',GROUP_LABELS[group])}
+      ${senses.length > 1 ? section('Các nghĩa khác',senses.slice(1)) : ''}
       ${labelLine('Cách viết khác',(term.aliases || []).join(' · '))}
       ${labelLine('Nguồn',source)}
       ${term.sourceId ? '<p><a href="https://www.edrdg.org/edrdg/licence.html" target="_blank" rel="noopener noreferrer">Giấy phép JMdict · CC BY-SA 4.0</a></p>' : ''}
@@ -769,9 +877,12 @@ export function createLookupUI(app) {
     if (!item) return '<p>Chữ này chưa có thẻ Kanji trong giáo trình.</p><div data-kanji-paths></div>' +
       detailButton('write',character,'Mở phòng luyện viết');
     return `<div class="n5-lookup-word">
-      <p class="n5-lookup-big" lang="ja">${esc(item.kanji)}</p>
-      ${labelLine('Âm Hán Việt',item.hanviet)}${labelLine('Nghĩa',item.meaning)}
-      ${labelLine('Âm On',item.onyomi)}${labelLine('Âm Kun',item.kunyomi)}
+      <header class="n5-result-surface n5-result-kanji" data-result-tone="kanji">
+        <p class="n5-lookup-big" lang="ja">${esc(item.kanji)}</p>
+        <div><p class="n5-result-meaning">${esc(item.meaning)}</p>
+        ${labelLine('Âm Hán Việt',item.hanviet)}
+        ${labelLine('Âm On',item.onyomi)}${labelLine('Âm Kun',item.kunyomi)}</div>
+      </header>
       ${item.compounds?.length ? `<section><h3>Từ vựng liên quan</h3><ul>${item.compounds.map(word =>
         `<li>${detailButton('compound',word.jp,word.jp)} ${esc(word.kana)} · ${esc(word.vi)}</li>`).join('')}</ul></section>` : ''}
       <div data-kanji-paths></div>

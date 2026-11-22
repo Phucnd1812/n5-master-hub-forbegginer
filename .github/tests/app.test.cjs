@@ -170,7 +170,7 @@ async function lookup(page, query) {
   await input.fill(query);
   await input.press('Enter');
   await page.locator('[data-lookup-state="ready"]').waitFor();
-  assert.equal(await page.locator('#mainContainer h1').textContent(), 'Kết quả cho “' + query + '”');
+  assert.equal(await page.locator('[data-lookup-state="ready"]').getAttribute('data-lookup-query'),query);
 }
 
 test('Universal Search connects sentence, dictionary, grammar, Kanji, review and history', {timeout: 90_000}, async t => {
@@ -227,8 +227,9 @@ test('Universal Search connects sentence, dictionary, grammar, Kanji, review and
   const sentence = '昨日、友達と映画を見てから、ご飯を食べました。';
   await lookup(page,sentence);
   await main.getByRole('button',{name:'Phân tích câu',exact:true}).click();
+  await main.getByRole('tab',{name:'Phân tích chi tiết',exact:true}).click();
   assert(await main.getByText(/Chỉ người cùng thực hiện/).isVisible());
-  assert(await main.getByText(/sau khi xem phim với bạn/).isVisible());
+  await main.locator('[data-translation-result]').getByText(/sau khi xem phim với bạn/).waitFor();
   assert(await main.locator('ruby').count() > 0);
   await main.getByRole('button',{name:'Furigana',exact:true}).click();
   await main.getByRole('button',{name:'Romaji',exact:true}).click();
@@ -266,7 +267,7 @@ test('Universal Search connects sentence, dictionary, grammar, Kanji, review and
   t.after(() => { networkAvailable = true; });
   assert.equal((await page.reload()).status(),200);
   await lookup(page,'nondekara');
-  const offline = page.locator('[data-lookup-analysis]');
+  const offline = page.locator('[data-lookup-analysis] [data-result-panel="overview"]');
   assert(await offline.getByText(/飲む → 飲んで → 飲んでから/).isVisible());
   await offline.getByRole('button',{name:'～てから',exact:true}).click();
   await page.getByRole('dialog').getByRole('heading',{name:'Ví dụ và phân tích'}).waitFor();
@@ -349,10 +350,10 @@ test('deep grammar builds forms, compares usage, saves a closed error and opens 
 test('contextual lookup supports IME and preserves a grammar exercise on return', {timeout:90_000}, async t => {
   const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'});
   await lookup(page,'薬を飲んでから寝なければなりません。');
-  await page.getByRole('button',{name:'Xem toàn bộ phân tích'}).click();
   const analysis = page.locator('[data-lookup-analysis]');
   assert(await analysis.locator('.n5-lookup-phrases').getByText('Tân ngữ',{exact:true}).isVisible());
   await analysis.getByText('Sau khi uống thuốc, phải đi ngủ.',{exact:true}).waitFor();
+  await analysis.getByRole('tab',{name:'Ngữ pháp',exact:true}).click();
   await analysis.locator('[data-lookup="grammar"][data-value="obligation"]').click();
   const dialog = page.getByRole('dialog');
   const answer = dialog.locator('textarea[lang="vi"]');
@@ -387,6 +388,8 @@ test('contextual lookup supports IME and preserves a grammar exercise on return'
   assert(Math.abs((await detail.evaluate(el => el.scrollTop)) - savedScroll) <= 2);
   await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
   assert.equal(await page.locator('#globalSearchInput').inputValue(),'薬を飲んでから寝なければなりません。');
+  assert.equal(await analysis.getByRole('tab',{name:'Ngữ pháp',exact:true}).getAttribute('aria-selected'),'true');
+  await analysis.getByRole('tab',{name:'Tổng hợp',exact:true}).click();
   await analysis.locator('.n5-lookup-phrases [data-lookup="part"]').filter({hasText:'飲んでから'}).first().click();
   await dialog.getByRole('button',{name:'飲',exact:true}).click();
   await dialog.getByText(/Thứ tự nét ·/).click();
@@ -1244,6 +1247,9 @@ test('AI translation is opt-in, cached, cancellable, and renders provider text s
     response.writeHead(status,{'Content-Type':'application/json'}).end(JSON.stringify(status===200?{
       ...shell,detectedLanguage:'ja',originalText:text,model:'gemini-test',
       translatedText:'<img src=x onerror=alert(1)>',japaneseText:text,
+      kanaReading:'てんたいぶつりがくではブラックホールをけんきゅうします。',
+      romaji:'tentai butsurigaku de wa burakku hooru o kenkyuu shimasu',
+      literalTranslation:'Bản dịch thử sát nghĩa.', grammarPatterns:[{pattern:'では',explanation:'Phạm vi nghiên cứu.'}],
     }:{error}));
   };
   t.after(()=>{releaseHold?.();mockCloud=null;});
@@ -1275,7 +1281,24 @@ test('AI translation is opt-in, cached, cancellable, and renders provider text s
   assert.equal(await inline.locator('img').count(),0);
   await inline.getByText(/Bản dịch đã lưu/).waitFor();
   const used=calls;
-  await ai.click();
+  assert.equal(await ai.count(),0);
+  assert.equal(await inline.getByRole('button',{name:'Dịch lại bằng AI',exact:true}).count(),1);
+  assert.equal(await inline.getByRole('button',{name:'Nghe tiếng Nhật',exact:true}).count(),1);
+  assert.equal(await inline.getByRole('button',{name:'Kiểm tra câu',exact:true}).count(),1);
+  const sentence=page.locator('[data-result-sentence]');
+  assert.equal(await sentence.getByText(phrase,{exact:true}).count(),1);
+  assert.match(await sentence.locator('[data-result-reading="Kana"]').textContent(),/ブラックホール.*Gemini/);
+  const overview=sentence.getByRole('tab',{name:'Tổng hợp',exact:true});
+  await overview.focus();
+  await overview.press('End');
+  assert.equal(await sentence.getByRole('tab',{name:'Phân tích chi tiết'}).getAttribute('aria-selected'),'true');
+  await sentence.getByText('Đối chiếu cách đọc',{exact:true}).waitFor();
+  await page.locator('#mainContainer').getByRole('button',{name:'Phân tích câu',exact:true}).click();
+  assert.equal(await sentence.getByRole('tab',{name:'Phân tích chi tiết'}).getAttribute('aria-selected'),'true');
+  await inline.getByText(/Bản dịch đã lưu/).waitFor();
+  assert.equal(calls,used);
+  await lookup(page,'テレビを見ています。');
+  await lookup(page,phrase);
   await inline.getByText(/Bản dịch đã lưu/).waitFor();
   assert.equal(calls,used);
   await go(page,'translator');
@@ -1297,4 +1320,57 @@ test('AI translation is opt-in, cached, cancellable, and renders provider text s
   await inline.getByText('Đang xem TV.',{exact:true}).waitFor();
   releaseHold?.();
   assert.equal(await inline.getByText('<img src=x onerror=alert(1)>',{exact:true}).count(),0);
+});
+
+test('shared result panels have clear contrast, responsive order and reduced motion', {timeout:60_000}, async t => {
+  for (const [settings,mobile] of [
+    [{viewport:{width:1440,height:900},colorScheme:'light',reducedMotion:'reduce'},false],
+    [{...playwright.devices['iPhone 13'],colorScheme:'dark'},true],
+  ]) {
+    const {page}=await openApp(t,settings);
+    await lookup(page,'テレビを見ています。');
+    const result=page.locator('[data-result-sentence]');
+    await result.locator('.n5-translation-output').getByText('Đang xem TV.',{exact:true}).waitFor();
+    const measured=await result.evaluate(root=>{
+      const luminance=color=>{
+        const channels=color.match(/[0-9.]+/g).slice(0,3).map(n=>Number(n)/255)
+          .map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4);
+        return .2126*channels[0]+.7152*channels[1]+.0722*channels[2];
+      };
+      const measure=element=>{
+        const panel=getComputedStyle(element);
+        const title=getComputedStyle(element.querySelector('h2,h3'));
+        const values=[luminance(panel.backgroundColor),luminance(panel.color),luminance(title.color)];
+        const contrast=(a,b)=>(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+        return {box:element.getBoundingClientRect().toJSON(),heading:contrast(values[0],values[2]),
+          body:contrast(values[0],values[1])};
+      };
+      return {source:measure(root.querySelector('.n5-result-source')),translation:measure(root.querySelector('.n5-translation-result')),
+        width:document.documentElement.scrollWidth,touchWidth:innerWidth,viewHeight:innerHeight,
+        renderedTranslation:root.querySelector('.n5-translation-output').getBoundingClientRect().bottom,
+        motion:getComputedStyle(root.querySelector('.n5-result-toolbar button')).transitionDuration};
+    });
+    for (const panel of [measured.source,measured.translation]) {
+      assert(panel.body>=4.5,JSON.stringify(panel));
+      assert(panel.heading>=4.5,JSON.stringify(panel));
+    }
+    assert(measured.width<=measured.touchWidth);
+    assert(measured.renderedTranslation<=measured.viewHeight);
+    if (mobile) assert(measured.translation.box.top>=measured.source.box.bottom);
+    else {
+      assert.equal(measured.translation.box.top,measured.source.box.top);
+      assert(measured.translation.box.left>=measured.source.box.right);
+      assert.equal(measured.motion,'0s');
+    }
+    const toolbar=result.locator('.n5-result-toolbar');
+    for (const name of ['Nghe tiếng Nhật','Sao chép bản dịch','Lưu câu','Kiểm tra câu','Dịch chuyên sâu bằng AI']) {
+      assert.equal(await toolbar.getByRole('button',{name,exact:true}).count(),1);
+    }
+    if (mobile) {
+      const top=page.locator('#backToTopBtn');
+      await top.waitFor({state:'hidden'});
+      await page.evaluate(()=>window.scrollTo({top:240,behavior:'instant'}));
+      await top.waitFor();
+    }
+  }
 });
