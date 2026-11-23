@@ -253,7 +253,9 @@ export function formSpellings(lemma,form) {
   const tail=lemma.jp.slice(prefix);
   const values=[form.jp];
   if (prefix) for (const alias of lemma.aliases || []) {
-    if (alias.endsWith(tail)) values.push(alias.slice(0,alias.length-tail.length)+form.jp.slice(prefix));
+    if (lemma.group==='III' && lemma.jp.endsWith('来る') && lemma.kana.endsWith('くる') && alias.endsWith('くる')) {
+      values.push(alias.slice(0,-2)+form.kana.slice(lemma.kana.length-2));
+    } else if (alias.endsWith(tail)) values.push(alias.slice(0,alias.length-tail.length)+form.jp.slice(prefix));
   }
   if (form.key==='person-plural') for (const spelling of values.slice()) {
     values.push(spelling.slice(0,-2)+'達');

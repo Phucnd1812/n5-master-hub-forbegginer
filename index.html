@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="application-name" content="N5 Master Hub">
-  <meta name="n5-release" content="5.52.3">
+  <meta name="n5-release" content="5.52.4">
   <meta name="description" content="Học tiếng Nhật JLPT N5 với từ vựng, Kanji, ngữ pháp và Flashcard ngoại tuyến.">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,13 +15,13 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch.png">
-  <title>N5 Master Hub v5.52.3</title>
+  <title>N5 Master Hub v5.52.4</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <script src="./assets/vendor/lucide-1.77.0.min.js" defer></script>
-  <script src="./assets/study-engine.js?v=5.52.3" defer></script>
-  <script src="./assets/smart-study.js?v=5.52.3" defer></script>
-  <script src="./assets/ui/effects.js?v=5.52.3" defer></script>
-  <script src="./pwa.js?v=5.52.3" defer></script>
+  <script src="./assets/study-engine.js?v=5.52.4" defer></script>
+  <script src="./assets/smart-study.js?v=5.52.4" defer></script>
+  <script src="./assets/ui/effects.js?v=5.52.4" defer></script>
+  <script src="./pwa.js?v=5.52.4" defer></script>
   <style>
     :root {
       --n5-heading-font: Inter, "Noto Sans JP", "Hiragino Sans", Meiryo, system-ui, sans-serif;
@@ -1249,14 +1249,7 @@
     #n5SearchBar:focus-within { background:rgba(255,255,255,.91); border-color:rgba(14,165,233,.42); box-shadow:0 0 0 4px rgba(14,165,233,.09),0 8px 24px rgba(14,165,233,.09),inset 0 1px white; }
     html.dark #n5SearchBar { background:rgba(8,18,34,.56); border-color:rgba(148,163,184,.2); box-shadow:inset 0 1px rgba(255,255,255,.06),0 5px 18px rgba(0,0,0,.16); }
     html.dark #n5SearchBar:focus-within { background:rgba(8,18,34,.86); border-color:rgba(56,189,248,.5); }
-    #handwritingSearchPanel { background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(239,248,255,.88) 55%,rgba(239,253,248,.9)); border:1px solid rgba(255,255,255,.94); box-shadow:0 24px 70px rgba(15,23,42,.2),inset 0 1px white; backdrop-filter:blur(28px) saturate(185%); -webkit-backdrop-filter:blur(28px) saturate(185%); }
-    html.dark #handwritingSearchPanel { background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,47,73,.92) 58%,rgba(6,38,34,.92)); border-color:rgba(148,163,184,.22); box-shadow:0 24px 70px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.07); }
-    #handwritingSearchCanvas { touch-action:none; }
-    #handwritingSearchResults .handwriting-candidate { display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px; text-align:left; border:1px solid rgba(148,163,184,.2); border-radius:14px; background:rgba(255,255,255,.58); transition:background .16s,border-color .16s,transform .16s; }
-    #handwritingSearchResults .handwriting-candidate:hover { background:rgba(224,242,254,.85); border-color:rgba(14,165,233,.4); transform:translateY(-1px); }
-    html.dark #handwritingSearchResults .handwriting-candidate { background:rgba(15,23,42,.55); border-color:rgba(148,163,184,.16); }
-    html.dark #handwritingSearchResults .handwriting-candidate:hover { background:rgba(8,47,73,.72); border-color:rgba(56,189,248,.42); }
-    @media(max-width:640px){ #mainLayout > header { gap:.4rem; padding-left:.65rem; padding-right:.65rem; } #n5SearchBar { gap:.15rem; padding-left:.35rem; padding-right:.25rem; } #handwritingSearchPanel { right:-42px; max-height:min(78dvh,720px); overflow-y:auto; } }
+    @media(max-width:640px){ #mainLayout > header { gap:.4rem; padding-left:.65rem; padding-right:.65rem; } #n5SearchBar { gap:.15rem; padding-left:.35rem; padding-right:.25rem; } }
 
 
 /* ========================================================================
@@ -1431,7 +1424,6 @@ html.dark #mainContainer { background:var(--n5-bg) !important; }
   #mainContainer h2 { font-size:1.2rem; line-height:1.3; }
   #mainContainer .grid { min-width:0; }
   #mainContainer .overflow-x-auto { max-width:100%; }
-  #handwritingSearchPanel { position:fixed !important; top:calc(76px + env(safe-area-inset-top,0px)) !important; left:12px !important; right:12px !important; width:auto !important; max-height:calc(100dvh - 100px - env(safe-area-inset-bottom,0px)) !important; overflow:auto !important; border-radius:22px !important; }
   .mobile-bottom-nav {
     position:fixed; display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
     left:10px; right:10px; bottom:calc(8px + env(safe-area-inset-bottom,0px)); z-index:45;
@@ -1461,7 +1453,7 @@ html.dark #mainContainer { background:var(--n5-bg) !important; }
   #n5SearchBar { gap:0 !important; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  #sidebar, #mainLayout > header, .mobile-bottom-nav, #n5SearchBar, #handwritingSearchPanel {
+  #sidebar, #mainLayout > header, .mobile-bottom-nav, #n5SearchBar {
     -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
     background:var(--n5-surface) !important;
   }
@@ -1701,8 +1693,6 @@ html.dark #dashboardPage .dashboard-hero { background:linear-gradient(118deg,#78
 .n5-flashcard-feedback { position:absolute; z-index:30; left:50%; top:48%; transform:translate(-50%,-50%); border:1px solid rgba(255,255,255,.7); color:white; font-size:1.1rem; font-weight:900; padding:14px 25px; border-radius:18px; text-shadow:0 1px 3px rgba(0,0,0,.15); box-shadow:0 12px 45px rgba(0,0,0,.2); backdrop-filter:blur(12px); background:rgba(16,185,129,.9); pointer-events:none; white-space:nowrap; animation:n5-fc-feedback-in .28s cubic-bezier(.18,1.5,.4,1) both; }
 .n5-fc-retry .n5-flashcard-feedback { background:rgba(217,119,6,.92); }
 @keyframes n5-fc-feedback-in { from {opacity:0;transform:translate(-50%,-43%) scale(.7)} to {opacity:1;transform:translate(-50%,-50%) scale(1)} }
-.n5-handwriting-scope-group button { background:rgba(148,163,184,.13); border:1px solid rgba(148,163,184,.23); color:#64748b; transition:background .15s ease,border-color .15s ease,color .15s ease; }
-.n5-handwriting-scope-group button.n5-handwriting-scope-active { color:white; background:linear-gradient(110deg,#0284c7,#0d9488); border-color:transparent; box-shadow:0 3px 12px rgba(2,132,199,.18); }
 @media (prefers-reduced-motion:reduce) { .n5-flashcard-feedback { animation:none!important; } .flashcard-stage { will-change:auto; } }
 
 
@@ -1906,14 +1896,15 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 .n5-personal-dialog{width:min(100%,550px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;color:#142437;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 25px 80px #0005;}
 .dark .n5-personal-dialog{background:#142337;color:#e5eef7}.n5-personal-dialog label{display:flex;flex-direction:column;gap:6px;font:600 13px/1.4 system-ui}.n5-personal-dialog input,.n5-personal-dialog select,.n5-personal-dialog textarea,.n5-p-actions select,.n5-p-actions input{width:100%;box-sizing:border-box;border:1px solid #94a3b877;background:#94a3b812;color:inherit;border-radius:12px;padding:10px;font:400 16px/1.4 system-ui;min-width:0}.n5-personal-dialog textarea{resize:vertical}.n5-p-button{padding:10px 13px;border-radius:12px;border:1px solid #94a3b855;background:#94a3b816;color:inherit;font-weight:700;font-size:13px;line-height:1.35;cursor:pointer;min-height:40px}.n5-p-button.primary{background:#0579b5;color:#fff;border-color:transparent}.n5-p-button.retry{background:#fef3c7;color:#92400e;border-color:#fbbf24}.n5-p-button:disabled{opacity:.4;cursor:default}.n5-p-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.n5-p-actions select,.n5-p-actions input{flex:1 1 140px;width:auto}.n5-p-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-top:1px solid #94a3b855;overflow-wrap:anywhere}.n5-p-row>div:first-child{min-width:0;flex:1}.n5-p-study{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:290px;padding:24px;border:1px solid #7dd3fc;border-radius:24px;background:linear-gradient(145deg,#eefaff,#e6fcf4);color:#16344c;text-align:center;overflow-wrap:anywhere;animation:n5PEnter .2s ease-out}.n5-p-study strong{font-size:clamp(24px,6vw,38px);line-height:1.5}.n5-p-study.answer{background:linear-gradient(140deg,#123449,#075b55);color:#fff}.dark .n5-p-study:not(.answer){background:#193347;color:#eff9ff}.n5-p-add{font-size:12px;white-space:nowrap}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto}.n5-smart-row>.n5-p-actions{justify-content:end}.n5-smart-row>.n5-p-add{grid-column:1/-1;justify-self:end}.n5-smart-row>.n5-p-actions .n5-p-add{white-space:normal}@keyframes n5PEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.n5-p-study{animation:none}}@media(max-width:600px){.n5-personal-overlay{align-items:flex-end;padding:8px}.n5-personal-dialog{max-height:85dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.n5-smart-row>.n5-p-actions{grid-column:1/-1}.n5-p-row{align-items:flex-start}.n5-p-row .n5-p-actions{flex-direction:column}}
 </style>
-  <link rel="stylesheet" href="./assets/tailwind.css?v=5.52.3">
-  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.52.3">
-  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.52.3">
-  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.52.3">
-  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.52.3">
-  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.52.3">
-  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.52.3">
-  <link rel="stylesheet" href="./assets/search/result.css?v=5.52.3">
+  <link rel="stylesheet" href="./assets/tailwind.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/search/result.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/ui/handwriting.css?v=5.52.4">
 </head>
 <body class="h-full bg-slate-50 dark:bg-jpdark-950 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
   <div id="app" class="flex h-screen overflow-hidden">
@@ -2036,18 +2027,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
                      class="w-full min-w-0 px-1 py-1 text-sm bg-transparent border-0 focus:outline-none focus:ring-0">
               <button type="button" id="globalSearchClearBtn" onclick="clearTopSearchInput()" aria-label="Xóa nội dung tìm kiếm" title="Xóa tìm kiếm" class="hidden shrink-0 w-7 h-7 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
               <span class="hidden sm:block h-5 w-px bg-slate-300/70 dark:bg-slate-600/70"></span>
-              <button type="button" id="handwritingSearchToggle" onclick="toggleHandwritingSearch()" aria-label="Tìm kiếm bằng chữ viết tay" title="Viết tay để tìm Kanji" class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-xl text-sky-700 dark:text-sky-300 hover:bg-sky-100/80 dark:hover:bg-sky-900/40 transition-colors"><i data-lucide="pen-line" class="w-4 h-4"></i></button>
+              <button type="button" id="handwritingSearchToggle" onclick="toggleHandwritingSearch()" aria-controls="handwritingSearchPanel" aria-haspopup="dialog" aria-expanded="false" aria-label="Tìm kiếm bằng chữ viết tay" title="Viết tay để tìm Kanji" class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-xl text-sky-700 dark:text-sky-300 hover:bg-sky-100/80 dark:hover:bg-sky-900/40 transition-colors"><i data-lucide="pen-line" class="w-4 h-4"></i></button>
             </div>
             <section id="n5LookupRecent" aria-label="Tra cứu gần đây" hidden></section>
             <section id="n5InstantLookup" aria-label="Gợi ý tra cứu" hidden></section>
-            <section id="handwritingSearchPanel" class="hidden absolute top-[calc(100%+12px)] right-0 z-[80] w-[min(94vw,430px)] rounded-3xl p-4 sm:p-5 space-y-3" aria-label="Tìm kiếm Kanji bằng chữ viết tay">
-              <div class="flex items-start justify-between gap-3"><div><p class="text-[11px] font-bold uppercase tracking-[.16em] text-sky-600 dark:text-sky-300">Handwriting search</p><h3 class="font-bold text-slate-900 dark:text-white mt-1">Viết Kanji để tra cứu</h3><p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Viết chữ Kanji rồi chọn Nhận diện. Có thể viết khác thứ tự nét hoặc nối nét; hệ thống ưu tiên hình dáng chữ. Mẫu nét có sẵn, không cần Internet. Dữ liệu nét: <a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer" class="underline">KanjiVG</a> (CC BY-SA 3.0).</p></div><button type="button" onclick="toggleHandwritingSearch(false)" class="w-8 h-8 rounded-full bg-slate-100/80 dark:bg-slate-800/80 flex items-center justify-center" aria-label="Đóng bảng viết"><i data-lucide="x" class="w-4 h-4"></i></button></div>
-              <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-600/70 bg-white dark:bg-slate-950 shadow-inner"><canvas id="handwritingSearchCanvas" width="480" height="480" class="block w-full aspect-square touch-none cursor-crosshair" aria-label="Khung viết Kanji"></canvas><div class="absolute inset-0 pointer-events-none opacity-30" style="background-image:linear-gradient(to right,transparent calc(50% - .5px),#94a3b8 50%,transparent calc(50% + .5px)),linear-gradient(to bottom,transparent calc(50% - .5px),#94a3b8 50%,transparent calc(50% + .5px))"></div><span class="absolute bottom-2 right-3 text-[10px] text-slate-400 pointer-events-none">Viết một chữ</span></div>
-              <div class="grid grid-cols-3 gap-2"><button type="button" onclick="undoHandwritingStroke()" class="rounded-xl py-2.5 text-xs font-semibold bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200">↶ Hoàn tác</button><button type="button" onclick="clearHandwritingCanvas()" class="rounded-xl py-2.5 text-xs font-semibold bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200">Xóa nét</button><button type="button" id="recognizeHandwritingBtn" onclick="recognizeHandwritingKanji()" class="rounded-xl py-2.5 text-xs font-bold bg-gradient-to-r from-sky-600 to-teal-500 text-white shadow-lg shadow-sky-500/20">Nhận diện</button></div>
-              <div class="n5-handwriting-scope-group flex gap-2" role="group" aria-label="Phạm vi nhận diện Kanji"><button type="button" data-n5-handwriting-scope="n5" aria-pressed="true" onclick="setHandwritingScope('n5')" class="n5-handwriting-scope-active flex-1 rounded-xl py-2 text-xs font-bold">Trong bài N5 (161)</button><button type="button" data-n5-handwriting-scope="all" aria-pressed="false" onclick="setHandwritingScope('all')" class="flex-1 rounded-xl py-2 text-xs font-bold">Mở rộng (6.703)</button></div>
-              <div id="handwritingSearchResults" class="space-y-2" aria-live="polite"><p class="text-xs text-slate-500 dark:text-slate-400 text-center py-1">Kết quả nhận diện sẽ hiển thị tại đây.</p></div>
-              <p class="text-[10px] leading-relaxed text-slate-400">Nhận diện chạy trực tiếp trên thiết bị bằng cách so khớp hình dạng với bộ Kanji trong website. Điểm tương đồng chỉ mang tính tham khảo, không phải xác suất chính xác tuyệt đối.</p>
-            </section>
           </div>
         </div>
 
@@ -2559,7 +2542,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const recent = n5LookupRecent();
       const panel = document.getElementById('n5LookupRecent');
       if (!recent.length || document.getElementById('globalSearchInput').value.trim() ||
-          !document.getElementById('handwritingSearchPanel').classList.contains('hidden')) return;
+          document.getElementById('handwritingSearchPanel').open) return;
       panel.innerHTML = `<h2>Tra cứu gần đây</h2><div class="n5-lookup-actions">${recent.slice(0,6).map(query =>
         `<button type="button" class="n5-lookup-chip" data-query="${escapeSearchHtml(query)}">${escapeSearchHtml(query)}</button>`).join('')}</div>`;
       panel.hidden = false;
@@ -2577,7 +2560,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CanPreview(query) {
       return n5LiveLookupQuery===query && n5LookupCurrent(query) &&
         document.activeElement===document.getElementById('globalSearchInput') &&
-        document.getElementById('handwritingSearchPanel').classList.contains('hidden');
+        !document.getElementById('handwritingSearchPanel').open;
     }
 
     function n5RenderInstantLookup(query,html) {
@@ -2721,7 +2704,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5LoadLookup() {
-      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.52.3'),n5EnsurePack()]).then(([{createLookupUI}]) => {
+      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.52.4'),n5EnsurePack()]).then(([{createLookupUI}]) => {
         n5LookupUI = createLookupUI({
           sources: () => ({vocab:N5_ALL_VOCAB,kanji:N5_ALL_KANJI,grammar:GRAMMAR_DATA,imported:n5PackRows}),
           dictionaryRevision: () => n5PackRevision,
@@ -2749,7 +2732,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
           findVocab:word => N5_ALL_VOCAB.find(item => [item.kanji,item.audio,item.kana].includes(word)),
           related:(id,reading) => reading ? N5_ALL_VOCAB.filter(item => item.id !== id &&
             item.kana === reading).slice(0,5) : [],
-          examples:n5LookupExamples, strokes:n5OfflineKanjiStrokes,
+          examples:n5LookupExamples, strokes:n5OfflineKanjiStrokes, strokePreview:n5HandwritingStrokePreview,
           mistake:n5GrammarMistake,
           toolFrame:tool => { n5NavigationTool = tool; n5SyncSidebarCurrent(); },
           review:n5LookupQueueReview,
@@ -2830,11 +2813,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     // v5.27: Stroke-geometry recognition using KanjiVG reference paths.
     // Recognition runs in the browser with locally bundled KanjiVG geometry.
     // Neither strokes nor handwriting images are uploaded to any service.
-    let handwritingCanvasReady = false;
-    let handwritingStrokeSnapshots = [];
     let handwritingStrokes = [];
-    let handwritingCurrentStroke = null;
-    let handwritingIsDrawing = false;
+    let handwritingRedo = [];
+    let handwritingCanvas, handwritingCanvasModule;
+    let handwritingRevision = 0;
     const handwritingStrokeTemplateCache = new Map();
     const HANDWRITING_TEMPLATE_STORE = 'n5_handwriting_stroke_templates_v1';
     let handwritingTemplateStore = null;
@@ -2849,39 +2831,91 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       try{const store=getHandwritingTemplateStore();store[char]=strokes;localStorage.setItem(HANDWRITING_TEMPLATE_STORE,JSON.stringify(store));}
       catch(e){/* Storage may be disabled or full; in-memory cache still works. */}
     }
+    function handwritingStatus(message) {
+      document.getElementById('handwritingSearchResults').innerHTML =
+        '<p class="n5-handwriting-note">' + studyEscape(message) + '</p>';
+    }
+
+    function handwritingControls() {
+      document.getElementById('undoHandwritingBtn').disabled = !handwritingStrokes.length;
+      document.getElementById('redoHandwritingBtn').disabled = !handwritingRedo.length;
+      document.getElementById('clearHandwritingBtn').disabled = !handwritingStrokes.length && !handwritingRedo.length;
+    }
+
+    function handwritingBusy(busy) {
+      const button = document.getElementById('recognizeHandwritingBtn');
+      button.disabled = busy;
+      button.textContent = busy ? 'Đang nhận diện…' : 'Nhận diện';
+      document.getElementById('handwritingSearchResults').setAttribute('aria-busy',String(busy));
+    }
+
+    function invalidateHandwriting(message) {
+      handwritingRevision++;
+      handwritingBusy(false);
+      if (message) handwritingStatus(message);
+    }
+
     function toggleHandwritingSearch(force) {
       const panel = document.getElementById('handwritingSearchPanel');
-      if (!panel) return;
-      const shouldOpen = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
-      panel.classList.toggle('hidden', !shouldOpen);
-      if (shouldOpen) { initHandwritingSearchCanvas(); document.querySelectorAll('[data-n5-handwriting-scope]').forEach(btn=>{ const selected=btn.dataset.n5HandwritingScope===n5HandwritingScope; btn.setAttribute('aria-pressed',String(selected));btn.classList.toggle('n5-handwriting-scope-active',selected); });requestAnimationFrame(() => { const c=document.getElementById('handwritingSearchCanvas'); if(c) c.focus?.(); }); }
+      const open = force ?? !panel.open;
+      if (!open) { if (panel.open) panel.close(); return; }
+      if (panel.open) return;
+      n5HideLookupRecent();
+      n5HideInstantLookup();
+      panel.showModal();
+      document.getElementById('handwritingSearchToggle').setAttribute('aria-expanded','true');
+      handwritingControls();
+      handwritingCanvasModule ??= import('./assets/ui/handwriting.js?v=5.52.4').then(({createHandwritingCanvas}) => {
+        handwritingCanvas = createHandwritingCanvas(document.getElementById('handwritingSearchCanvas'), {
+          getStrokes:() => handwritingStrokes,
+          start(stroke) {
+            invalidateHandwriting();
+            handwritingStrokes.push(stroke);
+            handwritingRedo = [];
+          },
+          finish:showHandwritingStrokeCount,
+        });
+      }).catch(() => {
+        handwritingCanvasModule = null;
+        handwritingStatus('Chưa mở được khung viết. Hãy mở lại bảng viết.');
+      });
+      handwritingCanvasModule.then(() => { if (panel.open) handwritingCanvas?.resize(); });
     }
-    function initHandwritingSearchCanvas() {
-      const canvas=document.getElementById('handwritingSearchCanvas');
-      if(!canvas || canvas.dataset.ready==='1') return;
-      const ctx=canvas.getContext('2d');
-      ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=17; ctx.strokeStyle='#172b4d';
-      const point=e=>{const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};};
-      canvas.addEventListener('pointerdown',e=>{e.preventDefault();handwritingIsDrawing=true;handwritingCurrentStroke=[];const p=point(e);handwritingCurrentStroke.push([p.x,p.y]);handwritingStrokes.push(handwritingCurrentStroke);canvas.setPointerCapture(e.pointerId);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();});
-      canvas.addEventListener('pointermove',e=>{if(!handwritingIsDrawing||!handwritingCurrentStroke)return;e.preventDefault();const p=point(e),last=handwritingCurrentStroke[handwritingCurrentStroke.length-1];if(Math.hypot(p.x-last[0],p.y-last[1])>1.1)handwritingCurrentStroke.push([p.x,p.y]);ctx.lineTo(p.x,p.y);ctx.stroke();});
-      const stop=()=>{if(!handwritingIsDrawing)return;handwritingIsDrawing=false;handwritingCurrentStroke=null;const out=document.getElementById('handwritingSearchResults');if(out)out.innerHTML='<p class="text-xs text-slate-500 dark:text-slate-400 text-center py-1">Đã ghi nhận '+handwritingStrokes.length+' nét. Nhấn Nhận diện để so khớp nét viết.</p>';};
-      canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
-      canvas.dataset.ready='1';handwritingCanvasReady=true;
+
+    function showHandwritingStrokeCount() {
+      handwritingControls();
+      handwritingStatus(handwritingStrokes.length ?
+        'Đã ghi nhận ' + handwritingStrokes.length + ' nét. Nhấn Nhận diện để tìm chữ.' :
+        'Viết một chữ Kanji để bắt đầu.');
     }
-    function undoHandwritingStroke(){
-      const c=document.getElementById('handwritingSearchCanvas');if(!c||!handwritingStrokes.length)return;
-      handwritingStrokes.pop();handwritingCurrentStroke=null;handwritingIsDrawing=false;
-      const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
-      ctx.strokeStyle='#172b4d';ctx.lineWidth=17;ctx.lineCap='round';ctx.lineJoin='round';
-      for(const line of handwritingStrokes){if(!line.length)continue;ctx.beginPath();ctx.moveTo(...line[0]);
-        if(line.length===1)ctx.lineTo(line[0][0]+.1,line[0][1]+.1);
-        else for(const p of line.slice(1))ctx.lineTo(...p);
-        ctx.stroke();
-      }
-      const out=document.getElementById('handwritingSearchResults');
-      if(out)out.innerHTML='<p class="text-xs text-slate-500 dark:text-slate-400 text-center py-1">Đã hoàn tác. Còn '+handwritingStrokes.length+' nét.</p>';
+
+    function undoHandwritingStroke() {
+      handwritingCanvas?.stop();
+      if (!handwritingStrokes.length) return;
+      handwritingRedo.push(handwritingStrokes.pop());
+      invalidateHandwriting();
+      handwritingCanvas?.redraw();
+      showHandwritingStrokeCount();
     }
-    function clearHandwritingCanvas(){const c=document.getElementById('handwritingSearchCanvas');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);handwritingStrokeSnapshots=[];handwritingStrokes=[];handwritingCurrentStroke=null;const out=document.getElementById('handwritingSearchResults');if(out)out.innerHTML='<p class="text-xs text-slate-500 dark:text-slate-400 text-center py-1">Đã xóa. Hãy viết một Kanji mới.</p>';}
+
+    function redoHandwritingStroke() {
+      handwritingCanvas?.stop();
+      if (!handwritingRedo.length) return;
+      handwritingStrokes.push(handwritingRedo.pop());
+      invalidateHandwriting();
+      handwritingCanvas?.redraw();
+      showHandwritingStrokeCount();
+    }
+
+    function clearHandwritingCanvas() {
+      handwritingCanvas?.stop();
+      handwritingRedo = [];
+      handwritingStrokes = [];
+      invalidateHandwriting();
+      handwritingCanvas?.redraw();
+      showHandwritingStrokeCount();
+    }
+
     function handwritingResampleStroke(points,count=14){
       if(!Array.isArray(points)||!points.length)return[];const pts=points.filter(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1]));if(!pts.length)return[];if(pts.length===1)return Array.from({length:count},()=>[pts[0][0],pts[0][1]]);
       const lengths=[0];for(let i=1;i<pts.length;i++)lengths.push(lengths[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const total=lengths[lengths.length-1];if(total<.01)return Array.from({length:count},()=>[pts[0][0],pts[0][1]]);
@@ -3041,6 +3075,15 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       }
       return lines;
     }
+    async function n5HandwritingStrokePreview(character) {
+      try {
+        const {bytes,records} = await n5InitHandwritingIndex();
+        const record = records.find(item => item.char === character);
+        if (!record) return null;
+        return n5DecodeHandwritingStrokes(record,bytes).map(line => 'M'+line.map(point =>
+          point.map(value => Math.round(value*1090)/10).join(',')).join(' L'));
+      } catch { return null; }
+    }
     // v5.36: the large Kanji shape matcher runs off the main UI thread when possible.
     let n5HWWorker=null,n5HWReady=null,n5HWSeq=0;
     const n5HWPending=new Map();
@@ -3116,63 +3159,76 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         worker.postMessage({type:'recognize',id,user,scope});
       }));
     }
-    function setHandwritingScope(scope){
-      n5HandwritingScope=scope==='all'?'all':'n5';
-      document.querySelectorAll('[data-n5-handwriting-scope]').forEach(btn=>{
-        const active=btn.dataset.n5HandwritingScope===n5HandwritingScope;
-        btn.setAttribute('aria-pressed',String(active));
-        btn.classList.toggle('n5-handwriting-scope-active',active);
+    function setHandwritingScope(scope) {
+      if (scope !== 'n5' && scope !== 'all' || scope === n5HandwritingScope) return;
+      n5HandwritingScope = scope;
+      document.querySelectorAll('[data-n5-handwriting-scope]').forEach(button => {
+        const selected = button.dataset.n5HandwritingScope === scope;
+        button.setAttribute('aria-pressed',String(selected));
+        if (selected) button.focus({preventScroll:true});
       });
-      if(handwritingStrokes.length)recognizeHandwritingKanji();
+      if (handwritingStrokes.length) recognizeHandwritingKanji();
     }
-    async function recognizeHandwritingKanji(){
-      const out=document.getElementById('handwritingSearchResults'),btn=document.getElementById('recognizeHandwritingBtn');
-      if(!out)return;
-      const user=handwritingNormalizeStrokes(handwritingStrokes);
-      if(!user){out.innerHTML='<p class="text-xs text-amber-600 text-center py-2">Hãy viết một chữ Kanji trong khung trước nhé.</p>';return;}
-      if(btn){btn.disabled=true;btn.textContent='Đang nhận diện…';}
-      out.innerHTML='<p class="text-xs text-sky-700 dark:text-sky-300 text-center py-2">Đang so khớp mẫu nét trực tiếp trên thiết bị…</p>';
-      // Yield one frame so the progress line is painted before CPU work.
-      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
-      try{
-        let scored=null,sampleCount=0;
-        try{
-          const result=await n5RunHandwritingWorker(user,n5HandwritingScope);
-          scored=result.scored.map(entry=>({rec:{char:entry.char,course:entry.course},score:entry.score,courseSuggestion:entry.courseSuggestion}));
-          sampleCount=result.sampleCount;
-        }catch(workerError){
-          // Safari file:// or strict browser policies may block blob workers.
-          console.info('Kanji recognizer: fallback to local matching',workerError.message);
+
+    async function recognizeHandwritingKanji() {
+      handwritingCanvas?.stop();
+      const panel = document.getElementById('handwritingSearchPanel');
+      const out = document.getElementById('handwritingSearchResults');
+      const user = handwritingNormalizeStrokes(handwritingStrokes);
+      if (!user) { handwritingStatus('Viết một chữ Kanji trước khi nhận diện.'); return; }
+      const revision = ++handwritingRevision;
+      const scope = n5HandwritingScope;
+      const current = () => panel.open && revision === handwritingRevision;
+      handwritingBusy(true);
+      handwritingStatus('Đang so khớp mẫu nét trên thiết bị…');
+      // Let the progress message paint before the synchronous fallback.
+      await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve,0)));
+      if (!current()) return;
+      try {
+        let result;
+        try {
+          result = await n5RunHandwritingWorker(user,scope);
+        } catch {
+          if (!current()) return;
+          const {bytes,records} = await n5InitHandwritingIndex();
+          if (!current()) return;
+          result = n5RankHandwriting(user,scope,records,bytes);
         }
-        if(!scored){
-        const {bytes,records}=await n5InitHandwritingIndex();
-        const result=n5RankHandwriting(user,n5HandwritingScope,records,bytes);
-        scored=result.scored.map(entry=>({rec:{char:entry.char,course:entry.course},score:entry.score,courseSuggestion:entry.courseSuggestion}));
-        sampleCount=result.sampleCount;
-        }
-        if(!scored.length){out.innerHTML='<p class="text-xs text-amber-600 text-center py-2">Chưa tìm được mẫu phù hợp; hãy vẽ rõ từng nét và thử lại.</p>';return;}
-        const ambiguous=scored.length>1&&scored[0].score-scored[1].score<.045;
-        out.innerHTML=`<div class="flex items-center justify-between gap-2"><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">${ambiguous?'Các chữ có nét gần nhau':'Kết quả khớp hình dạng'}</p><span class="text-[10px] text-slate-500">${sampleCount.toLocaleString('vi-VN')} mẫu ngoại tuyến</span></div><p class="text-[10px] text-slate-500">Điểm khớp là phép so sánh hình học, không phải xác suất. Hãy chọn chữ phù hợp với bạn.</p><div class="grid grid-cols-2 gap-2">${scored.map((r,i)=>{
-          const item=n5CourseKanji.get(r.rec.char),name=item?.meaning||'Ngoài bộ N5';
-          return `<button type="button" class="handwriting-candidate" onclick="selectHandwritingKanji('${r.rec.char}')" title="${item?'Tra cứu Kanji':'Mở hướng dẫn nét chữ'}"><span class="font-jp text-2xl font-bold text-sky-700 dark:text-sky-300">${r.rec.char}</span><span class="min-w-0 text-left flex-1"><b class="block truncate text-xs">${studyEscape(name)}</b><span class="text-[10px] text-slate-500">${i===0?'Khớp nhất · ':r.courseSuggestion?'Gợi ý N5 · ':''}${Math.round(r.score*100)} điểm</span></span></button>`;
-        }).join('')}</div><div class="mt-3 flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500 dark:text-slate-400">Chưa thấy chữ cần tìm?</span><button type="button" onclick="n5HandwritingSwitchToTextSearch()" class="text-xs font-semibold text-sky-700 dark:text-sky-300 underline underline-offset-2">Tra bằng Romaji / Hiragana</button></div>`;
-      }catch(err){
-        console.error('N5 Kanji local recognition',err);
-        out.innerHTML='<p class="text-xs text-amber-600 dark:text-amber-300">Không thể xử lý mẫu nét. Hãy tải lại ứng dụng rồi thử lại.</p>';
-      }finally{if(btn){btn.disabled=false;btn.textContent='Nhận diện';}}
-    }
-    function n5HandwritingSwitchToTextSearch(){
-      toggleHandwritingSearch(false);
-      const input=document.getElementById('globalSearchInput');
-      if(input){input.focus();input.select?.();}
-    }
-    function selectHandwritingKanji(char){
-      if(!n5CourseKanji.has(char)){
-        // Non-course glyphs are still viewable in the writing studio.
-        window.__pendingWriteKanji=char;window.__autoPlayStroke=false;
-        toggleHandwritingSearch(false);navigateTo('kanjiWrite');return;
+        if (!current()) return;
+        const {scored,sampleCount} = result;
+        if (!scored.length) { handwritingStatus('Chưa tìm được mẫu. Hãy viết rõ các nét và thử lại.'); return; }
+        const weak = scored[0].score < .87;
+        const close = scored[1] && scored[0].score-scored[1].score < .045;
+        const hint = weak && scope === 'n5' ?
+          `<aside class="n5-handwriting-hint"><p class="n5-handwriting-note">Chữ này có thể nằm ngoài bài N5. Bạn có thể thử kho mở rộng hoặc viết rõ nét hơn.</p>
+          <button class="n5-handwriting-button" type="button" onclick="setHandwritingScope('all')">Thử kho mở rộng</button></aside>` : '';
+        out.innerHTML = `<p class="n5-handwriting-note">${scope === 'n5' ? 'Trong bài N5' : 'Kho mở rộng'} · ${sampleCount.toLocaleString('vi-VN')} mẫu ngoại tuyến</p>
+          ${hint}<p class="n5-handwriting-note">${weak || close ? 'Một số chữ có hình dạng gần nhau. Hãy chọn chữ bạn định viết.' : 'Chọn một chữ để xem nghĩa và từ liên quan.'}</p>
+          <div class="n5-handwriting-candidates">${scored.map((candidate,index) => {
+            const item = n5LookupItem('kanji-char',candidate.char);
+            const source = candidate.course ? 'Trong bài N5' : 'Kho mở rộng';
+            return `<button type="button" class="handwriting-candidate" data-handwriting-char="${studyEscape(candidate.char)}" onclick="selectHandwritingKanji(this.dataset.handwritingChar)">
+              <strong lang="ja">${studyEscape(candidate.char)}</strong><span>${studyEscape(item?.meaning || '')}
+              <small>${index+1} · ${source}</small></span></button>`;
+          }).join('')}</div>
+          <button type="button" class="n5-handwriting-button" onclick="n5HandwritingSwitchToTextSearch()">Tra bằng bàn phím</button>`;
+      } catch (error) {
+        if (!current()) return;
+        console.error('N5 Kanji local recognition',error);
+        handwritingStatus('Chưa tải được kho mẫu nét. Hãy thử lại sau khi tải ứng dụng.');
+      } finally {
+        if (current()) handwritingBusy(false);
       }
-      const input=document.getElementById('globalSearchInput');if(!input)return;
+    }
+
+    function n5HandwritingSwitchToTextSearch() {
+      toggleHandwritingSearch(false);
+      const input = document.getElementById('globalSearchInput');
+      input.focus();
+      input.select();
+    }
+
+    function selectHandwritingKanji(char) {
       toggleHandwritingSearch(false);
       n5SmartSearch(char);
     }
@@ -6228,7 +6284,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5BackupPayload(){
       const smartStudy = window.n5SmartStudy?.snapshot();
       const uiEffects = n5SavedEffects();
-      return {version:'N5Hub-5.52.3',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
+      return {version:'N5Hub-5.52.4',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
         completedItems:[...state.completedItems],ttsRate:state.ttsRate,reviewData:state.reviewData,
         mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition,
         ...(uiEffects === undefined ? {} : {uiEffects}),
@@ -7175,6 +7231,14 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       recentLookup.addEventListener('keydown', event => {
         if (event.key === 'Escape') { globalSearch.focus(); n5HideLookupRecent(); }
       });
+      const handwritingPanel = document.getElementById('handwritingSearchPanel');
+      handwritingPanel.addEventListener('close',() => {
+        if (handwritingPanel.open) return;
+        handwritingCanvas?.stop();
+        const busy = document.getElementById('recognizeHandwritingBtn').disabled;
+        invalidateHandwriting(busy ? 'Nhấn Nhận diện để tiếp tục.' : '');
+        document.getElementById('handwritingSearchToggle').setAttribute('aria-expanded','false');
+      });
       const instantLookup=document.getElementById('n5InstantLookup');
       instantLookup.addEventListener('mousedown',event=>{if(event.target.closest('button'))event.preventDefault();});
       instantLookup.addEventListener('click',event=>{
@@ -7326,7 +7390,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const history=p.searchHistory===undefined?[]:p.searchHistory;
       if(!Array.isArray(history)||history.length>15||history.some(x=>typeof x!=='string'||x.length>2000))throw Error('Lịch sử tìm kiếm không hợp lệ.');
       if(JSON.stringify(p).length>5*1024*1024)throw Error('Bản đồng bộ vượt giới hạn 5 MB.');
-      return {version:'N5Hub-5.52.3',...validated,searchHistory:history};
+      return {version:'N5Hub-5.52.4',...validated,searchHistory:history};
     }
     function n5CloudRememberBase(row,p){
       n5CloudBase={uid:n5CloudSession.user.id,revision:Number(row.revision),sig:n5CloudSignature(p),updated:row.updated_at||new Date().toISOString(),auto:n5CloudEnabled};
@@ -7539,7 +7603,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CloudPanel(){
       const esc=studyEscape,button='rounded-xl px-4 py-3 text-sm font-bold';
       return `<section id="n5-cloud-panel" class="rounded-3xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 space-y-3">
-        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.52.3</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
+        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.52.4</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
         <p id="n5-cloud-status" role="status" class="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-3 text-sm leading-relaxed">${esc(n5CloudText)}</p>
         ${n5CloudSession?`<p class="text-sm break-all">Đăng nhập: <b>${esc(n5CloudSession.user.email||'Tài khoản của bạn')}</b></p>
         <button type="button" onclick="n5CloudSync()" class="w-full ${button} bg-sky-600 text-white">Đồng bộ ngay</button>
@@ -7561,5 +7625,35 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 
     document.addEventListener('visibilitychange',()=>{if(!document.hidden&&n5CloudEnabled)n5CloudSync('auto');});
 </script>
+
+  <dialog id="handwritingSearchPanel" aria-labelledby="n5-handwriting-title">
+    <header class="n5-handwriting-header">
+      <div><h2 id="n5-handwriting-title">Viết Kanji để tra cứu</h2><p>Viết một chữ, rồi nhấn Nhận diện.</p></div>
+      <button type="button" class="n5-handwriting-button n5-handwriting-close" onclick="toggleHandwritingSearch(false)" aria-label="Đóng bảng viết" autofocus>×</button>
+    </header>
+    <div class="n5-handwriting-body" tabindex="0" aria-label="Vùng viết và kết quả">
+      <div class="n5-handwriting-layout">
+        <div>
+          <div class="n5-handwriting-board"><canvas id="handwritingSearchCanvas" width="480" height="480" aria-label="Khung viết Kanji"></canvas></div>
+          <p class="n5-handwriting-meta"><span>Nhận diện trên thiết bị</span><a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">Mẫu nét KanjiVG · CC BY-SA 3.0</a></p>
+        </div>
+        <section class="n5-handwriting-results" aria-labelledby="n5-handwriting-results-title">
+          <h3 id="n5-handwriting-results-title">Kết quả nhận diện</h3>
+          <div class="n5-handwriting-scope" role="group" aria-label="Phạm vi nhận diện Kanji">
+            <button type="button" class="n5-handwriting-button" data-n5-handwriting-scope="n5" aria-pressed="true" onclick="setHandwritingScope('n5')">Trong bài N5</button>
+            <button type="button" class="n5-handwriting-button" data-n5-handwriting-scope="all" aria-pressed="false" onclick="setHandwritingScope('all')">Kho mở rộng</button>
+          </div>
+          <div id="handwritingSearchResults" aria-live="polite"><p class="n5-handwriting-note">Viết một chữ Kanji để bắt đầu.</p></div>
+        </section>
+      </div>
+    </div>
+    <footer class="n5-handwriting-actions">
+      <button id="undoHandwritingBtn" type="button" class="n5-handwriting-button" onclick="undoHandwritingStroke()" disabled>Hoàn tác</button>
+      <button id="redoHandwritingBtn" type="button" class="n5-handwriting-button" onclick="redoHandwritingStroke()" disabled>Làm lại</button>
+      <button id="clearHandwritingBtn" type="button" class="n5-handwriting-button" onclick="clearHandwritingCanvas()" disabled>Xóa nét</button>
+      <button id="recognizeHandwritingBtn" type="button" class="n5-handwriting-button" onclick="recognizeHandwritingKanji()">Nhận diện</button>
+    </footer>
+  </dialog>
+
 </body>
 </html>

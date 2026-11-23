@@ -1455,3 +1455,172 @@ test('inline live preview uses the latest paste and composes local translations 
   assert.equal(await ambiguous.locator('[data-result-sentence]').count(),0);
   assert.deepEqual(external,[]);
 });
+
+test('handwriting dialog keeps controls visible and scrolls internally at normal and zoom-equivalent layouts', {timeout:120_000}, async t => {
+  const {page} = await openApp(t,{viewport:{width:1280,height:720},deviceScaleFactor:1.5});
+  const input = page.locator('#globalSearchInput');
+  await input.fill('nihongo');
+  await page.locator('[data-lookup-query="nihongo"]').waitFor();
+  const toggle = page.locator('#handwritingSearchToggle');
+  await toggle.click();
+  const panel = page.getByRole('dialog',{name:'Viết Kanji để tra cứu'});
+  const close = panel.getByRole('button',{name:'Đóng bảng viết'});
+  const board = panel.locator('canvas');
+  const body = panel.locator('.n5-handwriting-body');
+  const recognize = panel.getByRole('button',{name:'Nhận diện',exact:true});
+  await page.waitForFunction(() => !!handwritingCanvas);
+  assert(await close.evaluate(button=>button===document.activeElement));
+  await page.keyboard.press('Tab');
+  assert(await panel.evaluate(dialog=>dialog.contains(document.activeElement)));
+  const box = await board.boundingBox();
+  await board.evaluate(canvas=>canvas.addEventListener('gotpointercapture',()=>{canvas.dataset.captured='true';},{once:true}));
+  await page.mouse.move(box.x+box.width*.6,box.y+box.height*.3);
+  await page.mouse.down();
+  await page.mouse.move(box.x+box.width+12,box.y+box.height*.59,{steps:10});
+  await page.mouse.up();
+  assert.equal(await board.getAttribute('data-captured'),'true');
+  assert.equal(await page.evaluate(()=>handwritingStrokes.length),1);
+  const first = await page.evaluate(()=>handwritingStrokes);
+  await panel.getByRole('button',{name:'Hoàn tác'}).click();
+  assert.equal(await page.evaluate(()=>handwritingStrokes.length),0);
+  await panel.getByRole('button',{name:'Làm lại'}).click();
+  assert.deepEqual(await page.evaluate(()=>handwritingStrokes),first);
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForFunction(()=>{
+    const c=document.getElementById('handwritingSearchCanvas');
+    return Math.abs(c.width-c.getBoundingClientRect().width*devicePixelRatio)<1;
+  });
+  assert.deepEqual(await page.evaluate(()=>handwritingStrokes),first);
+  assert(await board.evaluate(c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((value,i)=>i%4===3 && value>0)));
+  await panel.getByRole('button',{name:'Xóa nét'}).click();
+  await page.evaluate(async ()=>{
+    const {bytes,records}=await n5InitHandwritingIndex();
+    handwritingStrokes=n5DecodeHandwritingStrokes(records.find(record=>record.char==='着'),bytes)
+      .map(stroke=>stroke.map(([x,y])=>[x*480,y*480]));
+    handwritingCanvas.redraw();
+  });
+  await recognize.click();
+  const expand = panel.getByRole('button',{name:'Thử kho mở rộng'});
+  await expand.waitFor();
+  assert.match(await panel.locator('#handwritingSearchResults').innerText(),/161 mẫu ngoại tuyến/);
+  await expand.click();
+  await panel.locator('[data-handwriting-char="着"]').waitFor();
+  assert.match(await panel.locator('#handwritingSearchResults').innerText(),/Kho mở rộng · 6[.\s]703 mẫu ngoại tuyến/);
+
+  for (const [width,height,columns] of [[1920,1080,2],[1366,768,2],[1280,720,2],[390,844,1],[375,667,1],
+      [1093,614,2],[910,512,1]]) {
+    await page.setViewportSize({width,height});
+    await page.waitForFunction(({width,height})=>innerWidth===width && innerHeight===height,{width,height});
+    const geometry = await panel.evaluate(dialog=>{
+      const panel=dialog.getBoundingClientRect();
+      const scroll=dialog.querySelector('.n5-handwriting-body');
+      const footer=dialog.querySelector('footer').getBoundingClientRect();
+      const close=dialog.querySelector('[aria-label="Đóng bảng viết"]').getBoundingClientRect();
+      return {top:panel.top,bottom:panel.bottom,left:panel.left,right:panel.right,xOverflow:scroll.scrollWidth-scroll.clientWidth,
+        footer:footer.bottom,close:close.top,columns:getComputedStyle(dialog.querySelector('.n5-handwriting-layout')).gridTemplateColumns.split(' ').length};
+    });
+    assert(geometry.top>=0 && geometry.bottom<=height && geometry.left>=0 && geometry.right<=width,JSON.stringify(geometry));
+    assert(geometry.xOverflow<=1 && geometry.footer<=height && geometry.close>=0,JSON.stringify(geometry));
+    assert.equal(geometry.columns,columns,width+' × '+height);
+    await body.evaluate(scroller=>{scroller.scrollTop=scroller.scrollHeight;});
+    const last = await panel.locator('.handwriting-candidate').last().boundingBox();
+    const scroller = await body.boundingBox();
+    assert(last && scroller && last.y>=scroller.y-1 && last.y+last.height<=scroller.y+scroller.height+1);
+  }
+  await body.evaluate(scroller=>{scroller.scrollTop=0;});
+  const before = await page.evaluate(()=>[window.scrollY,document.getElementById('mainContainer').scrollTop]);
+  const wheel = await board.boundingBox();
+  await page.mouse.move(wheel.x+wheel.width/2,wheel.y+20);
+  await page.mouse.wheel(0,650);
+  await page.waitForFunction(()=>document.querySelector('.n5-handwriting-body').scrollTop>0);
+  assert.deepEqual(await page.evaluate(()=>[window.scrollY,document.getElementById('mainContainer').scrollTop]),before);
+  const strokes = await page.evaluate(()=>handwritingStrokes);
+  await page.keyboard.press('Escape');
+  await panel.waitFor({state:'hidden'});
+  assert.equal(await input.inputValue(),'nihongo');
+  await page.waitForFunction(()=>document.activeElement?.id==='handwritingSearchToggle');
+  await toggle.click();
+  assert.deepEqual(await page.evaluate(()=>handwritingStrokes),strokes);
+  await panel.locator('[data-handwriting-char="着"]').click();
+  await panel.waitFor({state:'hidden'});
+  const result = page.locator('[data-lookup-query="着"]');
+  await result.getByText(/mặc quần áo; mặc áo/).waitFor();
+  assert.equal(await input.inputValue(),'着');
+  assert(await page.evaluate(()=>n5LookupRecent().includes('着')));
+  await result.locator('[data-result-type="kanji"]').first().getByRole('button').click();
+  const detail = page.getByRole('dialog',{name:'着'});
+  await detail.getByText('Âm Kun',{exact:true}).waitFor();
+  await detail.getByRole('button',{name:'着る',exact:true}).waitFor();
+  await detail.getByText('Thứ tự nét · 12 nét',{exact:true}).click();
+  assert.equal(await detail.locator('.n5-lookup-strokes path').count(),12);
+});
+
+test('recognizer ranks both scopes with complete, reordered, missing and extra strokes', {timeout:120_000}, async t => {
+  const {page} = await openApp(t,{viewport:{width:1280,height:800}});
+  const trials = await page.evaluate(async ()=>{
+    const {bytes,records}=await n5InitHandwritingIndex();
+    const result = [];
+    for (const char of '着新電食見聞書語') {
+      const record = records.find(record=>record.char===char);
+      const points = n5DecodeHandwritingStrokes(record,bytes).map(line=>line.map(([x,y])=>[x*480,y*480]));
+      const extra = [...points,[[214,226],[228,228]]];
+      const variants = [points,[...points].reverse(),points.slice(0,-1),extra];
+      for (const [index,strokes] of variants.entries()) {
+        for (const scope of ['n5','all']) {
+          const {scored,sampleCount}=n5RankHandwriting(handwritingNormalizeStrokes(strokes),scope,records,bytes);
+          result.push({char,scope,index,sampleCount,first:scored[0]?.char,
+            offered:scored.map(item=>item.char),allCourse:scored.every(item=>item.course)});
+        }
+      }
+    }
+    return result;
+  });
+  assert.equal(trials.length,64);
+  for (const trial of trials) {
+    const {char,scope,index,first,offered,sampleCount,allCourse} = trial;
+    assert.equal(new Set(offered).size,offered.length);
+    assert(offered.length>1);
+    assert.equal(sampleCount,scope==='n5'?161:6703);
+    if (scope==='n5') assert(allCourse && !offered.includes('着'));
+    if (index<2 && (char!=='着' || scope==='all')) assert.equal(first,char);
+    if (index>=2 && char==='着' && scope==='all') assert(offered.includes(char));
+  }
+});
+
+test('mobile handwriting accepts touch, supports offline lookup, and keeps homophones visible', {timeout:120_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'light',viewport:{width:375,height:667}});
+  networkAvailable = false;
+  t.after(()=>{networkAvailable=true;});
+  await page.reload();
+  await page.locator('#handwritingSearchToggle').tap();
+  const dialog = page.getByRole('dialog',{name:'Viết Kanji để tra cứu'});
+  await page.waitForFunction(()=>!!handwritingCanvas);
+  await page.evaluate(async ()=>{
+    const {bytes,records}=await n5InitHandwritingIndex();
+    const strokes = n5DecodeHandwritingStrokes(records.find(record=>record.char==='着'),bytes);
+    const canvas = document.getElementById('handwritingSearchCanvas');
+    const r=canvas.getBoundingClientRect();
+    let pointerId=50;
+    for (const stroke of strokes) {
+      pointerId++;
+      const fire=(type,[x,y])=>canvas.dispatchEvent(new PointerEvent(type,{
+        clientX:r.left+x*r.width,clientY:r.top+y*r.height,pointerId,pointerType:'touch',isPrimary:true,button:0,bubbles:true,
+      }));
+      fire('pointerdown',stroke[0]);
+      for (const point of stroke.slice(1)) fire('pointermove',point);
+      fire(pointerId===51?'pointercancel':'pointerup',stroke.at(-1));
+    }
+  });
+  await dialog.getByText(/Đã ghi nhận 12 nét/).waitFor();
+  await dialog.getByRole('button',{name:'Nhận diện',exact:true}).tap();
+  await dialog.getByRole('button',{name:'Thử kho mở rộng'}).tap();
+  await dialog.locator('[data-handwriting-char="着"]').tap();
+  await page.locator('[data-lookup-query="着"]').waitFor();
+  const input = page.locator('#globalSearchInput');
+  await input.fill('kite');
+  const preview = page.locator('#n5InstantLookup');
+  await preview.getByText('Mặc quần áo',{exact:true}).waitFor();
+  assert(await preview.getByText('Đến',{exact:true}).isVisible());
+  await input.fill('シャツを着ています。');
+  await preview.getByText('Đang mặc áo sơ mi.',{exact:true}).waitFor();
+});

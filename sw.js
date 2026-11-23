@@ -1,4 +1,4 @@
-const RELEASE = '5.52.3';
+const RELEASE = '5.52.4';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -12,6 +12,8 @@ const assets = new Set([
   `assets/tailwind.css?v=${RELEASE}`,
   `assets/ui/premium.css?v=${RELEASE}`,
   `assets/ui/effects.js?v=${RELEASE}`,
+  `assets/ui/handwriting.css?v=${RELEASE}`,
+  `assets/ui/handwriting.js?v=${RELEASE}`,
   `assets/learning/builder.css?v=${RELEASE}`,
   `assets/learning/checker.css?v=${RELEASE}`,
   `assets/search/lookup.css?v=${RELEASE}`,

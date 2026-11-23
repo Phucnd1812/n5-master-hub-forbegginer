@@ -427,3 +427,73 @@ test('curriculum samples exercise short and long Romaji prefixes and verified co
       entry.description.includes(query==='kaze'?'gió':'phong cách')),query);
   }
 });
+
+test('clothing verbs keep written readings, homophones, and Vietnamese meanings distinct', async () => {
+  for (const query of ['着','着る','きる','kiru','mặc','mặc áo']) {
+    const {results} = await engine.search(query);
+    const wear = results.find(item => item.type === 'vocab' && item.title === '着る');
+    assert(wear?.description.startsWith('mặc quần áo'),query);
+    assert.equal(wear.reading,'きる',query);
+    assert.equal(wear.romaji,'kiru',query);
+    assert.equal(wear.group,'II',query);
+    if (['きる','kiru'].includes(query)) {
+      assert(results.some(item=>item.title==='切る' && item.group==='I' && item.description.startsWith('cắt')),query);
+    }
+  }
+  for (const query of ['きて','kite','Kite','ki te']) {
+    const {forms} = await engine.search(query);
+    const literal = forms.slice(0,2).map(({form})=>form.jp);
+    assert.deepEqual(new Set(literal),new Set(['来て','着て']),query);
+    const coming = forms.find(({form})=>form.jp==='来て').form;
+    const wearing = forms.find(({form})=>form.jp==='着て').form;
+    assert.deepEqual([coming.lemma.jp,coming.lemma.group,coming.meaning],['来る','III','đến']);
+    assert.deepEqual([wearing.lemma.jp,wearing.lemma.group,wearing.meaning],['着る','II','mặc quần áo']);
+  }
+  for (const [query,jp,key] of [
+    ['着ます','着ます','masu'],['着て','着て','te'],['来て','来て','te'],
+    ['着た','着た','past'],['着ない','着ない','negative'],['着ています','着ています','progressivePolite'],
+    ['kiteimasu','着ています','progressivePolite'],['着てください','着てください','request'],
+    ['kite kudasai','着てください','request'],
+  ]) {
+    const {forms} = await engine.search(query);
+    const match = forms.find(({form,match})=>form.jp===jp && match==='inflection')?.form;
+    assert.equal(match?.key,key,query);
+    if (key==='progressivePolite') assert.deepEqual(match.steps.map(step=>step.jp),['着る','着て','着ている','着ています']);
+  }
+});
+
+test('additional sourced verbs retain their groups and generate authentic spelling variants', async () => {
+  for (const [query,jp,kana,group] of [
+    ['著ました','着る','きる','II'],['穿いて','履く','はく','I'],['かぶって','被る','かぶる','I'],
+    ['着せない','着せる','きせる','II'],['降りない','降りる','おりる','II'],['畳んで','畳む','たたむ','I'],
+    ['縫いました','縫う','ぬう','I'],['取り換えました','取り替える','とりかえる','II'],
+    ['連れて来て','連れて来る','つれてくる','III'],['連れてきて','連れて来る','つれてくる','III'],
+  ]) {
+    const {forms} = await engine.search(query);
+    const candidate = forms.find(({match,form})=>match==='inflection' && form.lemma.jp===jp);
+    assert.equal(candidate?.form.lemma.kana,kana,query);
+    assert.equal(candidate.form.lemma.group,group,query);
+    assert(candidate.form.meaning && candidate.form.lemma.sourceId,query);
+  }
+  const {forms} = await engine.search('連れてくて');
+  assert(!forms.some(({match,form})=>match==='inflection' && form.lemma.jp==='連れて来る'));
+});
+
+test('offline sentence rules distinguish upper clothing, footwear, hats and destination', async () => {
+  const {localTranslation} = await import('../../assets/translation/rules.js');
+  for (const [jp,root,meaning] of [
+    ['服を着ています。','着る','Đang mặc quần áo.'],
+    ['シャツを着ています。','着る','Đang mặc áo sơ mi.'],
+    ['服を着てください。','着る','Hãy mặc quần áo.'],
+    ['ここに来てください。','来る','Xin hãy đến đây.'],
+    ['靴を履いています。','履く','Đang đi giày.'],
+    ['ズボンを穿いています。','履く','Đang mặc quần.'],
+    ['帽子をかぶっています。','被る','Đang đội mũ.'],
+  ]) {
+    const {analysis} = await engine.search(jp);
+    assert.equal(analysis.parts.findLast(part=>part.form)?.lemma.jp,root,jp);
+    assert.equal(localTranslation(jp,'ja-vi',analysis)?.translatedText,meaning,jp);
+  }
+  const {analysis} = await engine.search('帽子を着ています。');
+  assert(!localTranslation(analysis.original,'ja-vi',analysis));
+});

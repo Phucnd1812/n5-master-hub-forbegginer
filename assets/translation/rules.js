@@ -9,7 +9,8 @@ const nouns = new Map(Object.entries({
   テレビ:'TV',本:'sách',薬:'thuốc',音楽:'nhạc',映画:'phim',日本語:'tiếng Nhật',日本:'Nhật Bản',学校:'trường',
   水:'nước',お茶:'trà',ご飯:'cơm',朝ご飯:'bữa sáng',家:'nhà',公園:'công viên',図書館:'thư viện',教室:'lớp học',
   東京:'Tokyo',大阪:'Osaka',京都:'Kyoto',英語:'tiếng Anh',パン:'bánh mì',コーヒー:'cà phê',車:'ô tô',駅:'nhà ga',
-  ここ:'đây',そこ:'đó',あそこ:'kia',
+  ここ:'đây',そこ:'đó',あそこ:'kia',服:'quần áo',シャツ:'áo sơ mi',上着:'áo khoác',
+  靴:'giày',靴下:'tất',ズボン:'quần',スカート:'váy',帽子:'mũ',
 }));
 const times = new Map(Object.entries({
   毎日:'mỗi ngày',毎朝:'mỗi sáng',今:'bây giờ',今日:'hôm nay',明日:'ngày mai',昨日:'hôm qua',明後日:'ngày kia',
@@ -19,7 +20,14 @@ const verbs = new Map(Object.entries({
   見る:'xem',観る:'xem',飲む:'uống',食べる:'ăn',読む:'đọc',勉強する:'học',寝る:'đi ngủ',行く:'đi',来る:'đến',
   吹く:'thổi',泣く:'khóc',眠る:'ngủ',帰る:'về',買う:'mua',書く:'viết',話す:'nói',住む:'sống',働く:'làm việc',起きる:'thức dậy',待つ:'đợi',
   泳ぐ:'bơi',遊ぶ:'chơi',走る:'chạy',歩く:'đi bộ',開ける:'mở',閉める:'đóng',作る:'làm',使う:'dùng',
+  着る:'mặc',履く:'mặc',穿く:'mặc',被る:'đội',冠る:'đội',
 }));
+const clothing = new Map([
+  ['着る',new Set(['服','シャツ','上着'])],
+  ['履く',new Set(['靴','靴下','ズボン','スカート'])],
+  ['穿く',new Set(['ズボン','スカート'])],
+  ['被る',new Set(['帽子'])],['冠る',new Set(['帽子'])],
+]);
 const adjectives = new Map(Object.entries({
   暑い:'nóng',寒い:'lạnh',高い:'cao',安い:'rẻ',大きい:'lớn',小さい:'nhỏ',新しい:'mới',古い:'cũ',
   静か:'yên tĩnh',元気:'khỏe',忙しい:'bận',おいしい:'ngon',きれい:'đẹp',難しい:'khó',簡単:'đơn giản',
@@ -32,13 +40,13 @@ const leading = {
   progressive:'đang',progressivePolite:'đang',progressivePast:'lúc đó đang',progressivePlainPast:'lúc đó đang',
   progressiveNegative:'không',progressivePoliteNegative:'không',progressiveNegativePast:'đã không',
   progressivePoliteNegativePast:'đã không',desire:'muốn',desirePolite:'muốn',desireNegative:'không muốn',
-  request:'vui lòng',negativeRequest:'vui lòng đừng',duty:'phải',dutyPolite:'phải',dutyNakute:'phải',
+  request:'hãy',negativeRequest:'vui lòng đừng',duty:'phải',dutyPolite:'phải',dutyNakute:'phải',
   dutyNakutePolite:'phải',dutyNaito:'phải',dutyNaitoPlain:'phải',
   optional:'không cần',optionalPolite:'không cần',permit:'có thể',permitShort:'được phép',permitPolite:'có thể',permitQuestion:'có thể',
   prohibition:'không được',prohibitionPolite:'không được',experience:'đã từng',experiencePolite:'đã từng',
   afterTe:'',before:'',simultaneous:'',tara:'',ba:'',
 };
-const ongoing = new Set(['見る','観る','食べる','飲む','読む','勉強する','書く','話す','吹く','降る','泣く','眠る','働く','待つ','泳ぐ','遊ぶ','走る','歩く','作る']);
+const ongoing = new Set(['見る','観る','食べる','飲む','読む','勉強する','書く','話す','吹く','降る','泣く','眠る','働く','待つ','泳ぐ','遊ぶ','走る','歩く','作る',...clothing.keys()]);
 const motion = new Set(['行く','来る','帰る']);
 const join = words => words.filter(Boolean).join(' ');
 const rootOf = token => token?.lemma?.jp || '';
@@ -61,6 +69,7 @@ function sentencePart(tokens) {
         piece.jp==='に' && nouns.has(rootOf(tokens[i-1]))))))) return null;
 
   const args = {time:'',subject:'',object:'',place:'',compare:''};
+  const garments = clothing.get(root);
   let still = false;
   for (let i=0;i<tokens.length-1;i++) {
     const token=tokens[i];
@@ -85,6 +94,8 @@ function sentencePart(tokens) {
         slot='subject';
         meaning=person || subjectWords.get(word) || nouns.get(word);
       } else if (particle === 'を' && verb && !motion.has(root) && !adjectives.has(root) && verb !== 'ở') {
+        if (garments && !garments.has(word)) return null;
+        if (root === '履く' && (word === '靴' || word === '靴下')) verb = 'đi';
         slot='object';
         meaning=nouns.get(word);
       } else if (['に','へ'].includes(particle) && (motion.has(root) || particle === 'に' && verb === 'ở')) {
@@ -103,7 +114,7 @@ function sentencePart(tokens) {
     args[slot]=meaning;
     if (particle) i++;
   }
-  if (args.compare && !args.subject) return null;
+  if (args.compare && !args.subject || garments && !args.object) return null;
   if (form.startsWith('progressive') && root === '来る' && !still) return null;
   let prefix=still ? 'vẫn chưa' : leading[form];
   if (!prefix && ['ngày mai','ngày kia','tuần sau','năm sau'].includes(args.time) && !adjectives.has(root)) prefix='sẽ';
