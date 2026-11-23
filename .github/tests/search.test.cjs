@@ -18,7 +18,8 @@ before(async () => {
   const {builtInRows,jmdictRows} = await import('../../assets/search/lexicon.js');
   const rows = JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../assets/search/builtin-dictionary.json'),'utf8'));
   const verified = JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../assets/search/jmdict-essentials.json'),'utf8'));
-  engine = await createSearchEngine({...data, pack:[...jmdictRows(verified),...builtInRows(rows), ...data.pack]});
+  const hotfix = JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../assets/search/jmdict-hotfix.json'),'utf8'));
+  engine = await createSearchEngine({...data, pack:[...jmdictRows(verified),...jmdictRows(hotfix),...builtInRows(rows), ...data.pack]});
 });
 
 test('key normalization preserves kana voicing and folds Vietnamese independently', async () => {
@@ -233,7 +234,7 @@ test('Search 2.0 distinguishes exact, prefix, typo, and contextual matches', asy
   ]) {
     const {results,analysis} = await engine.search(query);
     assert.equal(results[0].id,id,query);
-    assert.equal(results[0].match,'inferred',query);
+    assert.equal(results[0].match,'grammar',query);
     assert.equal(analysis,null,query);
   }
 });
@@ -312,4 +313,117 @@ test('unseen sentences mark clause roles, unfamiliar words and translation evide
   assert(state.grammar.includes('compare:state'));
   assert.equal(state.parts.find(part => part.text === '少し').kana,'すこし');
   assert.equal(state.parts.find(part => part.text === '開けて').lemma.jp,'開ける');
+});
+
+test('verified suffixes link learner spellings and only extend attested person nouns', async () => {
+  for (const query of ['kodomo','こども','子ども','子供']) {
+    const {results} = await engine.search(query);
+    assert(results.some(entry => entry.type==='vocab' && ['子供','子ども'].includes(entry.title)),query);
+  }
+  for (const query of ['Kodomotach','kodomo tachi','kodomotachi','こどもたち','子どもたち','子供たち','子供達']) {
+    const result = await engine.search(query);
+    const candidate = result.forms.find(({form}) => form.jp==='子どもたち');
+    assert(candidate,query);
+    assert.equal(candidate.match,query==='Kodomotach'?'completion':'inflection',query);
+    assert.equal(candidate.form.lemma.jp,'子ども');
+    assert.equal(candidate.form.kana,'こどもたち');
+    assert.equal(candidate.form.meaning,'những đứa trẻ');
+    assert(candidate.form.spellings.includes('子供達'));
+  }
+  for (const [query,root,key] of [
+    ['消防士達','消防士','person-plural'],['外国人たち','外国人','person-plural'],
+    ['弟くん','弟','person-kun'],['妹ちゃん','妹','person-chan'],
+    ['運転手さん','運転手','person-san'],['先生方','先生','person-respective'],
+  ]) {
+    const {forms} = await engine.search(query);
+    assert(forms.some(({form,match})=>match==='inflection' && form.lemma.jp===root && form.key===key && form.meaning),query);
+  }
+  assert(!(await engine.search('本たち')).forms.some(({form})=>form.lemma.jp==='本'));
+});
+
+test('ambiguous incomplete verbs offer grounded forms and preserve exact independent words', async () => {
+  const {results,forms,analysis} = await engine.search('naitei');
+  assert.equal(results[0].title,'内定');
+  assert.equal(results[0].match,'exact');
+  assert.equal(analysis,null);
+  const meanings = new Map([
+    ['泣いている','đang khóc'],['泣いています','đang khóc'],
+    ['泣いていい','được phép khóc'],['泣いていた','lúc đó đang khóc'],
+  ]);
+  for (const query of ['naitei','泣いてい']) {
+    const result = query==='naitei'?{forms,analysis}:await engine.search(query);
+    assert.equal(result.analysis,null,query);
+    for (const [jp,meaning] of meanings) {
+      assert(result.forms.some(({form,match})=>match==='completion' && form.jp===jp &&
+        form.lemma.jp==='泣く' && form.meaning===meaning),jp);
+    }
+  }
+  for (const [query,root] of [
+    ['泣く','泣く'],['泣いて','泣く'],['泣いていい','泣く'],['泣いている','泣く'],['泣いています','泣く'],
+    ['吹く','吹く'],['吹いて','吹く'],['吹いています','吹く'],['benkyoushiteimasu','勉強する'],
+  ]) {
+    const {analysis} = await engine.search(query);
+    const token = analysis.parts.find(part=>part.kind==='word');
+    assert.equal(token.lemma.jp,root,query);
+    if (query!==root) assert(token.form?.meaning,query);
+    if (query==='泣いていい') assert.deepEqual(token.form.steps.map(step=>step.jp),['泣く','泣いて','泣いていい']);
+  }
+});
+
+test('weather and everyday sentences use complete offline predicate evidence', async () => {
+  const {localTranslation} = await import('../../assets/translation/rules.js');
+  for (const [jp,root,form,expected] of [
+    ['風が吹いています。','吹く','progressivePolite','Gió đang thổi.'],
+    ['雨が降っています。','降る','progressivePolite','Trời đang mưa.'],
+    ['雪が降っています。','降る','progressivePolite','Tuyết đang rơi.'],
+    ['テレビを見ています。','見る','progressivePolite','Đang xem TV.'],
+    ['日本語を勉強しています。','勉強する','progressivePolite','Đang học tiếng Nhật.'],
+    ['毎日学校へ行きます。','行く','masu','Mỗi ngày đến trường.'],
+    ['薬を飲んでから寝ます。','寝る','masu','Sau khi uống thuốc, đi ngủ.'],
+    ['音楽を聞きながら勉強します。','勉強する','masu','Tôi vừa nghe nhạc vừa học.'],
+  ]) {
+    const {analysis} = await engine.search(jp);
+    const predicate = analysis.parts.findLast(part=>part.form);
+    assert.equal(predicate.lemma.jp,root,jp);
+    assert.equal(predicate.form.key,form,jp);
+    assert.equal(analysis.coverage,1,jp);
+    const translation = localTranslation(jp,'ja-vi',analysis);
+    assert.equal(translation?.translatedText,expected,jp);
+    if (root==='吹く') {
+      assert.equal(translation.source,'rule');
+      assert.deepEqual(predicate.form.steps.map(step=>step.jp),['吹く','吹いて','吹いている','吹いています']);
+      assert(analysis.parts.some(part=>part.jp==='風' && part.kana==='かぜ'));
+      assert.deepEqual(analysis.parts.filter(part=>part.kind==='function').map(part=>part.grammar),['subject']);
+    }
+  }
+  const {analysis} = await engine.search('気象観測システムが風洞で試験運用されています。');
+  assert(!localTranslation(analysis.original,'ja-vi',analysis));
+});
+
+test('curriculum samples exercise short and long Romaji prefixes and verified combinations', async () => {
+  const {makeLemma,generateForms} = await import('../../assets/search/morphology.js');
+  const {romanize} = await import('../../assets/search/text.js');
+  const roots = [...new Map(data.vocab.map(makeLemma)
+    .filter(lemma=>lemma && /^[IV]+$/.test(lemma.group || '') && /^[a-z]{5,}$/.test(lemma.romaji) && lemma.vi)
+    .map(lemma=>[lemma.jp,lemma])).values()];
+  assert(roots.length>=30);
+  const sample=Array.from({length:12},(_,i)=>roots[Math.floor(i*roots.length/12)]);
+  for (const [index,lemma] of sample.entries()) {
+    const query=lemma.romaji.slice(0,-(index%2+1));
+    const {results} = await engine.search(query,{limit:96});
+    assert(results.some(entry=>entry.type==='vocab' && entry.title===lemma.jp &&
+      ['prefix','exact','alternate'].includes(entry.match)),query+' → '+lemma.jp);
+    const generated=generateForms(lemma);
+    const key=['mashita','progressivePolite','afterTe'][index%3];
+    const expected=generated.get(key);
+    assert(expected,lemma.jp);
+    const {analysis} = await engine.search(romanize(expected.kana));
+    assert(analysis?.parts.some(part=>[part,...part.alternatives].some(interpretation=>
+      interpretation.lemma?.jp===lemma.jp && interpretation.form?.key===key && interpretation.form.meaning)),expected.jp);
+  }
+  for (const query of ['kaze','fuu']) {
+    const {results} = await engine.search(query);
+    assert(results.some(entry=>entry.title==='風' && entry.reading===(query==='kaze'?'かぜ':'ふう') &&
+      entry.description.includes(query==='kaze'?'gió':'phong cách')),query);
+  }
 });

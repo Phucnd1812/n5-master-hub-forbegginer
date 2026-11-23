@@ -1,4 +1,4 @@
-const RELEASE = '5.52.2';
+const RELEASE = '5.52.3';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -41,6 +41,7 @@ const assets = new Set([
   'assets/search/builtin-dictionary.json',
   'assets/search/jmdict-essentials.json',
   'assets/search/jmdict-context.json',
+  'assets/search/jmdict-hotfix.json',
   'assets/search/text.js',
   'assets/search/result-ui.js',
   `assets/search/result.css?v=${RELEASE}`,

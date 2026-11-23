@@ -175,3 +175,36 @@
 @media (prefers-reduced-motion: reduce) {
   .n5-result-toolbar .n5-lookup-chip { transition: none; }
 }
+
+#n5InstantLookup {
+  position: absolute;
+  inset: calc(100% + .35rem) 0 auto;
+  z-index: 76;
+  max-height: 50vh;
+  max-height: min(20rem, calc(var(--n5-visual-viewport, 100dvh) - 5.5rem));
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--n5-border);
+  border-radius: 1rem;
+  padding: .4rem;
+  background: var(--n5-surface);
+  box-shadow: var(--n5-shadow);
+  color: var(--n5-text);
+  overflow-wrap: anywhere;
+}
+#n5InstantLookup[hidden] { display: none; }
+.n5-instant-item, .n5-instant-sentence {
+  display: grid;
+  width: 100%;
+  text-align: start;
+  gap: .18rem;
+  padding: .55rem .7rem;
+  border-radius: .7rem;
+  line-height: 1.35;
+}
+.n5-instant-item + .n5-instant-item { border-top: 1px solid var(--n5-border); }
+.n5-instant-item:is(:hover,:focus-visible,:active) { background: var(--n5-surface-soft); }
+.n5-instant-item > [lang="ja"], .n5-instant-query { font-size: 1rem; font-weight: 700; }
+.n5-instant-item strong { font-weight: 650; }
+.n5-instant-item small { color: var(--n5-muted); }
+.n5-instant-sentence .n5-lookup-chip { justify-self: start; }

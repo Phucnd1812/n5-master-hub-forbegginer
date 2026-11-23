@@ -66,6 +66,7 @@ export function makeLemma(item) {
   // Mixed-surface imports can have no reading. Keep the written entry only.
   return {...root, group:group || '', id:item.id, vi:item.vi || '', pos, lesson:item.lesson,
     source:item.source, sourceId:item.sourceId, readings:item.readings, aliases:item.aliases, examples:item.examples,
+    ...(item.personSuffixes ? {personSuffixes:item.personSuffixes} : {}),
     card:item.card !== false, romaji:IS_KANA.test(root.kana) ? romanize(root.kana) : ''};
 }
 
@@ -87,6 +88,7 @@ const FORM_LABELS = {
   desire:'Mong muốn ～たい', desirePolite:'Mong muốn lịch sự ～たいです', desireNegative:'Mong muốn phủ định ～たくない',
   prohibition:'Cấm ～てはいけない', prohibitionPolite:'Cấm ～てはいけません', progressive:'～ている',
   progressivePolite:'～ています', progressivePast:'～ていました', request:'Yêu cầu ～てください',
+  permitShort:'Cho phép ～ていい',
   negativeRequest:'Yêu cầu phủ định ～ないでください', permit:'Cho phép ～てもいい', permitPolite:'Cho phép ～てもいいです',
   permitQuestion:'Xin phép ～てもいいですか', optional:'Không bắt buộc ～なくてもいい',
   optionalPolite:'Không bắt buộc ～なくてもいいです', before:'Trước khi ～前に', after:'Sau khi ～後で',
@@ -130,7 +132,7 @@ const FORM_GRAMMAR = {
   dutyNakute:'obligation', dutyNakutePolite:'obligation',
   negativeNakya:'g11b_5', dutyNakya:'g11b_6',
   negativeDe:'compare:negative-connect', negativeTe:'compare:negative-connect', causativePassiveShort:'causative-passive',
-  permit:'permission', permitPolite:'permission', permitQuestion:'permission', optional:'optional', optionalPolite:'optional',
+  permit:'permission', permitShort:'permission', permitPolite:'permission', permitQuestion:'permission', optional:'optional', optionalPolite:'optional',
   invite:'g7c_5', propose:'g14a_1', justPast:'g10b_5', before:'g10a_2', after:'g10a_3',
 };
 for (const voice of [...VOICE_FORMS,'causativePassiveShort']) {
@@ -237,9 +239,41 @@ function verbBases(lemma, add) {
     suru ? 'する đổi bất quy tắc thành ' + s + '.' : '来る đổi bất quy tắc thành ' + k + '.');
 }
 
+const PERSON_SUFFIXES = {
+  plural:['たち','たち','Nhóm người ～たち','Chỉ nhiều người hoặc một người cùng nhóm đi với họ.'],
+  respective:['方','がた','Nhóm người kính trọng ～方','Cách nói trang trọng về một nhóm người.'],
+  san:['さん','さん','Xưng hô lịch sự ～さん','Thêm sau tên hoặc cách gọi người phù hợp để xưng hô lịch sự.'],
+  chan:['ちゃん','ちゃん','Xưng hô thân mật ～ちゃん','Cách gọi trìu mến, phụ thuộc quan hệ với người được gọi.'],
+  kun:['くん','くん','Xưng hô thân mật ～くん','Cách gọi tùy mức độ thân thiết và quan hệ.'],
+};
+
+export function formSpellings(lemma,form) {
+  let prefix=0;
+  while (prefix<lemma.jp.length && lemma.jp[prefix]===form.jp[prefix]) prefix++;
+  const tail=lemma.jp.slice(prefix);
+  const values=[form.jp];
+  if (prefix) for (const alias of lemma.aliases || []) {
+    if (alias.endsWith(tail)) values.push(alias.slice(0,alias.length-tail.length)+form.jp.slice(prefix));
+  }
+  if (form.key==='person-plural') for (const spelling of values.slice()) {
+    values.push(spelling.slice(0,-2)+'達');
+  }
+  return [...new Set(values)];
+}
+
+for (const [key, [,,label]] of Object.entries(PERSON_SUFFIXES)) FORM_LABELS['person-'+key]=label;
+
 export function generateForms(lemma) {
   const {forms, add, change} = formBuilder(lemma);
-  if (!lemma.group) return forms;
+  if (!lemma.group) {
+    for (const [key, meaning] of Object.entries(lemma.personSuffixes || {})) {
+      const suffix=PERSON_SUFFIXES[key];
+      if (!suffix || !meaning) continue;
+      const [written,kana,,rule]=suffix;
+      add('person-'+key,'dictionary',lemma.jp+written,lemma.kana+kana,rule,written);
+    }
+    return forms;
+  }
   if (lemma.group === 'i' || lemma.group === 'na') {
     adjectiveForms(lemma, change, add);
     return forms;
@@ -271,7 +305,7 @@ export function generateForms(lemma) {
     ['afterTe','te','から'], ['experience','past','ことがある'], ['experiencePolite','past','ことがあります'],
     ['desire','stem','たい'], ['simultaneous','stem','ながら'], ['progressive','te','いる'],
     ['prohibition','te','はいけない'], ['prohibitionPolite','te','はいけません'],
-    ['request','te','ください'], ['permit','te','もいい'],
+    ['request','te','ください'], ['permit','te','もいい'], ['permitShort','te','いい'],
     ['permitPolite','permit','です'], ['permitQuestion','permitPolite','か'], ['before','dictionary','前に','まえに'],
     ['after','past','後で','あとで'], ['potentialKoto','dictionary','ことができる'],
     ['potentialKotoPolite','dictionary','ことができます'], ['invite','masen','か'], ['propose','mashou','か'],
@@ -339,6 +373,7 @@ const STEP_MEANINGS = {
   afterTe:'Đặt hành động này trước hành động tiếp theo.',
 };
 
+const MEANING_VOICES = ['causativePassiveShort', ...VOICE_FORMS.slice().reverse()];
 const MEANING_PREFIX = {
   duty:'phải ', dutyPolite:'phải ', dutyNakute:'phải ', dutyNakutePolite:'phải ', dutyNakya:'phải ',
   dutyNaito:'phải ', dutyNaitoPlain:'phải ', afterTe:'sau khi ', simultaneous:'trong khi ',
@@ -346,6 +381,13 @@ const MEANING_PREFIX = {
   negativeBa:'nếu không ', experience:'đã từng ', experiencePolite:'đã từng ',
   prohibition:'không được ', prohibitionPolite:'không được ', potential:'có thể ', potentialNegative:'không thể ',
   potentialNegativePast:'đã không thể ', past:'đã ', masen:'không ', mashita:'đã ', masenPast:'đã không ',
+  permit:'được phép ', permitShort:'được phép ', permitPolite:'được phép ', permitQuestion:'có được phép ',
+  progressive:'đang ', progressivePolite:'đang ', progressivePlainPast:'lúc đó đang ', progressivePast:'lúc đó đang ',
+  progressiveNegative:'hiện không ', progressivePoliteNegative:'hiện không ', progressiveNegativePast:'lúc đó không ',
+  progressivePoliteNegativePast:'lúc đó không ', passive:'bị/được ', causative:'khiến/cho phép ', causativePassive:'bị bắt ',
+  causativePassiveShort:'bị bắt ', ba:'nếu ', tara:'nếu ', volitional:'định ', mashou:'hãy ', imperative:'hãy ',
+  request:'vui lòng ', adjNeg:'không ', adjNegPolite:'không ', adjPast:'đã ', adjPastPolite:'đã ',
+  adjNegPast:'đã không ', adjNegPastPolite:'đã không ',
   optional:'không cần ', optionalPolite:'không cần ', negativeDe:'không ', negativeRequest:'xin đừng ',
 };
 
@@ -369,8 +411,20 @@ export function describeForm(lemma, forms, key) {
   const form = forms.get(key);
   if (!form) return null;
   const steps = [];
-  const gloss = lemma.vi.split(/[;,；]/)[0].trim();
-  const meaning = key => gloss && MEANING_PREFIX[key] ? MEANING_PREFIX[key] + gloss : '';
+  const gloss = lemma.vi.split(/[;,；]/)[0].replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const meaning = key => {
+    if (!gloss) return '';
+    if (key.startsWith('person-')) return lemma.personSuffixes?.[key.slice(7)] || '';
+    if (MEANING_PREFIX[key]) return MEANING_PREFIX[key] + gloss;
+    const voice=MEANING_VOICES.find(base=>key.startsWith(base));
+    if (voice) {
+      const ending=key.slice(voice.length);
+      const tense=ending.includes('Past') ? 'đã ' : '';
+      const negative=ending.includes('Negative') ? 'không ' : '';
+      return tense + negative + MEANING_PREFIX[voice] + gloss;
+    }
+    return gloss;
+  };
   let node = form;
   while (node) {
     const parent = forms.get(node.parent);
@@ -385,7 +439,7 @@ export function describeForm(lemma, forms, key) {
     ['negative','past','negativePast','progressive','progressivePlainPast','progressiveNegative','progressiveNegativePast'].includes(key) ?
       'Thể thông thường' : '';
   return {lemma, key, jp:form.jp, kana:form.kana, romaji:formRomaji(form), label:FORM_LABELS[key],
-    grammar:form.grammar, ending:form.ending, meaning:meaning(key),
-    register, context:FORM_CONTEXTS[form.grammar] || STEP_MEANINGS[key] || '',
+    grammar:form.grammar, ending:form.ending, meaning:meaning(key), spellings:formSpellings(lemma,form),
+    register, context:FORM_CONTEXTS[form.grammar] || STEP_MEANINGS[key] || form.rule || '',
     steps:steps.reverse()};
 }

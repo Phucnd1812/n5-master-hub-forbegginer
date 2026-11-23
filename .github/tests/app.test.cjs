@@ -122,8 +122,8 @@ test('mobile and desktop study, Romaji, IME, deep link and legacy backup', {time
   await search.fill('食べませんでした');
   await search.dispatchEvent('compositionend');
   await page.waitForFunction(() => document.getElementById('mainContainer').dataset.n5Page === 'global-search');
+  await page.locator('[data-lookup-query="食べませんでした"]').waitFor();
   assert.equal(await page.locator('#mainContainer h1').textContent(), 'Kết quả cho “食べませんでした”');
-  await page.locator('[data-lookup-state="ready"]').waitFor();
   assert(await page.locator('[data-lookup-analysis]').getByText('食べる → 食べ → 食べませんでした').isVisible());
 
   const late = await page.evaluate(() => {
@@ -267,7 +267,7 @@ test('Universal Search connects sentence, dictionary, grammar, Kanji, review and
   t.after(() => { networkAvailable = true; });
   assert.equal((await page.reload()).status(),200);
   await lookup(page,'nondekara');
-  const offline = page.locator('[data-lookup-analysis] [data-result-panel="overview"]');
+  const offline = page.locator('[data-lookup-analysis]');
   assert(await offline.getByText(/飲む → 飲んで → 飲んでから/).isVisible());
   await offline.getByRole('button',{name:'～てから',exact:true}).click();
   await page.getByRole('dialog').getByRole('heading',{name:'Ví dụ và phân tích'}).waitFor();
@@ -443,15 +443,12 @@ test('new lookup returns to the top and a verb immediately shows its conjugation
   await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
 
   await go(page,'vocab');
-  await page.evaluate(() => {
-    window.scrollTo({top:600,behavior:'instant'});
-    const input = document.getElementById('globalSearchInput');
-    input.value = '飲む';
-    input.dispatchEvent(new InputEvent('input',{bubbles:true}));
-  });
-  await page.locator('[data-lookup-state="ready"]').waitFor();
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  assert.equal(await page.evaluate(() => window.scrollY),0);
+  await page.evaluate(() => window.scrollTo({top:600,behavior:'instant'}));
+  const input = page.locator('#globalSearchInput');
+  await input.fill('飲む');
+  await page.locator('[data-lookup-query="飲む"]').waitFor();
+  await input.press('Enter');
+  await page.waitForFunction(() => window.scrollY===0);
 });
 
 async function openPracticeTool(page, view) {
@@ -1373,4 +1370,88 @@ test('shared result panels have clear contrast, responsive order and reduced mot
       await top.waitFor();
     }
   }
+});
+
+test('mobile live lookup keeps IME and caret, opens a suggestion and follows contextual input', {timeout:90_000}, async t => {
+  const {page} = await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'},()=>{
+    window.lookupScrollCalls=0;
+    const scrollTo=window.scrollTo.bind(window);
+    window.scrollTo=(...args)=>{window.lookupScrollCalls++;return scrollTo(...args);};
+  });
+  const input=page.locator('#globalSearchInput');
+  const preview=page.locator('#n5InstantLookup');
+  await input.focus();
+  await page.evaluate(()=>{window.lookupScrollCalls=0;});
+  await input.pressSequentially('kodomotach',{delay:30});
+  await preview.getByText('Những đứa trẻ',{exact:true}).waitFor({timeout:20_000});
+  await page.locator('[data-lookup-query="kodomotach"]').waitFor();
+  assert(await preview.getByText(/こどもたち/).isVisible());
+  assert(await preview.locator('button').count()<=3);
+  assert(await input.evaluate(element=>document.activeElement===element && element.selectionStart===10));
+  assert.equal(await page.evaluate(()=>window.lookupScrollCalls),0);
+
+  await input.press('Backspace');
+  await input.press('h');
+  await preview.getByText('Những đứa trẻ',{exact:true}).waitFor();
+  await preview.getByRole('button',{name:/子どもたち/}).click();
+  const dialog=page.getByRole('dialog');
+  await dialog.getByRole('heading',{name:'子どもたち',exact:true}).waitFor();
+  assert(await dialog.getByText(/子供達/).isVisible());
+  const contextual=dialog.getByRole('searchbox');
+  await contextual.focus();
+  await contextual.dispatchEvent('compositionstart');
+  await contextual.fill('泣いて');
+  await page.waitForTimeout(400);
+  assert.equal(await dialog.locator('[data-context-result]').count(),0);
+  await contextual.fill('泣いてい');
+  await contextual.dispatchEvent('compositionend');
+  const contextResult=dialog.locator('[data-context-result="泣いてい"]');
+  await contextResult.getByRole('button',{name:/泣いていい/}).waitFor();
+  assert(await contextual.evaluate(element=>document.activeElement===element && element.selectionStart===element.value.length));
+  await contextResult.getByRole('button',{name:/泣いていい/}).click();
+  await dialog.getByRole('heading',{name:'泣いていい',exact:true}).waitFor();
+  assert(await dialog.locator('.n5-lookup-form').getByText('Được phép khóc',{exact:true}).isVisible());
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await contextResult.getByRole('button',{name:/泣いている/}).waitFor();
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});
+  assert.equal(await input.inputValue(),'kodomotach');
+  assert(await input.evaluate(element=>element===document.activeElement));
+});
+
+test('inline live preview uses the latest paste and composes local translations offline', {timeout:90_000}, async t => {
+  const {page}=await openApp(t,{viewport:{width:1280,height:800}});
+  const input=page.locator('#globalSearchInput');
+  const preview=page.locator('#n5InstantLookup');
+  const external=[];
+  page.on('request',request=>{
+    if (request.url().includes('/functions/v1/smart-translate')) external.push(request.url());
+  });
+  networkAvailable=false;
+  t.after(()=>{networkAvailable=true;});
+  await page.reload();
+  await input.focus();
+  await input.dispatchEvent('compositionstart');
+  await input.fill('風が');
+  await page.waitForTimeout(400);
+  assert.equal(await preview.isVisible(),false);
+  assert.equal(await page.locator('[data-lookup-query="風が"]').count(),0);
+  await input.dispatchEvent('compositionend');
+  await input.fill('naitei');
+  await input.fill('風が吹いています。');
+  await input.dispatchEvent('input',{inputType:'insertFromPaste',data:'風が吹いています。'});
+  await preview.getByText('Gió đang thổi.',{exact:true}).waitFor({timeout:20_000});
+  const result=page.locator('[data-lookup-query="風が吹いています。"]');
+  await result.locator('[data-n5-translation-slot]').getByText('Gió đang thổi.',{exact:true}).waitFor();
+  assert(await result.locator('[data-result-panel="overview"] .n5-lookup-path')
+    .getByText('吹く → 吹いて → 吹いている → 吹いています',{exact:true}).isVisible());
+  assert(await input.evaluate(element=>document.activeElement===element));
+  await input.fill('naitei');
+  await preview.getByText('内定',{exact:true}).waitFor();
+  const ambiguous=page.locator('[data-lookup-query="naitei"]');
+  for (const form of ['泣いている','泣いています','泣いていい','泣いていた']) {
+    await ambiguous.locator(`[data-lookup-form-surface="${form}"] button`).waitFor();
+  }
+  assert.equal(await ambiguous.locator('[data-result-sentence]').count(),0);
+  assert.deepEqual(external,[]);
 });
