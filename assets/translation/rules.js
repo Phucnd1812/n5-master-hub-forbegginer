@@ -3,7 +3,7 @@ import {HAS_JAPANESE,hiragana,romanize} from '../search/text.js';
 export const RULE_VERSION = 'rules-1';
 const subjectWords = new Map(Object.entries({
   私:'tôi',私たち:'chúng tôi',僕:'tôi',彼:'anh ấy',彼女:'cô ấy',先生:'giáo viên',学生:'học sinh',友達:'bạn',
-  子供:'trẻ em',雨:'mưa',雪:'tuyết',猫:'mèo',犬:'chó',
+  子供:'trẻ em',子ども:'trẻ em',風:'gió',雨:'mưa',雪:'tuyết',猫:'mèo',犬:'chó',
 }));
 const nouns = new Map(Object.entries({
   テレビ:'TV',本:'sách',薬:'thuốc',音楽:'nhạc',映画:'phim',日本語:'tiếng Nhật',日本:'Nhật Bản',学校:'trường',
@@ -17,7 +17,7 @@ const times = new Map(Object.entries({
 }));
 const verbs = new Map(Object.entries({
   見る:'xem',観る:'xem',飲む:'uống',食べる:'ăn',読む:'đọc',勉強する:'học',寝る:'đi ngủ',行く:'đi',来る:'đến',
-  帰る:'về',買う:'mua',書く:'viết',話す:'nói',住む:'sống',働く:'làm việc',起きる:'thức dậy',待つ:'đợi',
+  吹く:'thổi',泣く:'khóc',眠る:'ngủ',帰る:'về',買う:'mua',書く:'viết',話す:'nói',住む:'sống',働く:'làm việc',起きる:'thức dậy',待つ:'đợi',
   泳ぐ:'bơi',遊ぶ:'chơi',走る:'chạy',歩く:'đi bộ',開ける:'mở',閉める:'đóng',作る:'làm',使う:'dùng',
 }));
 const adjectives = new Map(Object.entries({
@@ -34,11 +34,11 @@ const leading = {
   progressivePoliteNegativePast:'đã không',desire:'muốn',desirePolite:'muốn',desireNegative:'không muốn',
   request:'vui lòng',negativeRequest:'vui lòng đừng',duty:'phải',dutyPolite:'phải',dutyNakute:'phải',
   dutyNakutePolite:'phải',dutyNaito:'phải',dutyNaitoPlain:'phải',
-  optional:'không cần',optionalPolite:'không cần',permit:'có thể',permitPolite:'có thể',permitQuestion:'có thể',
+  optional:'không cần',optionalPolite:'không cần',permit:'có thể',permitShort:'được phép',permitPolite:'có thể',permitQuestion:'có thể',
   prohibition:'không được',prohibitionPolite:'không được',experience:'đã từng',experiencePolite:'đã từng',
   afterTe:'',before:'',simultaneous:'',tara:'',ba:'',
 };
-const ongoing = new Set(['見る','観る','食べる','飲む','読む','勉強する','書く','話す','働く','待つ','泳ぐ','遊ぶ','走る','歩く','作る']);
+const ongoing = new Set(['見る','観る','食べる','飲む','読む','勉強する','書く','話す','吹く','降る','泣く','眠る','働く','待つ','泳ぐ','遊ぶ','走る','歩く','作る']);
 const motion = new Set(['行く','来る','帰る']);
 const join = words => words.filter(Boolean).join(' ');
 const rootOf = token => token?.lemma?.jp || '';
@@ -170,9 +170,10 @@ export function directionFor(text,mode,analysis) {
 
 export function looksLikeSentence(text,analysis) {
   const words=text.trim().split(/\s+/);
+  const tokens=analysis?.parts.filter(part=>part.kind==='word' || part.kind==='function') || [];
   return isVietnameseExample(text) || /[。！？!?]$/.test(text) && HAS_JAPANESE.test(text) && text.length >= 3
-    || !!analysis?.translation
-    || !!analysis?.parts.some(part => part.form) && analysis.parts.filter(part => part.kind === 'word' || part.kind === 'function').length >= 2
+    || !!analysis?.translation && !(tokens.length===1 && tokens[0].form)
+    || tokens.length>=2 && tokens.some(part=>part.form)
     || words.length >= 5 && /[ăâđêôơưạ-ỹ]/iu.test(text) &&
       /^(?:tôi|mình|chúng tôi|chúng ta|bạn|anh ấy|cô ấy|hôm nay|hôm qua|ngày mai|sáng nay)\b/iu.test(text);
 }

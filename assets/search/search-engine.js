@@ -34,7 +34,7 @@ const INTENT_RULES = [
   [/^(?:muon lam|muon thu lam)\b/, 'desire'],
 ];
 
-const MATCH = {exact:'exact', prefix:'prefix', partial:'partial', fuzzy:'fuzzy', inferred:'inferred'};
+const MATCH = {exact:'exact', alternate:'alternate', inflection:'inflection', prefix:'prefix', partial:'partial', fuzzy:'fuzzy', inferred:'inferred', grammar:'grammar'};
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
@@ -256,15 +256,25 @@ export async function createSearchEngine(data, yieldWork) {
       roman:IS_ROMAN.test(normalized) ? romanKey(normalized) : ''};
     if (!query.jp && !/[a-z0-9]/.test(query.latin)) return {results:[], counts:{}, analysis:null};
     const intent = !query.jp && INTENT_RULES.find(([pattern]) => pattern.test(query.latin))?.[1];
-    const analysis = intent ? null : analyzer.analyze(text);
+    let analysis = intent ? null : analyzer.analyze(text);
+    const completeSentence=/[。！？!?]/u.test(text) && !!query.jp ||
+      analysis?.coverage===1 && analysis.parts.some(part=>part.kind==='function') &&
+      analysis.parts.some(part=>part.form && part.form.key!=='te');
+    const forms=intent || completeSentence ? [] : analyzer.complete(query);
+    // A supported continuation is stronger than a chance segmentation of a partial word.
+    if (forms.length && !forms.some(item=>item.match==='inflection') && !analysis?.translation &&
+        analysis?.parts.some(part=>part.form)) analysis=null;
     const exactLessons = exactExamples.get(query.jp || query.roman);
     const vietnameseExamples = exactExamples.get(query.latin);
     const lexicalBoosts = new Map();
-    const grammarBoosts = new Set(analysis?.grammar || []);
+    const grammarBoosts = new Set(analysis?.coverage===1 ? analysis.grammar : []);
     const comparisons = new Set([...grammarBoosts].flatMap(id => COMPARE_BY_TOPIC.get(id) || []));
     const kanjiBoosts = new Set();
     const courseBoosts = new Map();
     const tokens = (analysis?.parts || []).filter(part => part.kind !== 'punct');
+    const singleInflection=tokens.length===1 && tokens[0].form && analysis.coverage===1;
+    const verifiedRoots=new Set(forms.filter(item=>item.match==='inflection').map(item=>item.form.lemma.id));
+    if (singleInflection) verifiedRoots.add(tokens[0].lemma.id);
     for (const part of tokens) {
       if (!part.lemma) continue;
       const partialRomaji = query.roman && analysis.coverage < 1;
@@ -279,7 +289,7 @@ export async function createSearchEngine(data, yieldWork) {
 
     const found = [];
     const fuzzy = [];
-    let strong = false;
+    let strong = forms.length>0;
     const mayCorrect = query.jp.length >= 3 && query.jp.length <= 12 ||
       !query.jp && (query.roman.length >= 4 && query.roman.length <= 20 ||
         !/\s/.test(query.latin) && query.latin.length >= 4 && query.latin.length <= 20);
@@ -292,10 +302,19 @@ export async function createSearchEngine(data, yieldWork) {
       let score = rank(profile, query);
       let match = score >= 220 ? MATCH.exact : score >= 165 ? MATCH.prefix : MATCH.partial;
       let inferred = 0;
-      if (entry.type === 'vocab') inferred = lexicalBoosts.get(entry.id) || 0;
+      if (entry.type === 'vocab') {
+        inferred = lexicalBoosts.get(entry.id) || 0;
+        if (match===MATCH.exact && score && query.jp && profile.primaryWritten!==query.jp && profile.primaryReading!==query.jp) {
+          match=MATCH.alternate;
+        }
+        if (verifiedRoots.has(entry.id) && score<220) {
+          score=Math.max(score,247);
+          match=MATCH.inflection;
+        }
+      }
       if (entry.type === 'grammar') {
         if (intent === entry.id) inferred = 300;
-        else if (grammarBoosts.has(entry.id)) inferred = 270;
+        else if (grammarBoosts.has(entry.id)) inferred = singleInflection ? 174 : 205;
         else if (comparisons.has(entry.id)) inferred = 155;
         if (exactLessons?.has(entry.id) || vietnameseExamples?.has(entry.id)) {
           score = Math.max(score,295);
@@ -311,7 +330,7 @@ export async function createSearchEngine(data, yieldWork) {
       if (entry.type === 'lesson' && courseBoosts.has(entry.id)) inferred = 110 + Math.min(8, courseBoosts.get(entry.id));
       if (inferred > score) {
         score = inferred;
-        if (match !== MATCH.exact) match = MATCH.inferred;
+        if (match !== MATCH.exact && match !== MATCH.alternate && match !== MATCH.inflection) match = entry.type==='grammar'?MATCH.grammar:MATCH.inferred;
       }
       // A name remains an exact match when deliberately looked up. In
       // prefix or mixed results keep study vocabulary above proper names.
@@ -336,6 +355,11 @@ export async function createSearchEngine(data, yieldWork) {
       }
     }
 
+    const exactDictionary=found.some(({entry,match,gloss})=>entry.type==='vocab' && !!gloss &&
+      (match===MATCH.exact || match===MATCH.alternate));
+    if (exactDictionary && !completeSentence && !intent) for (const row of found) {
+      if (row.entry.type==='grammar' && row.match!==MATCH.exact) row.score=Math.min(row.score,150);
+    }
     found.sort((a, b) => b.score - a.score || b.priority - a.priority ||
       ORDER_RANK.get(a.entry.type) - ORDER_RANK.get(b.entry.type) || a.entry.title.length - b.entry.title.length);
     const counts = {vocab:0, kanji:0, grammar:0, lesson:0};
@@ -354,7 +378,7 @@ export async function createSearchEngine(data, yieldWork) {
       if (counts[entry.type] <= LIMIT_PER_TYPE) results.push({...entry, match, approximate:match === MATCH.fuzzy});
     }
     const kanaSuggestion = !analysis && !intent && query.roman.length >= 3 ? suggestKana(query.roman) : '';
-    const model = {results, counts, analysis, kanaSuggestion};
+    const model = {results, counts, analysis, kanaSuggestion, forms};
     lastLookup = {text,model};
     return projectResults(model,limit);
   }

@@ -1,15 +1,17 @@
 import {HAS_HAN, HAS_JAPANESE, IS_KANA, fold, hiragana, plain} from './text.js';
 import {createSearchClient} from './search-client.js';
-import {looksLikeSentence} from '../translation/rules.js';
+import {directionFor,localTranslation,looksLikeSentence} from '../translation/rules.js';
 import {escapeResult as esc, sentenceHeader, sentenceReading, readingDifferences} from './result-ui.js';
 
 const TYPES = {vocab:'Từ vựng', kanji:'Kanji', grammar:'Ngữ pháp', lesson:'Giáo trình'};
 const MATCH_LABELS = {
-  exact:'Khớp chính xác', prefix:'Khớp đầu từ', partial:'Khớp một phần',
-  inferred:'Suy luận từ cách dùng', fuzzy:'Gợi ý gần đúng',
+  exact:'Khớp chính xác', alternate:'Cách viết khác đã đối chiếu', inflection:'Dạng tạo theo quy tắc',
+  prefix:'Khớp đầu từ', partial:'Khớp một phần', inferred:'Suy luận từ ngữ cảnh',
+  grammar:'Ngữ pháp gợi ý', fuzzy:'Gợi ý gần đúng',
 };
 const CHUNK = 14;
 const DIALOG_RESULTS = 6;
+const LOOKUP_DELAY = 240;
 const RESULT_CAP = 300;
 const PREFS = 'n5_lookup_display_v1';
 const GROUP_LABELS = {
@@ -94,6 +96,7 @@ export function createLookupUI(app) {
   let previousFocus;
   let frames = [];
   let composing = false;
+  let dialogTimer;
   let nextTabsId = 0;
 
   const getGuides = () => guides ??= import('./grammar-data.js').then(module => guideById = module.GRAMMAR_BY_ID);
@@ -118,7 +121,8 @@ export function createLookupUI(app) {
       <h3>${button(type,id,type === 'lesson' ? highlighted(title,query) : rubric(title,reading,query), 'class="n5-lookup-title"')}</h3>
       ${settings.furigana && reading && reading !== title ? `<p class="n5-lookup-meta" lang="ja">${highlighted(reading,query)}</p>` : ''}
       ${settings.roman && romaji ? `<p class="n5-lookup-meta">${highlighted(romaji,query)}</p>` : ''}
-      ${description ? `<p class="n5-result-meaning">${highlighted(description,query)}</p>` : ''}
+      ${description ? `<p class="n5-result-meaning">${highlighted(description,query)}</p>` :
+        type==='vocab'?'<p class="n5-lookup-meta">Chưa có nghĩa tiếng Việt trong mục này.</p>':''}
       ${entry.pos || entry.group ? `<p class="n5-lookup-meta">${esc(entry.pos || GROUP_LABELS[entry.group])}</p>` : ''}
       ${source || location ? '<div class="n5-lookup-meta">' + esc(source || location) + '</div>' : ''}
       ${entry.match ? '<small class="n5-lookup-meta" data-match="' + entry.match + '">' + MATCH_LABELS[entry.match] + '</small>' : ''}
@@ -188,8 +192,9 @@ export function createLookupUI(app) {
       (part.alternatives?.length?detailButton('part',index,'Xem cách phân tích khác'):'')+'</div></div>').join('');
     const overview=phrases?'<div class="n5-lookup-phrases">'+phrases+'</div>':(parts.length?
       '<div class="n5-lookup-terms">'+parts.map(term).join('')+'</div>':'');
-    const quickForm=parts.filter(part=>part.kind==='word').length===1 && forms ?
-      forms+(grammar?'<div class="n5-lookup-actions">'+grammar+'</div>':''):'';
+    const mainForm=parts.findLast(part=>part.form);
+    const quickForm=mainForm ? formSummary(mainForm.form) +
+      detailButton('part',parts.indexOf(mainForm),'Xem từng bước chia') : '';
     const sections={
       overview:overview+quickForm+'<div data-result-ai-overview></div>',
       vocab:'<div class="n5-result-knowledge-grid">'+vocabulary+'</div><div data-result-ai-vocab></div>',
@@ -256,6 +261,7 @@ export function createLookupUI(app) {
     return `<section class="n5-lookup-card n5-lookup-analysis" data-lookup-analysis>
       <h2>${words.length === 1 && mainForm ? 'Phân tích dạng chia' : 'Phân tích câu / cụm từ'}</h2>
       ${expanded ? `<p class="n5-lookup-sentence" ${written === original ? 'lang="ja"' : ''}>${esc(original)}</p>` : ''}
+      ${words.length === 1 && mainForm ? formSummary(mainForm.form) : ''}
       ${written && written !== original ? `<p class="n5-lookup-sentence" lang="ja">${esc(written)}</p>` : ''}
       ${settings.furigana && readings ? labelLine('Cách đọc',readings) : ''}
       ${settings.roman && romaji ? labelLine('Romaji',romaji) : ''}
@@ -265,7 +271,6 @@ export function createLookupUI(app) {
         ${translation ? button('sentence-card','','Thêm câu vào Flashcard','class="n5-lookup-chip"') : ''}
       </div>` : ''}
       ${showPhrases ? phraseCards : `<div class="n5-lookup-terms">${terms}</div>`}
-      ${words.length === 1 && mainForm ? formSummary(mainForm.form) : ''}
       ${expanded && words.length > 0 ? `<div class="n5-lookup-analysis-list">${parts.map((part, index) => {
         if (part.kind === 'punct') return '';
         if (part.kind === 'unknown') return `<div class="n5-lookup-term"><span lang="ja">${esc(part.text)}</span><span class="n5-lookup-meta">Chưa nhận diện</span></div>`;
@@ -287,11 +292,72 @@ export function createLookupUI(app) {
     </section>`;
   }
 
+  const displayMeaning = value => value ? value[0].toLocaleUpperCase('vi')+value.slice(1) : '';
+  const rootLabel = lemma => [lemma.jp,...(lemma.aliases || [])].join(' / ');
+
+  function completionCards(model) {
+    const forms=model.forms || [];
+    if (!forms.length) return '';
+    const primary=model.analysis?.parts.filter(part=>part.kind!=='punct');
+    const shown=forms.map((row,index)=>({row,index})).filter(({row})=>!(primary?.length===1 &&
+      primary[0].form?.key===row.form.key && primary[0].form.lemma.jp===row.form.lemma.jp));
+    if (!shown.length) return '';
+    return `<section class="n5-lookup-group" data-lookup-completions>
+      <h2>${shown.some(({row})=>row.match==='completion')?'Dạng có thể tra tiếp':'Cách phân tích theo quy tắc'}</h2>
+      <div class="n5-lookup-grid">${shown.map(({row:{match,form},index})=>
+        `<article class="n5-result-surface" data-result-tone="vocab" data-lookup-form-surface="${esc(form.jp)}">
+          ${button('form-result',index,rubric(form.jp,form.kana),'class="n5-lookup-title"')}
+          <p class="n5-result-meaning">${esc(displayMeaning(form.meaning))}</p>
+          <p class="n5-lookup-meta">${esc(form.kana)}${settings.roman?' · '+esc(form.romaji):''}</p>
+          <p class="n5-lookup-meta">Từ gốc · ${esc(rootLabel(form.lemma))}</p>
+          <p class="n5-lookup-meta">${match==='completion'?'Gợi ý hoàn thành':'Dạng khớp theo quy tắc'} · ${esc(form.label)}</p>
+        </article>`).join('')}</div></section>`;
+  }
+
+  function openCompletion(model,index,control) {
+    const form=model?.forms?.[Number(index)]?.form;
+    if (!form) return;
+    openDetail('inflection',JSON.stringify([form.lemma.id,form.key]),control,{lemma:form.lemma,form,model});
+  }
+
+  function previewContent(model,query) {
+    const analysis=model.analysis;
+    if (looksLikeSentence(query,analysis)) {
+      const result=localTranslation(query,directionFor(query,'auto',analysis),analysis);
+      const main=analysis?.parts.findLast(part=>part.form)?.form;
+      return `<div class="n5-instant-sentence">
+        <p class="n5-instant-query" ${HAS_JAPANESE.test(query)?'lang="ja"':''}>${esc(query)}</p>
+        ${result?`<p class="n5-result-meaning">${esc(result.translatedText)}</p>`:''}
+        ${analysis?.coverage===1 && analysis.readings?`<p class="n5-lookup-meta" lang="ja">${esc(analysis.readings)}</p>`:''}
+        ${main?`<p class="n5-lookup-meta">${esc(main.label)} · ${esc(main.lemma.jp)}</p>`:''}
+        ${button('dialog-search',query,'Xem câu và phân tích','class="n5-lookup-chip"')}</div>`;
+    }
+    const dictionary=model.results.filter(entry=>entry.type==='vocab' && entry.description);
+    const exact=dictionary.filter(entry=>entry.match==='exact' || entry.match==='alternate');
+    const entries=dictionary.length?dictionary:model.results;
+    const compact=(title,meaning,reading,roman,pos)=>
+      `<span lang="ja">${esc(title)}</span><strong>${esc(meaning)}</strong>
+       <small>${[reading,settings.roman?roman:'',pos].filter(Boolean).map(esc).join(' · ')}</small>`;
+    return [
+      ...exact.slice(0,1).map(entry=>button(entry.type,entry.id,compact(entry.title,entry.description,entry.reading,entry.romaji,entry.pos),'class="n5-instant-item"')),
+      ...(model.forms || []).slice(0,exact.length?2:3).map(({form,match},index)=>
+        button('form-result',index,compact(form.jp,displayMeaning(form.meaning),form.kana,form.romaji,
+          match==='completion'?'Gợi ý hoàn thành · '+form.label:form.label),'class="n5-instant-item"')),
+      ...entries.filter(entry=>entry!==exact[0]).slice(0,Math.max(0,3-Math.min(exact.length,1)-(model.forms?.length || 0)))
+        .map(entry=>button(entry.type,entry.id,compact(entry.title,entry.description,entry.reading,entry.romaji,entry.pos),'class="n5-instant-item"')),
+    ].join('');
+  }
+
   function formSummary(form) {
     return `<div class="n5-lookup-form n5-result-surface" data-result-tone="grammar">
-      <h3>${esc(form.label)}</h3>
+      <h3>${esc(form.jp)} · ${esc(form.label)}</h3>
+      ${form.meaning?`<p class="n5-result-meaning">${esc(displayMeaning(form.meaning))}</p>`:''}
+      ${labelLine('Từ gốc',rootLabel(form.lemma)+' — '+form.lemma.vi)}
+      ${settings.furigana ? labelLine('Kana',form.kana) : ''}
+      ${settings.roman ? labelLine('Romaji',form.romaji) : ''}
+      ${labelLine('Cách viết dạng này',form.spellings.filter(spelling => spelling!==form.jp).join(' · '))}
+      ${labelLine('Cách dùng',form.context)}
       <p class="n5-lookup-path" lang="ja">${form.steps.map(step => '<span>' + esc(step.jp) + '</span>').join(' → ')}</p>
-      ${labelLine('Nghĩa của dạng chia',form.meaning)}
       ${labelLine('Sắc thái',form.register)}
     </div>`;
   }
@@ -306,10 +372,13 @@ export function createLookupUI(app) {
 
   function draw(container, query, filter, model) {
     const {results, counts, analysis, kanaSuggestion} = model;
+    const sentence=looksLikeSentence(query,analysis);
+    const lead=!sentence && filter==='all' && model.forms?.length ?
+      results.find(entry=>entry.type==='vocab' && ['exact','alternate'].includes(entry.match)) : null;
     const group = (type) => {
       const title = TYPES[type];
       const limit = limits[type] || CHUNK;
-      const entries = results.filter(entry => entry.type === type);
+      const entries = results.filter(entry => entry.type === type && entry!==lead);
       if (!entries.length) return '';
       return `<section class="n5-lookup-group">
         <header><h2>${title}</h2><span class="n5-lookup-meta">${counts[type]} kết quả</span></header>
@@ -324,11 +393,11 @@ export function createLookupUI(app) {
     const rankedTypes = [...new Set(results.map(entry => entry.type))];
     const previous=rendered?.sentence;
     const selected=previous?.querySelector('[aria-selected="true"][data-result-tab]')?.dataset.resultTab;
-    const sentence=looksLikeSentence(query,analysis);
     const preview=sentence && ['all','sentence'].includes(filter) ? sentencePanel(analysis,query,selected) : '';
     const legacy=expanded=>sentence?'':analysisPanel(analysis,expanded,results.length && !expanded?'':kanaSuggestion,query);
     const visible = filter === 'sentence' ? legacy(true) :
-      filter === 'all' ? legacy(false) + rankedTypes.map(group).join('') : group(filter);
+      filter === 'all' ? (lead?resultCard(lead,query):'') + legacy(false) + completionCards(model) +
+        rankedTypes.map(group).join('') : group(filter);
     const history = app.saved();
     const recent = app.recent().filter(entry => entry !== query);
     container.innerHTML = `<div class="n5-lookup" data-lookup-state="ready" data-lookup-query="${esc(query)}">
@@ -369,6 +438,7 @@ export function createLookupUI(app) {
       }
     }
     mountTranslation(container,query,analysis,app.consumeTranslation?.(query));
+    if (app.canPreview?.(query)) app.preview(query,previewContent(model,query));
   }
 
   function moreButton(type, count, limit) {
@@ -400,7 +470,7 @@ export function createLookupUI(app) {
     const ticket = ++serial;
     const epoch = app.dictionaryRevision();
     const controller = startSearch();
-    container.innerHTML = pendingLookup(query);
+    if (!app.mobileLive?.(query) || !container.firstElementChild) container.innerHTML = pendingLookup(query);
     getClient().search(query,{signal:controller.signal,limit:CHUNK}).then(model => {
       if (!model || serial !== ticket || !app.current(query) || epoch !== app.dictionaryRevision()) return;
       rendered = {query, revision:epoch, model};
@@ -498,6 +568,7 @@ export function createLookupUI(app) {
       preserveButton(action,value);
       return;
     }
+    if (action === 'form-result') {openCompletion(rendered?.model,value,control);return;}
     if (action === 'more') { showMore(value,control); return; }
     if (action === 'search') { app.query(value); return; }
     if (action === 'clear') { app.clear(); return; }
@@ -552,8 +623,44 @@ export function createLookupUI(app) {
       if (control) handleDetailAction(control);
     });
     const input = dialog.querySelector('[data-dialog-search] input');
-    input.addEventListener('compositionstart', () => { composing = true; });
-    input.addEventListener('compositionend', () => { composing = false; });
+    function submitContext(submitted=false) {
+      clearTimeout(dialogTimer);
+      const query=input.value.trim();
+      if (!query || composing || !dialog.open) return;
+      const frame=frames.at(-1);
+      if (submitted) app.remember(query);
+      if (frame?.type==='dialog-search' && frame.payload?.live) {
+        if (frame.ready && frame.id===query) {
+          if (submitted) {
+            frame.payload.live=false;
+            mountTranslation(dialog.querySelector('.n5-lookup-detail'),query,frame.model?.analysis,true);
+          }
+          return;
+        }
+        frame.controller?.abort();
+        const next={type:'dialog-search',id:query,input:query,scroll:0,payload:{live:!submitted,translationSubmitted:submitted}};
+        frames[frames.length-1]=next;
+        showFrame(next);
+        return;
+      }
+      openDetail('dialog-search',query,input,{live:!submitted,translationSubmitted:submitted});
+    }
+    function scheduleContext() {
+      clearTimeout(dialogTimer);
+      const frame=frames.at(-1);
+      if (frame?.type==='dialog-search' && frame.id!==input.value.trim()) {
+        frame.controller?.abort();
+        translationView?.cancelScope(dialog.querySelector('.n5-lookup-detail'));
+      }
+      if (input.value.trim()) dialogTimer=setTimeout(submitContext,LOOKUP_DELAY);
+    }
+    input.addEventListener('compositionstart',()=>{
+      composing=true;
+      clearTimeout(dialogTimer);
+      frames.at(-1)?.controller?.abort();
+    });
+    input.addEventListener('compositionend',()=>{composing=false;scheduleContext();});
+    input.addEventListener('input',event=>{if (!composing && !event.isComposing) scheduleContext();});
     input.addEventListener('keydown', event => {
       if (event.key === 'Enter' && (composing || event.isComposing || event.keyCode === 229)) event.preventDefault();
       if (event.key === 'ArrowDown' && !composing) {
@@ -566,12 +673,13 @@ export function createLookupUI(app) {
     dialog.addEventListener('submit', event => {
       if (!event.target.matches('[data-dialog-search]')) { grammarView?.submit(event); return; }
       event.preventDefault();
-      const query = input.value.trim();
-      if (!composing && query) openDetail('dialog-search',query,input,{translationSubmitted:true});
+      submitContext(true);
     });
     dialog.addEventListener('change', event => grammarView?.change(event));
     dialog.addEventListener('close', () => {
       if (dialog.open) return;
+      clearTimeout(dialogTimer);
+      frames.at(-1)?.controller?.abort();
       frames = [];
       composing = false;
       dialog.querySelector('.n5-lookup-detail').replaceChildren();
@@ -586,6 +694,7 @@ export function createLookupUI(app) {
   }
 
   function openDetail(type, id, origin, payload) {
+    clearTimeout(dialogTimer);
     if (!dialog) makeDialog();
     if (!dialog.open) {
       previousFocus = origin || document.activeElement;
@@ -597,6 +706,7 @@ export function createLookupUI(app) {
     const previous = frames.at(-1);
     const input = dialog.querySelector('[data-dialog-search] input');
     if (previous) {
+      previous.controller?.abort();
       previous.scroll = body.scrollTop;
       if (previous.ready) {
         previous.elements = [...body.childNodes];
@@ -619,7 +729,8 @@ export function createLookupUI(app) {
     const body = dialog.querySelector('.n5-lookup-detail');
     app.toolFrame?.(frames.slice().reverse().find(({type}) => type === 'builder' || type === 'checker')?.type || '');
     dialog.querySelector('[data-lookup="detail-back"]').hidden = frames.length < 2;
-    dialog.querySelector('[data-dialog-search] input').value = frame.input;
+    const search=dialog.querySelector('[data-dialog-search] input');
+    if (search.value!==frame.input) search.value=frame.input;
     if (frame.elements) {
       title.textContent = frame.heading;
       body.replaceChildren(...frame.elements);
@@ -640,14 +751,16 @@ export function createLookupUI(app) {
       body.innerHTML = '<p role="status">Đang tra cứu…</p>';
       body.scrollTop = 0;
       try {
-        const model = await getClient().search(frame.id);
+        frame.controller=new AbortController();
+        const model = await getClient().search(frame.id,{signal:frame.controller.signal});
+        if (frame.controller.signal.aborted) return;
         if (frames.at(-1) !== frame || !dialog.open) return;
         frame.model = model;
         frame.shown = DIALOG_RESULTS;
         body.innerHTML = model ? dialogResults(model,frame.id) : '<p>Chưa mở được công cụ tra cứu.</p>';
         if (model) mountTranslation(body,frame.id,model.analysis,frame.payload?.translationSubmitted);
       } catch {
-        if (frames.at(-1) !== frame || !dialog.open) return;
+        if (frame.controller?.signal.aborted || frames.at(-1) !== frame || !dialog.open) return;
         body.innerHTML = '<p role="status">Chưa tải được kết quả. Hãy thử tra lại.</p>';
       }
     } else if (frame.type === 'builder' || frame.type === 'checker') {
@@ -729,23 +842,24 @@ export function createLookupUI(app) {
       const term = lemma ? {...entry,id:lemma.id,title:lemma.jp,reading:lemma.kana,romaji:lemma.romaji,description:lemma.vi,
         pos:lemma.pos,location:lemma.lesson,source:lemma.source,card:lemma.card,sourceId:lemma.sourceId,
         aliases:lemma.aliases,readings:lemma.readings,examples:lemma.examples || entry?.examples} : entry;
-      title.textContent = term?.title || part?.jp || 'Chi tiết tra cứu';
+      title.textContent = form?.jp || term?.title || part?.jp || 'Chi tiết tra cứu';
       if (term) body.innerHTML = wordDetail(term,vocab,form,part?.alternatives || [],partIndex,lemma?.group,basicForms);
       else body.innerHTML = labelLine('',part?.role || part?.vi) || '<p>Chưa có mục từ chi tiết.</p>';
     }
     frame.ready = true;
     body.scrollTop = frame.scroll;
-    dialog.querySelector('[data-lookup="detail-close"]').focus({preventScroll:true});
+    if (!frame.payload?.live) dialog.querySelector('[data-lookup="detail-close"]').focus({preventScroll:true});
   }
 
   function dialogResults(model, query) {
     const panel = analysisPanel(model.analysis,!!model.analysis,model.kanaSuggestion,query);
     const entries = model.results.slice(0,DIALOG_RESULTS);
-    return `<div class="n5-lookup">
-      ${panel}
+    const completions=completionCards(model);
+    return `<div class="n5-lookup" data-context-result="${esc(query)}">
+      ${panel}${completions}
       ${entries.length ? `<div class="n5-lookup-grid" data-dialog-results>${entries.map(entry => resultCard(entry,query)).join('')}</div>` : ''}
       ${model.results.length > DIALOG_RESULTS ? detailButton('dialog-more','','Xem thêm kết quả') : ''}
-      ${!panel && !entries.length ? '<p>Chưa thấy kết quả phù hợp.</p>' : ''}</div>`;
+      ${!panel && !completions && !entries.length ? '<p>Chưa thấy kết quả phù hợp.</p>' : ''}</div>`;
   }
 
   function entryLemma(entry) {
@@ -790,6 +904,7 @@ export function createLookupUI(app) {
     const readings = [...new Set([term.reading,...(term.readings || [])].filter(Boolean))];
     const source = term.sourceId ? term.source + ' · #' + term.sourceId : term.source || term.location || 'Kho học liệu N5 Master Hub';
     return `<div class="n5-lookup-word">
+      ${form ? formSummary(form) : ''}
       <header class="n5-result-surface n5-result-word" data-result-tone="vocab">
         <p class="n5-lookup-big">${rubric(term.title,term.reading)}</p>
         ${term.description?`<p class="n5-result-meaning">${esc(senses[0] || term.description)}</p>`:''}
@@ -799,7 +914,7 @@ export function createLookupUI(app) {
           ${settings.roman ? labelLine('Romaji',term.romaji) : ''}
         </div>
       </header>
-      ${form ? formSummary(form) + labelLine('Ngữ cảnh',form.context) + formSteps(form) +
+      ${form ? formSteps(form) +
         (form.grammar ? detailButton('grammar',form.grammar,grammarTitle(form.grammar)) : '') : ''}
       ${basicForms.length ? `<section class="n5-result-surface" data-result-tone="grammar" data-verb-conjugations><h3>Cách chia động từ</h3>
         <div class="n5-knowledge-branches">${basicForms.map(item => `<div>
@@ -913,9 +1028,10 @@ export function createLookupUI(app) {
   function handleDetailAction(control) {
     const {lookup:action,value} = control.dataset;
     switch (action) {
+      case 'form-result': openCompletion(frames.at(-1)?.model,value,control); break;
       case 'detail-close': closeDetail(); break;
       case 'detail-back':
-        if (frames.length > 1) { frames.pop(); showFrame(frames.at(-1)); }
+        if (frames.length > 1) { clearTimeout(dialogTimer);frames.pop().controller?.abort();showFrame(frames.at(-1)); }
         break;
       case 'audio': app.audio(value); break;
       case 'part':
@@ -996,6 +1112,13 @@ export function createLookupUI(app) {
   }
 
   return {render,openDetail,focusFirstResult,
+    activatePreview(control,origin=control) {
+      const {lookup:action,value}=control.dataset;
+      if (!rendered || !app.current(rendered.query)) return;
+      app.remember(rendered.query);
+      if (action==='form-result') openCompletion(rendered.model,value,origin);
+      else openDetail(action,value,origin);
+    },
     focusDialogSearch() {
       if (!dialog?.open) return false;
       dialog.querySelector('[data-dialog-search] input').focus();

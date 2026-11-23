@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.52.3 — Universal Search Intelligence & Instant Lookup
+
+- Tra cứu tự động sau 240 ms ở thanh tìm kiếm và cửa sổ tra cứu. Gợi ý ngắn hiện ngay dưới ô nhập, giữ con trỏ và chờ gõ tiếng Nhật xong. Mobile giữ vị trí khi đang gõ. Enter vẫn đưa trang kết quả về đầu.
+- Hiển thị nghĩa tiếng Việt, từ gốc và các bước chia ngay trong kết quả. Tách mục từ khớp chính xác khỏi dạng chia, cách viết khác, gợi ý tiền tố và mẫu ngữ pháp liên quan.
+- Bổ sung 23 mục JMdict, liên kết cách viết đã xác minh và hỗ trợ hậu tố trên các từ chỉ người phù hợp. Bộ dịch ngoại tuyến xử lý các vị ngữ thời tiết đơn giản.
+- Thêm kiểm thử cho gõ nhanh, dán, IME, tra cứu ngoại tuyến và nâng cấp PWA từ v5.52.2. [Báo cáo kỹ thuật](docs/v5.52.3-review.md)
+
 ## v5.52.2 — Search Experience & Visual Clarity
 
 - Đưa câu gốc và bản dịch lên đầu, gom thao tác dịch vào một thanh và chia phần kiến thức thành bốn tab giữ trạng thái.

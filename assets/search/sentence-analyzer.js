@@ -1,6 +1,6 @@
 import {FUNCTION_WORDS, CURATED_SENTENCES} from './lexicon.js';
 import {SEARCH_TOPICS,SEARCH_LESSONS} from '../grammar/search-data.js';
-import {describeForm,formRomaji} from './morphology.js';
+import {describeForm,formRomaji,formSpellings} from './morphology.js';
 import {collectPhrases} from './syntax.js';
 import {HAS_HAN, HAS_JAPANESE, IS_ROMAN, hiragana, japaneseKey, romanize, romanAliases, romanKey} from './text.js';
 
@@ -113,14 +113,21 @@ function phraseKey(value) {
   return hiragana(value).replace(/[\s、，,]/g, '').replace(/[。.]$/, '');
 }
 
-function inflectedSpellings(lemma, form) {
-  if (!lemma.aliases?.length) return [];
-  let prefix = 0;
-  while (prefix < lemma.jp.length && lemma.jp[prefix] === form.jp[prefix]) prefix++;
-  if (!prefix) return [];
-  const tail = lemma.jp.slice(prefix);
-  return lemma.aliases.filter(alias => alias.endsWith(tail)).map(alias =>
-    alias.slice(0,alias.length - tail.length) + form.jp.slice(prefix));
+const COMPLETION_ORDER = ['progressive','progressivePolite','permitShort','progressivePlainPast','permit',
+  'progressiveNegative','progressivePast','progressivePoliteNegative','te','past','negative','masu','afterTe',
+  'potential','passive','causative','causativePassive','simultaneous','dutyPolite','ba','tara'];
+const COMPLETION_RANK = new Map(COMPLETION_ORDER.map((key,index)=>[key,index]));
+const canComplete = token => token.form && !!token.vi &&
+  (COMPLETION_RANK.has(token.form.key) || token.form.key.startsWith('person-'));
+
+function lowerBound(keys, prefix) {
+  let low=0, high=keys.length;
+  while (low<high) {
+    const middle=(low+high) >>> 1;
+    if (keys[middle]<prefix) low=middle+1;
+    else high=middle;
+  }
+  return low;
 }
 
 export function createSentenceAnalyzer(wordExamples = []) {
@@ -132,6 +139,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
   const maximum = 64;
   let lengthsJP;
   let lengthsRoman;
+  let completionJapanese, completionRoman;
 
   function put(map,lengths,key,token) {
     if (!key || key.length > maximum) return;
@@ -207,7 +215,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
       add({kind:'word',jp:form.jp,kana:form.kana,romaji:pronunciation.romaji,
         id:lemma.id,pos:lemma.pos,vi:lemma.vi,signature:signature + ':' + form.key,ref,weight:weight + .35,
         form,grammar:form.grammar},
-      inflectedSpellings(lemma,form),pronunciation.keys);
+      formSpellings(lemma,form),pronunciation.keys);
     }
   }
 
@@ -278,6 +286,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
           (!isRoman || part.kind !== 'function' || parts.some(token => token.form || token.ref?.lemma.group))) detections.add(grammar);
       const options = (part.candidates || []).filter(candidate => candidate.signature !== part.signature &&
         candidate.kind === part.kind && candidate.ref && candidate.weight >= part.weight - 2 &&
+        !(part.form && !candidate.form && !candidate.ref.lemma.group && candidate.jp===part.jp && candidate.kana===part.kana) &&
         (!HAS_HAN.test(part.text) || candidate.written === part.written ||
           candidate.ref.lemma.jp === part.ref.lemma.jp)).slice(0, PREVIEW_ALTERNATIVES);
       for (const option of options) if (option.form?.grammar) detections.add(option.form.grammar);
@@ -317,5 +326,34 @@ export function createSentenceAnalyzer(wordExamples = []) {
       coverage, parts:publicParts, phrases, grammar:[...detections], notes, translation:example?.vi || '',
       ...(example?.kana ? {referenceReading:{kana:example.kana}} : {})};
   }
-  return {addWord, analyze, finish() { romanForms.clear(); }};
+  function complete(query) {
+    const isJapanese=!!query.jp;
+    const prefix=query.jp || query.roman;
+    if (!prefix || prefix.length<(isJapanese?2:4) || prefix.length>32) return [];
+    const lexicon=isJapanese?japanese:roman;
+    const keysForCompletion=()=>[...lexicon.keys()].filter(key=>lexicon.get(key).some(canComplete)).sort();
+    const keys=isJapanese ? completionJapanese ??= keysForCompletion() : completionRoman ??= keysForCompletion();
+    const candidates=new Map();
+    function include(tokens,exact) {
+      for (const token of tokens || []) {
+        if (!token.form || !token.vi || !exact && !canComplete(token)) continue;
+        const id=token.form.jp+'\0'+token.form.kana+'\0'+token.form.key;
+        const canonical=exact && !isJapanese ? romanKey(token.romaji) : '';
+        // Long-vowel aliases can also be the literal beginning of a longer form.
+        const matched=exact && (isJapanese || !canonical.startsWith(prefix) || canonical===prefix);
+        if (!candidates.has(id)) candidates.set(id,{token,exact:matched});
+      }
+    }
+    include(lexicon.get(prefix),true);
+    for (let i=lowerBound(keys,prefix),stop=i+160; i<keys.length && i<stop && keys[i].startsWith(prefix); i++) {
+      if (keys[i]!==prefix) include(lexicon.get(keys[i]),false);
+    }
+    return [...candidates.values()].sort((a,b)=>Number(b.exact)-Number(a.exact) ||
+      (COMPLETION_RANK.get(a.token.form.key) ?? 30)-(COMPLETION_RANK.get(b.token.form.key) ?? 30) ||
+      b.token.weight-a.token.weight || a.token.jp.length-b.token.jp.length).slice(0,8).map(({token,exact})=>({
+        match:exact?'inflection':'completion',form:describeForm(token.ref.lemma,token.ref.forms,token.form.key),
+      }));
+  }
+
+  return {addWord, analyze, complete, finish() { romanForms.clear(); }};
 }

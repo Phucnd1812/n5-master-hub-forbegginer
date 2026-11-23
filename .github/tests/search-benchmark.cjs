@@ -10,7 +10,8 @@ const mime = {'.html':'text/html', '.css':'text/css', '.js':'text/javascript', '
 const queries = ['na','owaranai','tabesasenai','ikanakerebanaranai','nondekara','tabetakotogaaru','không được làm','muốn làm',
   'nihongoo','学校','ﾃﾚﾋﾞ','高くなかった','飲まなければならない','食べられる','昨日、友達と映画を見てから、ご飯を食べました。',
   '天体物理学ではブラックホールを研究します。','owa','taberarenakatta','ikanakerebanarimasen','benkyoushiteimasu',
-  'không cần phải','vừa nghe nhạc vừa học','薬を飲んでから寝なければなりません。','申込みました','毎日、日本語を勉強するます。'];
+  'không cần phải','vừa nghe nhạc vừa học','薬を飲んでから寝なければなりません。','申込みました','毎日、日本語を勉強するます。',
+  'kodomo','kodomotach','naitei','泣いてい','風が吹いています。','雪が降っています。'];
 const desktop = {viewport:{width:1280,height:800}};
 const mobile = {viewport:{width:390,height:844}, isMobile:true, hasTouch:true};
 const median = values => {
@@ -68,6 +69,7 @@ async function measure(browser, url, options, effectsMode) {
     const result = await page.evaluate(async ({queries,url}) => {
       const input = document.getElementById('globalSearchInput');
       const content = document.getElementById('mainContainer');
+      input.focus({preventScroll:true});
       const ready = '[data-lookup-state="ready"], #mainContainer .n5-smart-panel';
       const navigation = performance.getEntriesByType('navigation')[0];
       const resources = performance.getEntriesByType('resource').filter(entry => entry.name.startsWith(url));
@@ -172,8 +174,10 @@ async function main() {
   const variants = [
     {label:'baseline',site:sites[0]},
     {label:'candidate',site:sites[1],mode:'auto'},
-    {label:'fullEffects',site:sites[1],mode:'full'},
-    {label:'performanceEffects',site:sites[1],mode:'performance'},
+    ...(process.env.N5_BENCH_COMPARE_ONLY==='1' ? [] : [
+      {label:'fullEffects',site:sites[1],mode:'full'},
+      {label:'performanceEffects',site:sites[1],mode:'performance'},
+    ]),
   ];
   let browser;
   try {
