@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.52.4 — Handwriting Experience & Dictionary Fix
+
+- Mở bảng viết Kanji trong cửa sổ có vùng cuộn riêng. Giữ nút đóng và các nút nhận diện, hoàn tác, làm lại và xóa nét trong tầm nhìn.
+- Giữ nét khi thay đổi kích thước. Nếu kho N5 khớp yếu, người dùng có thể thử kho mở rộng. Chọn bất kỳ ứng viên nào để tra trong Universal Search và xem thứ tự nét từ dữ liệu ngoại tuyến khi có.
+- Bổ sung 11 mục JMdict có nhóm chia đã xác minh. Phân biệt `着て` và `来て` trong kết quả `kite` hoặc `きて` và dịch các câu trang phục theo danh từ đi kèm.
+- Cập nhật cache PWA và bổ sung ca thử cho cuộn, chuột, cảm ứng và nhận diện ngoại tuyến. [Báo cáo kỹ thuật](docs/v5.52.4-review.md)
+
 ## v5.52.3 — Universal Search Intelligence & Instant Lookup
 
 - Tra cứu tự động sau 240 ms ở thanh tìm kiếm và cửa sổ tra cứu. Gợi ý ngắn hiện ngay dưới ô nhập, giữ con trỏ và chờ gõ tiếng Nhật xong. Mobile giữ vị trí khi đang gõ. Enter vẫn đưa trang kết quả về đầu.

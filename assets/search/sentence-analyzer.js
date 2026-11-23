@@ -341,14 +341,14 @@ export function createSentenceAnalyzer(wordExamples = []) {
         const canonical=exact && !isJapanese ? romanKey(token.romaji) : '';
         // Long-vowel aliases can also be the literal beginning of a longer form.
         const matched=exact && (isJapanese || !canonical.startsWith(prefix) || canonical===prefix);
-        if (!candidates.has(id)) candidates.set(id,{token,exact:matched});
+        if (!candidates.has(id)) candidates.set(id,{token,exact:matched,literal:matched && canonical===prefix});
       }
     }
     include(lexicon.get(prefix),true);
     for (let i=lowerBound(keys,prefix),stop=i+160; i<keys.length && i<stop && keys[i].startsWith(prefix); i++) {
       if (keys[i]!==prefix) include(lexicon.get(keys[i]),false);
     }
-    return [...candidates.values()].sort((a,b)=>Number(b.exact)-Number(a.exact) ||
+    return [...candidates.values()].sort((a,b)=>Number(b.exact)-Number(a.exact) || Number(b.literal)-Number(a.literal) ||
       (COMPLETION_RANK.get(a.token.form.key) ?? 30)-(COMPLETION_RANK.get(b.token.form.key) ?? 30) ||
       b.token.weight-a.token.weight || a.token.jp.length-b.token.jp.length).slice(0,8).map(({token,exact})=>({
         match:exact?'inflection':'completion',form:describeForm(token.ref.lemma,token.ref.forms,token.form.key),

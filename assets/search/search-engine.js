@@ -65,7 +65,7 @@ function vocabularyProfile(item) {
     original:plain(item.kanji || item.jp || item.kana), builtin:Boolean(item.builtin),
   }, [lemma.jp, ...wordPieces(plain(item.kanji || item.jp)), ...(item.aliases || [])],
   [lemma.kana, ...wordPieces(item.kana), ...(item.readings || [])],
-  [item.vi], [item.roman, ...(item.romans || [])]);
+  [item.vi, ...(item.sourceId ? lemma.vi.split(/[;；]/) : [])], [item.roman, ...(item.romans || [])]);
   return {profile, lemma, forms};
 }
 
@@ -128,6 +128,7 @@ function rank(profile, query) {
       if (direct === 230 && profile.primaryWritten === query.jp) return 245;
       return direct + (direct >= 190 && profile.primaryReading.startsWith(query.jp) ? 10 : 0);
     }
+    if (query.singleKanji && entry.type === 'vocab' && profile.primaryWritten.includes(query.jp)) return 112;
     if (query.jp.length >= 2 && context.some(value => value.includes(query.jp))) return 53;
     return 0;
   }
@@ -253,6 +254,7 @@ export async function createSearchEngine(data, yieldWork) {
     const normalized = text.normalize('NFKC');
     if (!text) return {results:[], counts:{}, analysis:null};
     const query = {jp:HAS_JAPANESE.test(text) ? japaneseKey(text) : '', latin:fold(text),
+      singleKanji:/^\p{Script=Han}$/u.test(normalized),
       roman:IS_ROMAN.test(normalized) ? romanKey(normalized) : ''};
     if (!query.jp && !/[a-z0-9]/.test(query.latin)) return {results:[], counts:{}, analysis:null};
     const intent = !query.jp && INTENT_RULES.find(([pattern]) => pattern.test(query.latin))?.[1];

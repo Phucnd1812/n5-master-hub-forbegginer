@@ -375,6 +375,8 @@ export function createLookupUI(app) {
     const sentence=looksLikeSentence(query,analysis);
     const lead=!sentence && filter==='all' && model.forms?.length ?
       results.find(entry=>entry.type==='vocab' && ['exact','alternate'].includes(entry.match)) : null;
+    const extraKanji = /^\p{Script=Han}$/u.test(query) && !results.some(entry=>entry.type==='kanji' && entry.title===query) &&
+      ['all','kanji'].includes(filter) ? detailButton('kanji-char',query,'Xem nét viết chữ '+query) : '';
     const group = (type) => {
       const title = TYPES[type];
       const limit = limits[type] || CHUNK;
@@ -417,6 +419,7 @@ export function createLookupUI(app) {
         ${button('setting','roman','Romaji',`class="n5-lookup-chip" aria-pressed="${settings.roman}"`)}
         ${button('setting','furigana','Furigana',`class="n5-lookup-chip" aria-pressed="${settings.furigana}"`)}
       </div>
+      ${extraKanji ? '<div class="n5-lookup-actions">'+extraKanji+'</div>' : ''}
       ${visible || (preview?'':'<p class="n5-lookup-status">Chưa thấy kết quả phù hợp. Thử cách đọc, nghĩa hoặc một phần của từ.</p>')}
       <footer class="n5-lookup-footer">
         ${recent.length ? historyList('Tra cứu gần đây',recent,'clear-recent') : ''}
@@ -801,11 +804,15 @@ export function createLookupUI(app) {
       const item = app.item(frame.type,frame.id);
       const char = item?.kanji || frame.id;
       title.textContent = char;
-      body.innerHTML = kanjiDetail(item,char);
-      const paths = await app.strokes(char);
+      const related = frame.model?.results.filter(entry=>entry.type==='vocab' && entry.description &&
+        entry.title.includes(char) && !item?.compounds?.some(word=>word.jp===entry.title)).slice(0,5) || [];
+      body.innerHTML = kanjiDetail(item,char,related);
+      const exactPaths = await app.strokes(char);
+      const simplified = !exactPaths?.length;
+      const paths = simplified ? await app.strokePreview(char) : exactPaths;
       if (frames.at(-1) !== frame || !dialog.open) return;
       if (paths?.length) body.querySelector('[data-kanji-paths]').innerHTML =
-        `<section class="n5-result-surface" data-result-tone="kanji" aria-label="Nét viết">${strokeDiagram(char,paths)}</section>`;
+        `<section class="n5-result-surface" data-result-tone="kanji" aria-label="Nét viết">${strokeDiagram(char,paths,simplified)}</section>`;
     } else if (frame.type === 'lesson') {
       title.textContent = frame.id;
       body.innerHTML = `<div class="n5-lookup-actions">
@@ -976,20 +983,23 @@ export function createLookupUI(app) {
     </div>`;
   }
 
-  function strokeDiagram(character,paths) {
+  function strokeDiagram(character,paths,simplified) {
     if (!paths?.length) return '';
     const numbers = paths.map((path,i) => {
       const start = path.match(/^M(-?[\d.]+)[,\s]+(-?[\d.]+)/i);
       return start ? `<text x="${start[1]}" y="${start[2]}">${i + 1}</text>` : '';
     });
     return `<details><summary>Thứ tự nét · ${paths.length} nét</summary>
+      ${simplified ? '<p class="n5-lookup-meta">Mẫu nét giản lược từ KanjiVG · CC BY-SA 3.0.</p>' : ''}
       <svg class="n5-lookup-strokes" viewBox="0 0 109 109" role="img" aria-label="Thứ tự nét chữ ${esc(character)}">
         ${paths.map(path => `<path d="${esc(path)}"/>`).join('')}${numbers.join('')}
       </svg></details>`;
   }
 
-  function kanjiDetail(item, character) {
-    if (!item) return '<p>Chữ này chưa có thẻ Kanji trong giáo trình.</p><div data-kanji-paths></div>' +
+  function kanjiDetail(item, character, related) {
+    const extraWords = related.length ? '<section><h3>Mục từ trong từ điển</h3><ul>'+related.map(word=>
+      '<li>'+detailButton('vocab',word.id,word.title)+' '+esc(word.reading)+' · '+esc(word.description)+'</li>').join('')+'</ul></section>' : '';
+    if (!item) return '<p>Chữ này chưa có hồ sơ nghĩa và cách đọc.</p>'+extraWords+'<div data-kanji-paths></div>' +
       detailButton('write',character,'Mở phòng luyện viết');
     return `<div class="n5-lookup-word">
       <header class="n5-result-surface n5-result-kanji" data-result-tone="kanji">
@@ -1000,6 +1010,7 @@ export function createLookupUI(app) {
       </header>
       ${item.compounds?.length ? `<section><h3>Từ vựng liên quan</h3><ul>${item.compounds.map(word =>
         `<li>${detailButton('compound',word.jp,word.jp)} ${esc(word.kana)} · ${esc(word.vi)}</li>`).join('')}</ul></section>` : ''}
+      ${extraWords}
       <div data-kanji-paths></div>
       <div class="n5-lookup-actions">
         ${detailButton('write',item.kanji,'Cách viết và thứ tự nét')}

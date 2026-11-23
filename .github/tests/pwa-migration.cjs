@@ -10,7 +10,7 @@ const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png',
   '.webmanifest':'application/manifest+json','.json':'application/json','.bin':'application/octet-stream'};
 const release = root => readFileSync(join(root,'index.html'),'utf8').match(/name="n5-release" content="([^"]+)"/)[1];
-const previousRelease = '5.52.2';
+const previousRelease = '5.52.3';
 const savedMistake = 'Câu sai đã lưu trên v' + previousRelease;
 
 function checkKanjiAssets(baseline) {
@@ -103,6 +103,13 @@ async function checkUpgrade() {
     assert.deepEqual(await snapshot(page),{...before,data:{...before.data,uiEffects:'balanced'}});
     assert.equal(await page.locator('html').getAttribute('data-n5-effect-mode'),'balanced');
     const input = page.locator('#globalSearchInput');
+    await page.locator('#handwritingSearchToggle').click();
+    await page.waitForFunction(()=>!!handwritingCanvas);
+    await page.getByRole('button',{name:'Đóng bảng viết'}).click();
+    await input.fill('kite');
+    const preview = page.locator('#n5InstantLookup');
+    await preview.getByText('Mặc quần áo',{exact:true}).waitFor();
+    assert(await preview.getByText('Đến',{exact:true}).isVisible());
     await input.fill('kodomotach');
     await page.locator('#n5InstantLookup').getByText('Những đứa trẻ',{exact:true}).waitFor();
     await input.fill('風が吹いています。');

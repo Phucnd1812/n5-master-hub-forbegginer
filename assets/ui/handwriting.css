@@ -1,0 +1,119 @@
+#handwritingSearchPanel {
+  --hw-block-space: calc(max(12px, env(safe-area-inset-top)) + max(12px, env(safe-area-inset-bottom)));
+  --hw-inline-space: calc(max(12px, env(safe-area-inset-left)) + max(12px, env(safe-area-inset-right)));
+  --hw-board: #f7fbff;
+  --hw-ink: #163455;
+  --hw-grid: #7097af45;
+  --hw-accent: #075985;
+  --hw-tint: #0ea5e911;
+  position: fixed;
+  inset: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  margin: auto;
+  box-sizing: border-box;
+  width: min(53rem, calc(100vw - var(--hw-inline-space)));
+  max-width: none;
+  height: min(39rem, calc(100vh - var(--hw-block-space)));
+  height: min(39rem, calc(var(--n5-visual-viewport, 100dvh) - var(--hw-block-space)));
+  max-height: calc(100dvh - var(--hw-block-space));
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--n5-border);
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, var(--n5-surface), var(--n5-surface-soft));
+  color: var(--n5-text);
+  box-shadow: 0 18px 70px #0b203c45, inset 0 1px #ffffff55;
+}
+#handwritingSearchPanel[open] { display: flex; }
+#handwritingSearchPanel::backdrop { background: #08192c76; }
+html.dark #handwritingSearchPanel {
+  --hw-board: #111f31;
+  --hw-ink: #e1f4ff;
+  --hw-grid: #91bad040;
+  --hw-accent: #a5e2ff;
+  --hw-tint: #38bdf818;
+}
+html:has(#handwritingSearchPanel[open]) { overflow: hidden; overscroll-behavior: none; }
+
+.n5-handwriting-header,
+.n5-handwriting-actions {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex: none;
+  padding: .65rem clamp(.65rem, 2vw, 1.25rem);
+}
+.n5-handwriting-header { justify-content: space-between; border-bottom: 1px solid var(--n5-border); }
+.n5-handwriting-header h2 { font-size: clamp(1rem, 2.7vw, 1.4rem); font-weight: 800; }
+.n5-handwriting-header p,
+.n5-handwriting-meta,
+.n5-handwriting-note { color: var(--n5-muted); font-size: .82rem; line-height: 1.45; }
+.n5-handwriting-actions { border-top: 1px solid var(--n5-border); flex-wrap: wrap; }
+
+.n5-handwriting-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: clamp(.65rem, 2vw, 1.25rem);
+}
+.n5-handwriting-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: start; gap: 1.25rem; }
+.n5-handwriting-board {
+  width: min(100%, 25rem);
+  margin-inline: auto;
+  border: 1px solid var(--n5-border);
+  border-radius: 1.1rem;
+  overflow: hidden;
+  background:
+    linear-gradient(to right, transparent calc(50% - .5px), var(--hw-grid) calc(50% - .5px), var(--hw-grid) calc(50% + .5px), transparent calc(50% + .5px)),
+    linear-gradient(to bottom, transparent calc(50% - .5px), var(--hw-grid) calc(50% - .5px), var(--hw-grid) calc(50% + .5px), transparent calc(50% + .5px)),
+    var(--hw-board);
+}
+#handwritingSearchCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  color: var(--hw-ink);
+  cursor: crosshair;
+  touch-action: none;
+}
+.n5-handwriting-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; margin-top: .45rem; }
+.n5-handwriting-meta a { color: var(--hw-accent); text-decoration: underline; }
+.n5-handwriting-results h3 { font-size: 1rem; font-weight: 750; margin-bottom: .5rem; }
+.n5-handwriting-scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-bottom: .6rem; }
+.n5-handwriting-button, .handwriting-candidate {
+  min-height: 44px;
+  border: 1px solid var(--n5-border);
+  border-radius: .8rem;
+  padding: .45rem .65rem;
+  background: var(--n5-surface);
+  color: var(--n5-text);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.n5-handwriting-button:is(:hover,[aria-pressed="true"]),
+.handwriting-candidate:hover { background: var(--hw-tint); border-color: var(--hw-accent); }
+.n5-handwriting-button:disabled { opacity: .55; cursor: default; }
+.n5-handwriting-button:focus-visible,
+.handwriting-candidate:focus-visible { outline: 2px solid var(--n5-focus); outline-offset: 2px; }
+.n5-handwriting-close { width: 44px; flex-shrink: 0; font-size: 1.35rem; line-height: 1; }
+#recognizeHandwritingBtn { margin-inline-start: auto; color: white; background: linear-gradient(115deg, #086797, #087465); border-color: transparent; }
+.n5-handwriting-candidates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: .4rem; margin: .55rem 0; }
+.handwriting-candidate { display: flex; align-items: center; gap: .48rem; min-width: 0; text-align: start; }
+.handwriting-candidate strong { color: var(--hw-accent); font-size: 1.8rem; line-height: 1.1; flex: none; }
+.handwriting-candidate small { display: block; font-size: .7rem; color: var(--n5-muted); }
+.n5-handwriting-hint { padding: .55rem; margin: .55rem 0; border-radius: .8rem; background: var(--hw-tint); }
+.n5-handwriting-hint .n5-handwriting-button { margin-top: .4rem; }
+
+@media (max-width: 720px), (max-height: 570px) {
+  #handwritingSearchPanel { width: min(32rem, calc(100vw - var(--hw-inline-space))); }
+  .n5-handwriting-layout { grid-template-columns: minmax(0, 1fr); gap: .85rem; }
+  .n5-handwriting-board { width: min(100%, 22rem); }
+}
+@media (max-width: 430px) {
+  .n5-handwriting-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+  #recognizeHandwritingBtn { margin-inline-start: 0; }
+}
