@@ -76,9 +76,9 @@ export function createSearchClient(sources, workerURL) {
       if (result) return result;
     }
     if (closed || signal?.aborted) return null;
-    fallback ??= Promise.all([import('./search-engine.js'),import('./lexicon.js')])
-      .then(async ([{createSearchEngine},{loadBuiltInDictionary}]) =>
-        createSearchEngine({...curriculum,pack:[...await loadBuiltInDictionary(), ...imported]}, yieldWork))
+    fallback ??= Promise.all([import('./search-engine.js'),import('./lexicon.js'),import('./dictionary-catalog.js')])
+      .then(async ([{createSearchEngine},{loadBuiltInDictionary},{getDictionaryCatalog}]) =>
+        createSearchEngine({...curriculum,pack:[...await loadBuiltInDictionary(), ...imported],catalog:getDictionaryCatalog()}, yieldWork))
       .catch(error => { fallback = null; throw error; });
     const engine = await fallback;
     if (closed || signal?.aborted) return null;

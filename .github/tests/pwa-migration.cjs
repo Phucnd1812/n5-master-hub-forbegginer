@@ -7,10 +7,10 @@ const playwright = require('playwright');
 const scope = '/n5-master-hub-forbegginer/';
 const candidate = resolve(__dirname,'../..');
 const engine = process.env.N5_TEST_BROWSER || 'chromium';
-const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png',
+const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.woff2':'font/woff2',
   '.webmanifest':'application/manifest+json','.json':'application/json','.bin':'application/octet-stream'};
 const release = root => readFileSync(join(root,'index.html'),'utf8').match(/name="n5-release" content="([^"]+)"/)[1];
-const previousRelease = '5.52.3';
+const previousRelease = '5.52.4';
 const savedMistake = 'Câu sai đã lưu trên v' + previousRelease;
 
 function checkKanjiAssets(baseline) {
@@ -25,6 +25,16 @@ async function snapshot(page) {
     const {exportedAt,version,...data} = n5BackupPayload();
     return {data,lookup:localStorage.getItem('n5_lookup_display_v1')};
   });
+}
+
+async function measureOfflineLookup(page) {
+  await page.goto(page.url(),{waitUntil:'domcontentloaded'});
+  const input = page.locator('#globalSearchInput');
+  const suggestion = page.locator('#n5InstantLookup').getByText('Mặc quần áo',{exact:true});
+  const start = performance.now();
+  await input.fill('kite');
+  await suggestion.waitFor();
+  return Math.round(performance.now() - start);
 }
 
 async function checkUpgrade() {
@@ -60,7 +70,11 @@ async function checkUpgrade() {
     await page.goto(site,{waitUntil:'domcontentloaded'});
     await page.waitForFunction(() => navigator.serviceWorker.controller);
     assert.equal(await page.title(),'N5 Master Hub v' + previousRelease);
+    networkAvailable = false;
+    const baselineOfflineMs = await measureOfflineLookup(page);
+    networkAvailable = true;
     await page.evaluate(() => {
+      navigateTo('dashboard');
       toggleBookmark('v6c_028');
       saveFlashcardKnowledge('v6c_028',true);
       n5SmartSaveQuery('nomu');
@@ -99,7 +113,7 @@ async function checkUpgrade() {
     await page.evaluate(() => n5Effects.setMode('balanced'));
 
     networkAvailable = false;
-    await page.goto(site,{waitUntil:'domcontentloaded'});
+    const candidateOfflineMs = await measureOfflineLookup(page);
     assert.deepEqual(await snapshot(page),{...before,data:{...before.data,uiEffects:'balanced'}});
     assert.equal(await page.locator('html').getAttribute('data-n5-effect-mode'),'balanced');
     const input = page.locator('#globalSearchInput');
@@ -110,6 +124,8 @@ async function checkUpgrade() {
     const preview = page.locator('#n5InstantLookup');
     await preview.getByText('Mặc quần áo',{exact:true}).waitFor();
     assert(await preview.getByText('Đến',{exact:true}).isVisible());
+    await input.fill('genkan');
+    await preview.getByText(/lối vào nhà/).waitFor();
     await input.fill('kodomotach');
     await page.locator('#n5InstantLookup').getByText('Những đứa trẻ',{exact:true}).waitFor();
     await input.fill('風が吹いています。');
@@ -144,6 +160,7 @@ async function checkUpgrade() {
     assert.deepEqual(errors,[]);
     console.log(engine + ': v' + previousRelease + ' → v' + current +
       ', Kanji bytes verified, backup and preferences preserved, offline lookup and practice passed.');
+    console.log(engine + ': first offline kite preview after reload ' + baselineOfflineMs + ' → ' + candidateOfflineMs + ' ms.');
   } finally {
     await browser?.close();
     server.close();

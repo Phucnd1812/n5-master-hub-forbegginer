@@ -1,5 +1,6 @@
 import {createSearchEngine} from './search-engine.js';
 import {loadBuiltInDictionary} from './lexicon.js';
+import {getDictionaryCatalog} from './dictionary-catalog.js';
 
 let initialized;
 let sources;
@@ -7,7 +8,7 @@ const requests = new Set();
 
 function getEngine() {
   initialized ??= loadBuiltInDictionary().then(rows =>
-    createSearchEngine({...sources,pack:[...rows,...sources.pack]}))
+    createSearchEngine({...sources,pack:[...rows,...sources.pack],catalog:getDictionaryCatalog()}))
     .catch(error => { initialized = null; throw error; });
   return initialized;
 }
@@ -37,7 +38,8 @@ self.onmessage = async ({data}) => {
     // Let cancellation messages reach the worker after the index build.
     await new Promise(resolve => setTimeout(resolve,0));
     if (!requests.has(data.id)) return;
-    const result = await engine[data.type](data.query,{limit:data.limit});
+    const signal = {get aborted() { return !requests.has(data.id); }};
+    const result = await engine[data.type](data.query,{limit:data.limit,signal});
     if (requests.has(data.id)) self.postMessage({id:data.id,result});
   } catch {
     if (requests.has(data.id)) self.postMessage({id:data.id,failed:true});

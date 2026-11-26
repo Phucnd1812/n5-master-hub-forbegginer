@@ -55,14 +55,16 @@ function indexEntry(entry, japanese, readings, vietnamese, roman = [], secondary
     fuzzy:!/(?:Tên riêng|Ký tự|Romanization)/i.test(entry.pos || '')};
 }
 
-function vocabularyProfile(item) {
+function vocabularyProfile(item, inflect = true) {
   const lemma = makeLemma(item);
-  const forms = generateForms(lemma);
+  const forms = inflect ? generateForms(lemma) : new Map();
   const profile = indexEntry({
     type:'vocab', id:item.id, title:lemma.jp, reading:lemma.kana, romaji:lemma.romaji, description:lemma.vi,
     pos:lemma.pos, location:item.lesson || '', source:item.source || '', card:lemma.card, group:lemma.group,
     sourceId:item.sourceId, aliases:item.aliases, readings:item.readings, examples:item.examples,
     original:plain(item.kanji || item.jp || item.kana), builtin:Boolean(item.builtin),
+    ...(item.catalog ? {catalog:true,dictionaryLevel:item.dictionaryLevel,referenceMeanings:item.referenceMeanings} :
+      item.lesson || item._n5Supplement ? {studySource:'Giáo trình'} : {}),
   }, [lemma.jp, ...wordPieces(plain(item.kanji || item.jp)), ...(item.aliases || [])],
   [lemma.kana, ...wordPieces(item.kana), ...(item.readings || [])],
   [item.vi, ...(item.sourceId ? lemma.vi.split(/[;；]/) : [])], [item.roman, ...(item.romans || [])]);
@@ -105,7 +107,9 @@ function kanjiProfile(item) {
   const readings = unique([item.onyomi, item.kunyomi].flatMap(value => String(value || '').split(/[、,\s/]+/))
     .map(value => value.replace(/[.・-]/g, '')).filter(Boolean));
   return indexEntry({type:'kanji', id:item.id, title:item.kanji, reading:readings.join(' · '),
-    description:[item.hanviet, item.meaning].filter(Boolean).join(' · '), location:item.group || ''},
+    description:[item.hanviet,item.meaning].filter(Boolean).join(' · '),location:item.group || '',
+    ...(item.source ? {kanjiInfo:item,dictionaryLevel:item.referenceJLPT ? 'N'+item.referenceJLPT : '',
+      referenceMeanings:item.referenceMeanings} : {studySource:'Giáo trình'})},
   [item.kanji], readings, [item.hanviet, item.meaning], [],
   compounds.flatMap(compound => [compound.jp, compound.kana, romanKey(romanize(compound.kana)), compound.vi]));
 }
@@ -162,6 +166,9 @@ function projectResults(model, limit) {
 }
 
 export async function createSearchEngine(data, yieldWork) {
+  const catalog = data.catalog;
+  const core = catalog ? await catalog.loadCore() : {words:[],kanji:[]};
+  const coreKanji = new Map(core.kanji.map(item=>[item.kanji,item]));
   const analyzer = createSentenceAnalyzer(data.pack.flatMap(row => row.sourceId ? row.examples || [] : []));
   const exactExamples = new Map();
   for (const {id,examples} of [...SEARCH_TOPICS,...SEARCH_LESSONS]) {
@@ -175,6 +182,9 @@ export async function createSearchEngine(data, yieldWork) {
   const profiles = [];
   const lessons = new Map();
   const knownWords = new Set();
+  const baseTerms = new Map();
+  const baseKanji = new Set();
+  const baseIds = new Set();
   const checkerRefs = [];
   let lastLookup;
 
@@ -186,7 +196,10 @@ export async function createSearchEngine(data, yieldWork) {
   function addWord(item, weight) {
     const ref = vocabularyProfile(item);
     profiles.push(ref.profile);
-    knownWords.add(ref.lemma.jp + '\0' + ref.lemma.kana);
+    baseIds.add(ref.lemma.id);
+    const key = ref.lemma.jp + '\0' + ref.lemma.kana;
+    knownWords.add(key);
+    if (!baseTerms.has(key)) baseTerms.set(key,ref);
     const spellings = wordPieces(plain(item.kanji || item.jp));
     const readings = wordPieces(plain(item.kana,true));
     if (!item.sourceId && spellings.length > 1 && spellings.length === readings.length) {
@@ -213,7 +226,15 @@ export async function createSearchEngine(data, yieldWork) {
   }
   for (const [index, item] of data.kanji.entries()) {
     if (yieldWork && index % 40 === 0) await yieldWork();
-    profiles.push(kanjiProfile(item));
+
+    const info = coreKanji.get(item.kanji);
+    profiles.push(kanjiProfile(info ? {...item,...info,id:item.id,courseId:item.id,
+      hanviet:info.hanviet || item.hanviet,meaning:info.meaning || item.meaning} : item));
+    baseKanji.add(item.kanji);
+  }
+  for (const info of core.kanji) if (!baseKanji.has(info.kanji)) {
+    profiles.push(kanjiProfile(info));
+    baseKanji.add(info.kanji);
   }
   for (const item of data.grammar) {
     profiles.push(grammarProfile(item));
@@ -245,6 +266,17 @@ export async function createSearchEngine(data, yieldWork) {
         3, profile.forms, profile.pronunciation);
     }
   }
+  function redundant(row) {
+    const previous = baseTerms.get(row.jp+'\0'+row.kana);
+    return baseIds.has(row.id) || previous?.lemma.vi && (!row.verifiedGroup || row.verifiedGroup===previous.lemma.group) &&
+      (!row.vi || fold(row.vi)===fold(previous.lemma.vi));
+  }
+  for (const row of core.words) {
+    if (redundant(row)) {
+      const existing = baseTerms.get(row.jp+'\0'+row.kana)?.profile.entry;
+      if (existing) existing.dictionaryLevel ||= row.dictionaryLevel;
+    } else addWord(row,row.vi ? 4.7 : 2.5);
+  }
   analyzer.finish();
 
   async function search(value, {signal,limit} = {}) {
@@ -259,10 +291,26 @@ export async function createSearchEngine(data, yieldWork) {
     if (!query.jp && !/[a-z0-9]/.test(query.latin)) return {results:[], counts:{}, analysis:null};
     const intent = !query.jp && INTENT_RULES.find(([pattern]) => pattern.test(query.latin))?.[1];
     let analysis = intent ? null : analyzer.analyze(text);
+    const dynamic = catalog && !intent ? await catalog.lookup(text,analysis) : null;
+    if (signal?.aborted) return null;
+    const extraProfiles = [];
+    let extension;
+    for (const row of dynamic?.words || []) {
+      if (redundant(row)) continue;
+      const ref = vocabularyProfile(row,row.analyze);
+      extraProfiles.push(ref.profile);
+      if (row.analyze) {
+        extension ??= createSentenceAnalyzer([],true);
+        extension.addWord(ref,row.vi ? 4.7 : 2.4,ref.profile.forms,ref.profile.pronunciation);
+      }
+    }
+    for (const item of dynamic?.kanji || []) if (!baseKanji.has(item.kanji)) extraProfiles.push(kanjiProfile(item));
+    extension?.finish();
+    if (extension) analysis = analyzer.analyze(text,extension.indexes);
     const completeSentence=/[。！？!?]/u.test(text) && !!query.jp ||
       analysis?.coverage===1 && analysis.parts.some(part=>part.kind==='function') &&
       analysis.parts.some(part=>part.form && part.form.key!=='te');
-    const forms=intent || completeSentence ? [] : analyzer.complete(query);
+    const forms=intent || completeSentence ? [] : analyzer.complete(query,extension?.indexes);
     // A supported continuation is stronger than a chance segmentation of a partial word.
     if (forms.length && !forms.some(item=>item.match==='inflection') && !analysis?.translation &&
         analysis?.parts.some(part=>part.form)) analysis=null;
@@ -295,7 +343,7 @@ export async function createSearchEngine(data, yieldWork) {
     const mayCorrect = query.jp.length >= 3 && query.jp.length <= 12 ||
       !query.jp && (query.roman.length >= 4 && query.roman.length <= 20 ||
         !/\s/.test(query.latin) && query.latin.length >= 4 && query.latin.length <= 20);
-    for (const [index, profile] of profiles.entries()) {
+    for (const [index, profile] of (extraProfiles.length ? profiles.concat(extraProfiles) : profiles).entries()) {
       if (yieldWork && index % 512 === 0) {
         await yieldWork();
         if (signal?.aborted) return null;
@@ -306,6 +354,8 @@ export async function createSearchEngine(data, yieldWork) {
       let inferred = 0;
       if (entry.type === 'vocab') {
         inferred = lexicalBoosts.get(entry.id) || 0;
+        if (match===MATCH.exact && entry.description) score += 45;
+        else if (score && entry.catalog && !entry.description) score -= query.jp && profile.primaryWritten===query.jp ? 12 : 43;
         if (match===MATCH.exact && score && query.jp && profile.primaryWritten!==query.jp && profile.primaryReading!==query.jp) {
           match=MATCH.alternate;
         }
@@ -328,6 +378,7 @@ export async function createSearchEngine(data, yieldWork) {
           match = MATCH.exact;
         }
       }
+      if (entry.type === 'kanji' && query.singleKanji && entry.title===query.jp) score += 100;
       if (entry.type === 'kanji' && kanjiBoosts.has(entry.title)) inferred = 109;
       if (entry.type === 'lesson' && courseBoosts.has(entry.id)) inferred = 110 + Math.min(8, courseBoosts.get(entry.id));
       if (inferred > score) {
@@ -365,6 +416,8 @@ export async function createSearchEngine(data, yieldWork) {
     found.sort((a, b) => b.score - a.score || b.priority - a.priority ||
       ORDER_RANK.get(a.entry.type) - ORDER_RANK.get(b.entry.type) || a.entry.title.length - b.entry.title.length);
     const counts = {vocab:0, kanji:0, grammar:0, lesson:0};
+    const homophones = [];
+    const literalReading = query.jp && IS_KANA.test(query.jp) ? query.jp : '';
     const seen = new Set();
     const results = [];
     const termKey = entry => entry.title.replace(/[。．!?！？]+$/g,'') + '\0' + entry.reading;
@@ -372,15 +425,20 @@ export async function createSearchEngine(data, yieldWork) {
       .map(({entry}) => termKey(entry)));
     for (const {entry, match, gloss} of found) {
       const spelling = termKey(entry);
-      if (entry.builtin && !gloss && definedWords.has(spelling)) continue;
+      if ((entry.builtin || entry.catalog) && !gloss && definedWords.has(spelling)) continue;
       const key = [entry.type,spelling,gloss.replace(/[.!?。]+$/g,'')].join('\0');
       if (seen.has(key)) continue;
       seen.add(key);
       counts[entry.type]++;
-      if (counts[entry.type] <= LIMIT_PER_TYPE) results.push({...entry, match, approximate:match === MATCH.fuzzy});
+      const result = {...entry,match,approximate:match===MATCH.fuzzy};
+      if (counts[entry.type]<=LIMIT_PER_TYPE) results.push(result);
+      if (entry.type==='vocab' && entry.reading && !/^Tên riêng/i.test(entry.pos || '') &&
+          (literalReading ? hiragana(entry.reading)===literalReading :
+            query.roman && romanAliases(entry.romaji).includes(query.roman))) homophones.push(result);
     }
     const kanaSuggestion = !analysis && !intent && query.roman.length >= 3 ? suggestKana(query.roman) : '';
-    const model = {results, counts, analysis, kanaSuggestion, forms};
+    const homophoneHeads = new Set(homophones.map(entry=>entry.title+'\0'+entry.reading));
+    const model = {results,counts,analysis,kanaSuggestion,forms,homophones:homophoneHeads.size>1 ? homophones : []};
     lastLookup = {text,model};
     return projectResults(model,limit);
   }

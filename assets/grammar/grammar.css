@@ -92,3 +92,15 @@
   .n5-formation-table { font-size: .82rem; }
   .n5-formation-table :is(th,td) { padding-inline: .24rem; }
 }
+
+.n5-question-panel, .n5-qa-topic { margin-block:.7rem; }
+.n5-question-panel > summary, .n5-qa-topic > summary { cursor:pointer; }
+.n5-qa-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; margin-block:.55rem; }
+.n5-qa-pair > div { min-width:0; padding:.65rem; border:1px solid var(--n5-border); border-radius:.75rem; background:var(--n5-surface-soft); }
+.n5-qa-japanese { font-size:1rem; line-height:1.6; }
+.n5-qa-pair small { display:block; color:var(--n5-muted); overflow-wrap:anywhere; }
+.n5-qa-pair small[hidden] { display:none; }
+.n5-qa-answer + .n5-qa-answer { border-top:1px solid var(--n5-border); padding-top:.45rem; margin-top:.45rem; }
+.n5-qa-explanation { margin-block:.45rem; color:var(--n5-muted); }
+[data-qa-reply] { display:block; width:100%; padding:.4rem; color:inherit; background:var(--n5-surface); border:1px solid var(--n5-border); border-radius:.5rem; }
+@media (max-width:620px) { .n5-qa-pair { grid-template-columns:1fr; } }

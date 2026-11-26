@@ -208,3 +208,24 @@
 .n5-instant-item strong { font-weight: 650; }
 .n5-instant-item small { color: var(--n5-muted); }
 .n5-instant-sentence .n5-lookup-chip { justify-self: start; }
+
+.n5-paste-note {
+  overflow-wrap:anywhere;
+  margin:.35rem 0;
+  padding:.65rem .75rem;
+  border:1px solid var(--n5-border);
+  border-radius:.75rem;
+  color:var(--n5-text);
+  background:var(--n5-surface);
+  font-size:.84rem;
+}
+#n5SearchShell > .n5-paste-note {
+  position:absolute;
+  inset:calc(100% + .35rem) 0 auto;
+  z-index:77;
+  max-height: min(15rem,50dvh);
+  overflow:auto;
+  box-shadow:var(--n5-shadow);
+}
+#n5SearchShell:has(> .n5-paste-note) #n5InstantLookup { display:none; }
+.n5-paste-note .n5-lookup-actions { margin-top:.35rem; }
