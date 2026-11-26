@@ -130,7 +130,7 @@ function lowerBound(keys, prefix) {
   return low;
 }
 
-export function createSentenceAnalyzer(wordExamples = []) {
+export function createSentenceAnalyzer(wordExamples = [], layer = false) {
   const japanese = new Map();
   const roman = new Map();
   const jpLengths = new Set();
@@ -169,7 +169,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
     for (const spelling of readings) put(roman,romanLengths,spelling,token);
   }
 
-  for (const [jp, spelling, grammar, vi, aliases] of FUNCTION_WORDS) {
+  for (const [jp, spelling, grammar, vi, aliases] of layer ? [] : FUNCTION_WORDS) {
     add({kind:'function',jp,kana:jp,romaji:spelling,grammar,vi,weight:3,signature:'function:' + jp},
       [],[...romanAliases(spelling),...(aliases || [])]);
   }
@@ -181,7 +181,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
     if (!readings.has(key)) readings.set(key,example);
     else if (phraseKey(readings.get(key)?.jp) !== phraseKey(example.jp)) readings.set(key,null);
   }
-  for (const [jp, kana, vi] of [...CURATED_SENTENCES, ...[...SEARCH_TOPICS,...SEARCH_LESSONS].flatMap(guide => guide.examples),...wordExamples]) {
+  for (const [jp, kana, vi] of layer ? [] : [...CURATED_SENTENCES, ...[...SEARCH_TOPICS,...SEARCH_LESSONS].flatMap(guide => guide.examples),...wordExamples]) {
     const key = phraseKey(jp);
     const example = {jp,kana,vi};
     if (!curatedJP.has(key)) curatedJP.set(key,example);
@@ -219,7 +219,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
     }
   }
 
-  function analyze(value) {
+  function analyze(value, extra) {
     const original = String(value ?? '').trim();
     if (!original) return null;
     const source = original.normalize('NFKC');
@@ -232,6 +232,16 @@ export function createSentenceAnalyzer(wordExamples = []) {
     }
     lengthsJP ??= [...jpLengths].sort((a,b) => a - b);
     lengthsRoman ??= [...romanLengths].sort((a,b) => a - b);
+    const baseIndex = isRoman ? roman : japanese;
+    const extraIndex = isRoman ? extra?.roman : extra?.japanese;
+    const dictionary = extraIndex ? {get(key) {
+      const base = baseIndex.get(key);
+      const added = extraIndex.get(key);
+      return base && added ? [...base,...added].sort((a,b)=>b.weight-a.weight) : base || added;
+    }} : baseIndex;
+    const baseLengths = isRoman ? lengthsRoman : lengthsJP;
+    const extraLengths = isRoman ? extra?.romanLengths : extra?.jpLengths;
+    const lengths = extraLengths ? [...new Set([...baseLengths,...extraLengths])].sort((a,b)=>a-b) : baseLengths;
     const parts = [];
     let unknownUnits = 0;
     let totalUnits = 0;
@@ -244,7 +254,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
       }
       const normalized = isRoman ? romanKey(chunk) : hiragana(chunk);
       if (!normalized) continue;
-      const tokens = tokenize(normalized, isRoman, isRoman ? roman : japanese, isRoman ? lengthsRoman : lengthsJP, chunk);
+      const tokens = tokenize(normalized,isRoman,dictionary,lengths,chunk);
       let offset = 0;
       for (const token of tokens) {
         const text = isRoman || normalized.length !== chunk.length ? token.text : chunk.slice(offset, offset + token.text.length);
@@ -326,7 +336,7 @@ export function createSentenceAnalyzer(wordExamples = []) {
       coverage, parts:publicParts, phrases, grammar:[...detections], notes, translation:example?.vi || '',
       ...(example?.kana ? {referenceReading:{kana:example.kana}} : {})};
   }
-  function complete(query) {
+  function complete(query, extra) {
     const isJapanese=!!query.jp;
     const prefix=query.jp || query.roman;
     if (!prefix || prefix.length<(isJapanese?2:4) || prefix.length>32) return [];
@@ -344,10 +354,17 @@ export function createSentenceAnalyzer(wordExamples = []) {
         if (!candidates.has(id)) candidates.set(id,{token,exact:matched,literal:matched && canonical===prefix});
       }
     }
-    include(lexicon.get(prefix),true);
-    for (let i=lowerBound(keys,prefix),stop=i+160; i<keys.length && i<stop && keys[i].startsWith(prefix); i++) {
-      if (keys[i]!==prefix) include(lexicon.get(keys[i]),false);
+    function includeIndex(index, ordered) {
+      include(index.get(prefix),true);
+      for (let i=lowerBound(ordered,prefix),stop=i+160; i<ordered.length && i<stop && ordered[i].startsWith(prefix); i++) {
+        if (ordered[i]!==prefix) include(index.get(ordered[i]),false);
+      }
     }
+    include(lexicon.get(prefix),true);
+    const extraIndex = isJapanese ? extra?.japanese : extra?.roman;
+    if (extraIndex) include(extraIndex.get(prefix),true);
+    includeIndex(lexicon,keys);
+    if (extraIndex) includeIndex(extraIndex,[...extraIndex.keys()].filter(key=>key.startsWith(prefix)).sort());
     return [...candidates.values()].sort((a,b)=>Number(b.exact)-Number(a.exact) || Number(b.literal)-Number(a.literal) ||
       (COMPLETION_RANK.get(a.token.form.key) ?? 30)-(COMPLETION_RANK.get(b.token.form.key) ?? 30) ||
       b.token.weight-a.token.weight || a.token.jp.length-b.token.jp.length).slice(0,8).map(({token,exact})=>({
@@ -355,5 +372,5 @@ export function createSentenceAnalyzer(wordExamples = []) {
       }));
   }
 
-  return {addWord, analyze, complete, finish() { romanForms.clear(); }};
+  return {addWord, analyze, complete, indexes:{japanese,roman,jpLengths,romanLengths}, finish() { romanForms.clear(); }};
 }

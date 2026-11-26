@@ -1,3 +1,4 @@
+import {renderQuestionPanel} from './question-view.js';
 import {COURSE} from './course.js';
 import {COMPARISONS} from './comparisons.js';
 import {EXTENSIONS} from './extensions.js';
@@ -205,6 +206,7 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
         note('Điều kiện',topic.conditions) + note('Khi cần tránh',topic.avoid) +
         note('Lỗi dễ nhầm',topic.mistakes || topic.exercise[2]?.[1]) + note('So với mẫu gần',topic.compare),true)}
       ${section('formation','Hình thành từng bước',formation + (!tables && topic.groups ? steps(topic.groups) : '') + visual,true)}
+      ${renderQuestionPanel(topic.id,settings)}
       ${section('examples','Ví dụ và phân tích',examples.map(row => example(row,topic.usage,topic.formula)).join(''),true)}
       ${section('practice','Bài tập áp dụng',practice(topic),true)}
       ${section('related','Kiến thức nền và bài học',links([...topic.prerequisites,...(topic.course || [])]) +

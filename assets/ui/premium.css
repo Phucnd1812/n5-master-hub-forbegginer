@@ -1,7 +1,9 @@
 /* Liquid Glass surfaces, typography and effects shared by the app shell. */
 :root {
-  --n5-font-interface: Inter, system-ui, -apple-system, "Segoe UI", "Noto Sans JP", sans-serif;
-  --n5-font-japanese: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  --n5-font-heading: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --n5-font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --n5-font-interface: var(--n5-font-body);
+  --n5-font-japanese: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
   --n5-bg: #edf5fc;
   --n5-surface: #fbfdff;
   --n5-surface-soft: #f0f6fb;
@@ -60,13 +62,14 @@ html, html body {
   color: var(--n5-text);
 }
 html body {
-  font-family: var(--n5-font-interface);
+  font-family: var(--n5-font-interface) !important;
   letter-spacing: 0;
 }
 body h1, body h2, body h3, body h4, body h5, body h6, body summary, body [role="heading"] {
-  font-family: var(--n5-font-interface) !important;
+  font-family: var(--n5-font-heading) !important;
+  font-weight: 700;
 }
-body :is([lang="ja"], .font-jp, .n5-lookup-jp) {
+body :is([lang="ja"], .font-jp, .n5-lookup-jp, rt):not(:is(svg,canvas)) {
   font-family: var(--n5-font-japanese) !important;
 }
 #app { background: var(--n5-bg) !important; }
@@ -691,3 +694,6 @@ html:root[data-n5-effects="performance"] :is(.n5-flashcard-motion, .n5-flashcard
     backdrop-filter: none !important;
   }
 }
+
+body :is(rt, .n5-lookup-strokes text) { font-family: var(--n5-font-japanese); }
+body :is(.n5-result-meaning, .n5-lookup-meta, .n5-grammar-chapter p, .n5-paste-note) { line-height: 1.55; }

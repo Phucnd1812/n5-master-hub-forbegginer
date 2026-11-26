@@ -5,13 +5,13 @@ const http = require('node:http');
 
 const scope = '/n5-master-hub-forbegginer/';
 const engine = process.env.N5_TEST_BROWSER || 'chromium';
-const mime = {'.html':'text/html', '.css':'text/css', '.js':'text/javascript', '.png':'image/png',
+const mime = {'.html':'text/html', '.css':'text/css', '.js':'text/javascript', '.png':'image/png','.woff2':'font/woff2',
   '.webmanifest':'application/manifest+json', '.json':'application/json', '.bin':'application/octet-stream'};
 const queries = ['na','owaranai','tabesasenai','ikanakerebanaranai','nondekara','tabetakotogaaru','không được làm','muốn làm',
   'nihongoo','学校','ﾃﾚﾋﾞ','高くなかった','飲まなければならない','食べられる','昨日、友達と映画を見てから、ご飯を食べました。',
   '天体物理学ではブラックホールを研究します。','owa','taberarenakatta','ikanakerebanarimasen','benkyoushiteimasu',
   'không cần phải','vừa nghe nhạc vừa học','薬を飲んでから寝なければなりません。','申込みました','毎日、日本語を勉強するます。',
-  'kodomo','kodomotach','naitei','泣いてい','風が吹いています。','雪が降っています。'];
+  'kodomo','kodomotach','naitei','泣いてい','風が吹いています。','雪が降っています。','kami','shuukan','shuumatsu','genkan','折','shitteimasu'];
 const desktop = {viewport:{width:1280,height:800}};
 const mobile = {viewport:{width:390,height:844}, isMobile:true, hasTouch:true};
 const median = values => {
@@ -69,6 +69,12 @@ async function measure(browser, url, options, effectsMode) {
     const result = await page.evaluate(async ({queries,url}) => {
       const input = document.getElementById('globalSearchInput');
       const content = document.getElementById('mainContainer');
+      const preview = document.getElementById('n5InstantLookup');
+      const draftOnly = input.dataset.n5SearchMode==='preview';
+      const shifts = [];
+      const layout = PerformanceObserver.supportedEntryTypes?.includes('layout-shift') ?
+        new PerformanceObserver(list=>shifts.push(...list.getEntries())) : null;
+      layout?.observe({type:'layout-shift',buffered:true});
       input.focus({preventScroll:true});
       const ready = '[data-lookup-state="ready"], #mainContainer .n5-smart-panel';
       const navigation = performance.getEntriesByType('navigation')[0];
@@ -82,6 +88,7 @@ async function measure(browser, url, options, effectsMode) {
         let longestFrame = 0;
         let renderedAt;
         const hasResults = () => {
+          if (draftOnly) return !preview.hidden && preview.dataset.previewQuery===query;
           const result=content.querySelector(ready);
           return result && (result.dataset.lookupQuery===query ||
             content.querySelector('h1')?.textContent==='Kết quả cho “'+query+'”');
@@ -89,7 +96,7 @@ async function measure(browser, url, options, effectsMode) {
         const observer = new MutationObserver(() => {
           if (renderedAt === undefined && hasResults()) renderedAt = performance.now();
         });
-        observer.observe(content,{childList:true,subtree:true});
+        observer.observe(draftOnly ? preview : content,{childList:true,subtree:true,attributes:draftOnly});
         input.value = query;
         input.dispatchEvent(new InputEvent('input',{bubbles:true}));
         await new Promise((resolve,reject) => {
@@ -110,7 +117,11 @@ async function measure(browser, url, options, effectsMode) {
         });
       }
       const longTasks = window.n5BenchmarkLongTasks?.();
+      shifts.push(...(layout?.takeRecords() || []));
+      layout?.disconnect();
       return {
+        measurement:draftOnly?'inline-preview':'legacy-full-page',
+        layoutShift:layout ? shifts.filter(entry=>!entry.hadRecentInput).reduce((sum,entry)=>sum+entry.value,0) : null,
         stats,loadedMs:navigation.domContentLoadedEventEnd,bodyBytes,shellBytes:navigation.decodedBodySize,
         effect:document.documentElement.dataset.n5Effects || 'legacy',
         longTasks:longTasks ? {
@@ -146,6 +157,8 @@ function summarize(runs) {
   const heap = runs.map(run => run.rendererJsHeapBytes).filter(Number.isFinite);
   return {
     resolvedEffects:[...new Set(runs.map(run => run.effect))],
+    measurement:runs[0].measurement,
+    noInputLayoutShift:runs[0].layoutShift===null ? null : Math.round(1000*median(runs.map(run=>run.layoutShift)))/1000,
     appLoadedMs:round(median(runs.map(run => run.loadedMs))),
     coldMs:round(median(runs.map(run => run.stats[0].ms))),
     coldDomMs:round(median(runs.map(run => run.stats[0].domMs))),

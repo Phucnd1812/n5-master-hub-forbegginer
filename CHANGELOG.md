@@ -1,5 +1,14 @@
 # Changelog
 
+## v5.52.5 — Complete Dictionary & Kanji Expansion
+
+- Mở rộng kho từ JMdict và Kanji KANJIDIC2. Nhóm từ đồng âm có danh sách đầy đủ theo từng lượt, giữ riêng từ gốc và dạng chia. Bổ sung thứ tự nét KanjiVG tải theo nhu cầu, có phát, tạm dừng và phát lại.
+- Gõ để xem tối đa ba gợi ý ngay dưới ô tìm kiếm. Enter hoặc **Xem tất cả** mới mở trang kết quả, đưa trang lên đầu và ghi lịch sử. Mở thẻ gợi ý giữ nguyên bài học đang xem.
+- Sao chép và dán ruby có cấu trúc bằng phần chữ gốc. Khi văn bản thuần có dấu hiệu trộn furigana, ứng dụng đưa gợi ý và chờ người dùng chọn.
+- Dùng Plus Jakarta Sans cho tiêu đề, Be Vietnam Pro cho giao diện và Noto Sans JP cho tiếng Nhật. Font được lưu cùng ứng dụng, giữ chế độ sáng/tối và bố cục Liquid Glass.
+- Thêm 78 bộ câu hỏi và cách trả lời trong bài ngữ pháp và cửa sổ tra cứu. Kèm hội thoại, giải thích tiếng Việt và đường dẫn đến trình Kiểm tra câu.
+- Cập nhật cache PWA và kiểm tra khả năng giữ dữ liệu học qua nâng cấp. [Báo cáo kiểm kê và kiểm thử](docs/v5.52.5-review.md)
+
 ## v5.52.4 — Handwriting Experience & Dictionary Fix
 
 - Mở bảng viết Kanji trong cửa sổ có vùng cuộn riêng. Giữ nút đóng và các nút nhận diện, hoàn tác, làm lại và xóa nét trong tầm nhìn.

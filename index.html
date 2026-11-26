@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="application-name" content="N5 Master Hub">
-  <meta name="n5-release" content="5.52.4">
+  <meta name="n5-release" content="5.52.5">
   <meta name="description" content="Học tiếng Nhật JLPT N5 với từ vựng, Kanji, ngữ pháp và Flashcard ngoại tuyến.">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,13 +15,13 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch.png">
-  <title>N5 Master Hub v5.52.4</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <title>N5 Master Hub v5.52.5</title>
+  <link rel="stylesheet" href="./assets/fonts/v1/fonts.css">
   <script src="./assets/vendor/lucide-1.77.0.min.js" defer></script>
-  <script src="./assets/study-engine.js?v=5.52.4" defer></script>
-  <script src="./assets/smart-study.js?v=5.52.4" defer></script>
-  <script src="./assets/ui/effects.js?v=5.52.4" defer></script>
-  <script src="./pwa.js?v=5.52.4" defer></script>
+  <script src="./assets/study-engine.js?v=5.52.5" defer></script>
+  <script src="./assets/smart-study.js?v=5.52.5" defer></script>
+  <script src="./assets/ui/effects.js?v=5.52.5" defer></script>
+  <script src="./pwa.js?v=5.52.5" defer></script>
   <style>
     :root {
       --n5-heading-font: Inter, "Noto Sans JP", "Hiragino Sans", Meiryo, system-ui, sans-serif;
@@ -1896,15 +1896,15 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 .n5-personal-dialog{width:min(100%,550px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;color:#142437;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 25px 80px #0005;}
 .dark .n5-personal-dialog{background:#142337;color:#e5eef7}.n5-personal-dialog label{display:flex;flex-direction:column;gap:6px;font:600 13px/1.4 system-ui}.n5-personal-dialog input,.n5-personal-dialog select,.n5-personal-dialog textarea,.n5-p-actions select,.n5-p-actions input{width:100%;box-sizing:border-box;border:1px solid #94a3b877;background:#94a3b812;color:inherit;border-radius:12px;padding:10px;font:400 16px/1.4 system-ui;min-width:0}.n5-personal-dialog textarea{resize:vertical}.n5-p-button{padding:10px 13px;border-radius:12px;border:1px solid #94a3b855;background:#94a3b816;color:inherit;font-weight:700;font-size:13px;line-height:1.35;cursor:pointer;min-height:40px}.n5-p-button.primary{background:#0579b5;color:#fff;border-color:transparent}.n5-p-button.retry{background:#fef3c7;color:#92400e;border-color:#fbbf24}.n5-p-button:disabled{opacity:.4;cursor:default}.n5-p-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.n5-p-actions select,.n5-p-actions input{flex:1 1 140px;width:auto}.n5-p-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-top:1px solid #94a3b855;overflow-wrap:anywhere}.n5-p-row>div:first-child{min-width:0;flex:1}.n5-p-study{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:290px;padding:24px;border:1px solid #7dd3fc;border-radius:24px;background:linear-gradient(145deg,#eefaff,#e6fcf4);color:#16344c;text-align:center;overflow-wrap:anywhere;animation:n5PEnter .2s ease-out}.n5-p-study strong{font-size:clamp(24px,6vw,38px);line-height:1.5}.n5-p-study.answer{background:linear-gradient(140deg,#123449,#075b55);color:#fff}.dark .n5-p-study:not(.answer){background:#193347;color:#eff9ff}.n5-p-add{font-size:12px;white-space:nowrap}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto}.n5-smart-row>.n5-p-actions{justify-content:end}.n5-smart-row>.n5-p-add{grid-column:1/-1;justify-self:end}.n5-smart-row>.n5-p-actions .n5-p-add{white-space:normal}@keyframes n5PEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.n5-p-study{animation:none}}@media(max-width:600px){.n5-personal-overlay{align-items:flex-end;padding:8px}.n5-personal-dialog{max-height:85dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.n5-smart-row>.n5-p-actions{grid-column:1/-1}.n5-p-row{align-items:flex-start}.n5-p-row .n5-p-actions{flex-direction:column}}
 </style>
-  <link rel="stylesheet" href="./assets/tailwind.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/search/result.css?v=5.52.4">
-  <link rel="stylesheet" href="./assets/ui/handwriting.css?v=5.52.4">
+  <link rel="stylesheet" href="./assets/tailwind.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/search/result.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/ui/handwriting.css?v=5.52.5">
 </head>
 <body class="h-full bg-slate-50 dark:bg-jpdark-950 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
   <div id="app" class="flex h-screen overflow-hidden">
@@ -2022,7 +2022,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
           <div id="n5SearchShell" class="relative flex-1 min-w-0 max-w-2xl">
             <div id="n5SearchBar" class="flex items-center gap-1.5 rounded-2xl px-2 py-1.5">
               <i data-lucide="search" class="w-4 h-4 ml-1 text-slate-400 pointer-events-none shrink-0"></i>
-              <input type="text" id="globalSearchInput" placeholder="Tra từ, Kanji, ngữ pháp hoặc câu…" aria-label="Tìm kiếm toàn bộ N5 Master Hub"
+              <input type="text" id="globalSearchInput" data-n5-search-mode="preview" placeholder="Tra từ, Kanji, ngữ pháp hoặc câu…" aria-label="Tìm kiếm toàn bộ N5 Master Hub"
                      maxlength="320" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false"
                      class="w-full min-w-0 px-1 py-1 text-sm bg-transparent border-0 focus:outline-none focus:ring-0">
               <button type="button" id="globalSearchClearBtn" onclick="clearTopSearchInput()" aria-label="Xóa nội dung tìm kiếm" title="Xóa tìm kiếm" class="hidden shrink-0 w-7 h-7 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
@@ -2478,7 +2478,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         </div>
         <details class="n5-smart-history"><summary>Định dạng và nguồn dữ liệu</summary>
           <p class="n5-smart-note">Chọn tệp JSONL từ Kaikki hoặc JSON gồm các mục jp, kana, vi, pos. Tên riêng tra được như mục từ, ngoài phạm vi phân tích câu. Kho tích hợp lấy từ Wiktionary tiếng Việt qua Wiktextract / Kaikki, theo <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>. Xem mục gốc và lịch sử tác giả trong kết quả từ điển. Ngoại trừ giáo trình, việc biên tập nghĩa của từng mục phụ thuộc nguồn tệp.</p>
-          <p class="n5-smart-note">Kho mở rộng chọn lọc từ JMdict của Electronic Dictionary Research and Development Group và William Breen, có nghĩa tiếng Việt do N5 Master Hub biên soạn. <a href="https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project" target="_blank" rel="noopener noreferrer">Tài liệu JMdict</a> · <a href="https://www.edrdg.org/edrdg/licence.html" target="_blank" rel="noopener noreferrer">Giấy phép CC BY-SA 4.0</a></p>
+          <p class="n5-smart-note">Kho mở rộng chọn lọc từ JMdict và KANJIDIC2 của James William Breen, Electronic Dictionary Research and Development Group và các cộng tác viên. N5 Master Hub chọn, rút gọn và bổ sung nghĩa tiếng Việt cho một số mục. <a href="https://www.edrdg.org/edrdg/licence.html" target="_blank" rel="noopener noreferrer">Giấy phép CC BY-SA 4.0</a></p>
+          <p class="n5-smart-note">Thứ tự nét của Ulrich Apel và các cộng tác viên <a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">KanjiVG</a> theo CC BY-SA 3.0. Bộ tham chiếu trình độ dựa trên Jonathan Waller và OpenJLPT. <a href="https://github.com/Phucnd1812/n5-master-hub-forbegginer/blob/main/assets/dictionary/DATA-LICENSE.md" target="_blank" rel="noopener noreferrer">Chi tiết nguồn và giấy phép</a></p>
         </details>
       </section>`;
     }
@@ -2488,6 +2489,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       if (!q) return;
       cancelScheduledGlobalSearchRender();
       n5LiveLookupQuery = '';
+      n5LookupUI?.cancelPreview();
       n5HideInstantLookup();
       n5LookupReturn = null;
       n5LookupScroll = null;
@@ -2558,7 +2560,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5CanPreview(query) {
-      return n5LiveLookupQuery===query && n5LookupCurrent(query) &&
+      return n5LiveLookupQuery===query && !globalSearchIsComposing &&
         document.activeElement===document.getElementById('globalSearchInput') &&
         !document.getElementById('handwritingSearchPanel').open;
     }
@@ -2567,34 +2569,24 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       if (!n5CanPreview(query)) return;
       const panel=document.getElementById('n5InstantLookup');
       panel.innerHTML=html;
+      panel.dataset.previewQuery=query;
       panel.hidden=!html;
     }
 
-    function n5MobileLiveLookup(query) {
-      return n5LiveLookupQuery===query && window.matchMedia('(max-width: 767px)').matches;
-    }
-
     function n5UpdateLookupInput(value) {
-      clearTimeout(n5LookupRecentTimer);
-      if (state.searchQuery !== value) n5LookupUI?.cancelPending();
-      n5LookupReturn = null;
-      n5LookupScroll = null;
-      state.searchQuery = value.slice(0,320);
-      n5TranslationSubmitted = '';
-      n5LiveLookupQuery = state.searchQuery.trim();
+      n5LookupUI?.cancelPreview();
+      n5LiveLookupQuery = value.slice(0,320).trim();
       n5HideInstantLookup();
-      n5LookupTop = n5MobileLiveLookup(n5LiveLookupQuery) ? '' : n5LiveLookupQuery;
-      state.globalSearchFilter = 'all';
-      state.globalSearchActive = Boolean(n5LiveLookupQuery);
-      if (state.globalSearchActive) {
-        n5HideLookupRecent();
-        if (!n5LookupModule) n5LoadLookup().then(lookup => lookup.warm()).catch(() => {});
-      } else n5ShowLookupRecent();
-      scheduleGlobalSearchRender();
+      n5HideLookupRecent();
+      if (n5LiveLookupQuery) scheduleGlobalSearchRender();
+      else {
+        cancelScheduledGlobalSearchRender();
+        n5ShowLookupRecent();
+      }
     }
 
     function n5LookupCurrent(query) {
-      return state.globalSearchActive && state.searchQuery.trim() === query && !globalSearchIsComposing;
+      return state.globalSearchActive && state.searchQuery.trim() === query;
     }
 
     function n5LookupRendered(query) {
@@ -2704,12 +2696,12 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5LoadLookup() {
-      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.52.4'),n5EnsurePack()]).then(([{createLookupUI}]) => {
+      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.52.5'),n5EnsurePack()]).then(([{createLookupUI}]) => {
         n5LookupUI = createLookupUI({
           sources: () => ({vocab:N5_ALL_VOCAB,kanji:N5_ALL_KANJI,grammar:GRAMMAR_DATA,imported:n5PackRows}),
           dictionaryRevision: () => n5PackRevision,
           current:n5LookupCurrent, rendered:n5LookupRendered, remember:n5RememberLookup,
-          canPreview:n5CanPreview, preview:n5RenderInstantLookup, mobileLive:n5MobileLiveLookup,
+          canPreview:n5CanPreview, preview:n5RenderInstantLookup, commitPreview:query=>n5SmartSearch(query,true),
           query:n5SmartSearch, clear:clearGlobalSearch, refresh:() => renderCurrentView(true),
           filter:() => state.globalSearchFilter, setFilter:setGlobalSearchFilter,
           saved:n5SmartHistory, save:n5SmartSaveQuery, clearSaved:n5SmartClearHistory,
@@ -2788,7 +2780,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const delay = 240;
       globalSearchRenderTimer = setTimeout(() => {
         globalSearchRenderTimer = null;
-        renderCurrentView(true);
+        const query = n5LiveLookupQuery;
+        if (n5CanPreview(query)) n5LoadLookup().then(lookup => {
+          if (n5CanPreview(query)) lookup.preview(query);
+        }).catch(() => {});
       }, delay);
     }
 
@@ -2865,7 +2860,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       panel.showModal();
       document.getElementById('handwritingSearchToggle').setAttribute('aria-expanded','true');
       handwritingControls();
-      handwritingCanvasModule ??= import('./assets/ui/handwriting.js?v=5.52.4').then(({createHandwritingCanvas}) => {
+      handwritingCanvasModule ??= import('./assets/ui/handwriting.js?v=5.52.5').then(({createHandwritingCanvas}) => {
         handwritingCanvas = createHandwritingCanvas(document.getElementById('handwritingSearchCanvas'), {
           getStrokes:() => handwritingStrokes,
           start(stroke) {
@@ -3234,9 +3229,11 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function clearTopSearchInput() {
-      clearGlobalSearch();
-      document.getElementById('globalSearchInput')?.focus();
-      n5ShowLookupRecent();
+      const input = document.getElementById('globalSearchInput');
+      input.value = '';
+      input.focus({preventScroll:true});
+      n5UpdateLookupInput('');
+      updateTopSearchClearButton();
     }
 
     function clearGlobalSearch() {
@@ -4390,7 +4387,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       if (state.globalSearchActive && state.searchQuery.trim()) {
         const freshLookup = n5LookupTop === state.searchQuery.trim();
         renderGlobalSearchHub(main);
-        if (preserveScroll && !freshLookup && !n5MobileLiveLookup(state.searchQuery.trim())) requestAnimationFrame(() => {
+        if (preserveScroll && !freshLookup) requestAnimationFrame(() => {
           if (window.matchMedia('(max-width: 767px)').matches) window.scrollTo(0, mobileScrollY);
           else main.scrollTop = mainScrollTop;
         });
@@ -4766,6 +4763,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
                   </div>
 
                   ${buildGrammarExtra(item)}
+                  <div data-course-question-topic="${item.id}"></div>
                   <button type="button" onclick="openGrammarStructureFromSearch('${item.id}')" class="mb-3 text-sm font-semibold text-sky-600 dark:text-sky-300">Tra cứu mẫu này</button>
 
                   <!-- Closed by default, with a native accessible disclosure toggle. -->
@@ -4802,6 +4800,12 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         </div>
       `;
       translateVisibleGrammarExamples(container);
+      import('./assets/grammar/question-view.js').then(({renderQuestionPanel}) => {
+        const reading = n5ReadSavedJson('n5_lookup_display_v1',{furigana:true,roman:false},'object');
+        for (const slot of container.querySelectorAll('[data-course-question-topic]')) {
+          slot.innerHTML = renderQuestionPanel(slot.dataset.courseQuestionTopic,reading,true);
+        }
+      }).catch(()=>{});
     }
     function n5LoadMoreGrammar() {
       const container=document.getElementById('mainContainer');
@@ -6284,7 +6288,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5BackupPayload(){
       const smartStudy = window.n5SmartStudy?.snapshot();
       const uiEffects = n5SavedEffects();
-      return {version:'N5Hub-5.52.4',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
+      return {version:'N5Hub-5.52.5',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
         completedItems:[...state.completedItems],ttsRate:state.ttsRate,reviewData:state.reviewData,
         mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition,
         ...(uiEffects === undefined ? {} : {uiEffects}),
@@ -7180,13 +7184,26 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         saveState();
       });
 
+      import('./assets/search/furigana-normalizer.js').then(({installFuriganaClipboard})=>{
+        installFuriganaClipboard(document,async word=>(await n5LoadLookup()).readingMatch(word));
+      }).catch(()=>{});
+
+      document.getElementById('mainContainer').addEventListener('click',event=>{
+        const control=event.target.closest('[data-course-question-topic] [data-lookup="qa-check"]');
+        if (!control) return;
+        const field=control.closest('[data-qa-practice]')?.querySelector('[data-qa-reply]');
+        const sentence=field?.value.trim();
+        if (sentence) n5OpenLearningTool('checker',control,{sentence});
+        else field?.focus();
+      });
+
       // Global Search Input Listener
       const globalSearch = document.getElementById('globalSearchInput');
       globalSearch.addEventListener('compositionstart', () => {
         globalSearchIsComposing = true;
         n5HideInstantLookup();
         cancelScheduledGlobalSearchRender();
-        n5LookupUI?.cancelPending();
+        n5LookupUI?.cancelPreview();
       });
       globalSearch.addEventListener('compositionend', (e) => {
         globalSearchIsComposing = false;
@@ -7209,9 +7226,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
           n5SmartSearch(globalSearch.value,true);
         }
         if (event.key === 'Escape') { n5LiveLookupQuery='';n5HideInstantLookup();n5HideLookupRecent(); }
-        const suggestion=document.querySelector('#n5InstantLookup:not([hidden]) button');
-        if (event.key === 'ArrowDown' && suggestion) {
-          event.preventDefault();suggestion.focus({preventScroll:true});
+        const suggestions=[...document.querySelectorAll('#n5InstantLookup:not([hidden]) button')];
+        if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && suggestions.length) {
+          event.preventDefault();
+          (event.key === 'ArrowDown' ? suggestions[0] : suggestions.at(-1)).focus({preventScroll:true});
         } else if (event.key === 'ArrowDown' && !document.getElementById('n5LookupRecent').hidden) {
           event.preventDefault();
           document.querySelector('#n5LookupRecent button')?.focus();
@@ -7244,13 +7262,20 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       instantLookup.addEventListener('click',event=>{
         const choice=event.target.closest('[data-lookup]');
         if (!choice) return;
-        n5LiveLookupQuery='';
         n5LookupUI?.activatePreview(choice,globalSearch);
+        n5LiveLookupQuery='';
         n5HideInstantLookup();
       });
       instantLookup.addEventListener('keydown',event=>{
         if (event.key==='Escape') {
+          event.preventDefault();
           n5LiveLookupQuery='';n5HideInstantLookup();globalSearch.focus({preventScroll:true});
+        } else if (event.key==='ArrowDown' || event.key==='ArrowUp') {
+          const controls=[...instantLookup.querySelectorAll('button')];
+          const index=controls.indexOf(document.activeElement)+(event.key==='ArrowDown'?1:-1);
+          event.preventDefault();
+          if (index<0 || index>=controls.length) globalSearch.focus({preventScroll:true});
+          else controls[index].focus();
         }
       });
       const searchShell = document.getElementById('n5SearchShell');
@@ -7390,7 +7415,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const history=p.searchHistory===undefined?[]:p.searchHistory;
       if(!Array.isArray(history)||history.length>15||history.some(x=>typeof x!=='string'||x.length>2000))throw Error('Lịch sử tìm kiếm không hợp lệ.');
       if(JSON.stringify(p).length>5*1024*1024)throw Error('Bản đồng bộ vượt giới hạn 5 MB.');
-      return {version:'N5Hub-5.52.4',...validated,searchHistory:history};
+      return {version:'N5Hub-5.52.5',...validated,searchHistory:history};
     }
     function n5CloudRememberBase(row,p){
       n5CloudBase={uid:n5CloudSession.user.id,revision:Number(row.revision),sig:n5CloudSignature(p),updated:row.updated_at||new Date().toISOString(),auto:n5CloudEnabled};
@@ -7603,7 +7628,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CloudPanel(){
       const esc=studyEscape,button='rounded-xl px-4 py-3 text-sm font-bold';
       return `<section id="n5-cloud-panel" class="rounded-3xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 space-y-3">
-        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.52.4</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
+        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.52.5</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
         <p id="n5-cloud-status" role="status" class="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-3 text-sm leading-relaxed">${esc(n5CloudText)}</p>
         ${n5CloudSession?`<p class="text-sm break-all">Đăng nhập: <b>${esc(n5CloudSession.user.email||'Tài khoản của bạn')}</b></p>
         <button type="button" onclick="n5CloudSync()" class="w-full ${button} bg-sky-600 text-white">Đồng bộ ngay</button>

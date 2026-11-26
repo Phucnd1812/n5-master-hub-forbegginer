@@ -59,7 +59,7 @@ export function makeLemma(item) {
   const [reading = ''] = wordPieces(plain(item.kana, true));
   const kana = hiragana(reading);
   const pos = String(item.pos || '');
-  const group = IS_KANA.test(kana) && (item.verifiedGroup ||
+  const group = IS_KANA.test(kana) && (item.catalog ? item.verifiedGroup : item.verifiedGroup ||
     (/Tính từ (?:đuôi )?い/i.test(pos) && kana.endsWith('い') ? 'i' :
       /Tính từ (?:đuôi )?な/i.test(pos) ? 'na' : verbGroup(pos, jp, kana)));
   const root = group && /^[IV]+$/.test(group) ? dictionaryForm(jp || kana, kana, group) : {jp:jp || kana, kana};
@@ -67,6 +67,7 @@ export function makeLemma(item) {
   return {...root, group:group || '', id:item.id, vi:item.vi || '', pos, lesson:item.lesson,
     source:item.source, sourceId:item.sourceId, readings:item.readings, aliases:item.aliases, examples:item.examples,
     ...(item.personSuffixes ? {personSuffixes:item.personSuffixes} : {}),
+    ...(item.catalog ? {catalog:true,dictionaryLevel:item.dictionaryLevel,referenceMeanings:item.referenceMeanings} : {}),
     card:item.card !== false, romaji:IS_KANA.test(root.kana) ? romanize(root.kana) : ''};
 }
 
@@ -393,6 +394,11 @@ const MEANING_PREFIX = {
   optional:'không cần ', optionalPolite:'không cần ', negativeDe:'không ', negativeRequest:'xin đừng ',
 };
 
+const RESULTATIVE_READINGS = new Map([
+  ['知る','biết, hiện có thông tin'],
+  ['結婚する','đã kết hôn'],
+]);
+
 const FORM_CONTEXTS = {
   potential:'Dùng khi nói về năng lực hoặc điều kiện cho phép thực hiện việc đó.',
   passive:'Góc nhìn đặt vào người hoặc vật chịu tác động. Các dạng ～られる còn có cách hiểu khác.',
@@ -417,6 +423,10 @@ export function describeForm(lemma, forms, key) {
   const meaning = key => {
     if (!gloss) return '';
     if (key.startsWith('person-')) return lemma.personSuffixes?.[key.slice(7)] || '';
+    if (key==='progressive' || key==='progressivePolite') {
+      const state = RESULTATIVE_READINGS.get(lemma.jp);
+      if (state) return state;
+    }
     if (MEANING_PREFIX[key]) return MEANING_PREFIX[key] + gloss;
     const voice=MEANING_VOICES.find(base=>key.startsWith(base));
     if (voice) {

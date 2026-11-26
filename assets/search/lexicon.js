@@ -82,6 +82,9 @@ export function builtInRows(rows) {
 const JMDICT_POS = {
   I:'Động từ nhóm I', II:'Động từ nhóm II', III:'Động từ nhóm III',
   i:'Tính từ い', na:'Tính từ な', n:'Danh từ', pn:'Đại từ', adv:'Phó từ', conj:'Liên từ',
+  nvs:'Danh động từ する', adjno:'Tính từ dùng với の', adjpn:'Từ bổ nghĩa', adjn:'Tính từ', other:'Từ loại chờ xác minh',
+  exp:'Cụm từ', prt:'Trợ từ', int:'Thán từ', ctr:'Lượng từ', suf:'Hậu tố', pref:'Tiền tố', verb:'Động từ',
+  proper:'Tên riêng',
 };
 const INFLECTING_TAGS = new Set(['I','II','III','i','na']);
 
@@ -90,6 +93,16 @@ export function jmdictRows(rows) {
     id:'jmdict:' + seq + ':' + jp + ':' + kana, jp, kana, vi, aliases, examples, personSuffixes,
     pos:JMDICT_POS[tag], verifiedGroup:INFLECTING_TAGS.has(tag) ? tag : '',
     source:'JMdict / EDRDG · Mở rộng', sourceId:seq, card:false,
+  }));
+}
+
+export function catalogRows(rows) {
+  return rows.map(([sourceId,jp,kana,tag,vi,aliases,referenceMeanings,dictionaryLevel,referenceId]) => ({
+    id:sourceId?'jmdict:'+sourceId+':'+jp+':'+kana:'openjlpt:'+referenceId,
+    jp,kana,vi,aliases,referenceMeanings,dictionaryLevel,referenceId,sourceId,card:false,
+    source:sourceId?'JMdict / EDRDG':'OpenJLPT', pos:JMDICT_POS[tag],
+    verifiedGroup:INFLECTING_TAGS.has(tag) ? tag : '',
+    catalog:true,
   }));
 }
 

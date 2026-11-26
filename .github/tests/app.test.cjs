@@ -11,7 +11,7 @@ const project = '/n5-master-hub-forbegginer/';
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const release = index.match(/<meta name="n5-release" content="([^"]+)">/)[1];
 const nextRelease = release + '-test';
-const types = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.png':'image/png',
+const types = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.png':'image/png','.woff2':'font/woff2',
   '.webmanifest':'application/manifest+json', '.json':'application/json', '.bin':'application/octet-stream'};
 const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const mockPath = project + 'mock-supabase';
@@ -121,6 +121,9 @@ test('mobile and desktop study, Romaji, IME, deep link and legacy backup', {time
   assert.equal(await page.evaluate(() => state.globalSearchActive), false);
   await search.fill('食べませんでした');
   await search.dispatchEvent('compositionend');
+  await page.locator('#n5InstantLookup:not([hidden])').waitFor();
+  assert.equal(await page.evaluate(()=>state.globalSearchActive),false);
+  await search.press('Enter');
   await page.waitForFunction(() => document.getElementById('mainContainer').dataset.n5Page === 'global-search');
   await page.locator('[data-lookup-query="食べませんでした"]').waitFor();
   assert.equal(await page.locator('#mainContainer h1').textContent(), 'Kết quả cho “食べませんでした”');
@@ -249,7 +252,7 @@ test('Universal Search connects sentence, dictionary, grammar, Kanji, review and
   const desktopPage = await desktop.newPage();
   await desktopPage.goto(site,{waitUntil:'domcontentloaded'});
   await lookup(desktopPage,'na');
-  const known = desktopPage.locator('[data-result-type="vocab"]').first();
+  const known = desktopPage.locator('[data-result-type="vocab"][data-result-id^="v"]').first();
   const knownId = await known.getAttribute('data-result-id');
   await known.locator('button').click();
   await desktopPage.getByRole('dialog').getByRole('button',{name:'Mở trong giáo trình'}).click();
@@ -446,7 +449,8 @@ test('new lookup returns to the top and a verb immediately shows its conjugation
   await page.evaluate(() => window.scrollTo({top:600,behavior:'instant'}));
   const input = page.locator('#globalSearchInput');
   await input.fill('飲む');
-  await page.locator('[data-lookup-query="飲む"]').waitFor();
+  await page.locator('#n5InstantLookup:not([hidden])').waitFor();
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'vocab');
   await input.press('Enter');
   await page.waitForFunction(() => window.scrollY===0);
 });
@@ -1308,12 +1312,14 @@ test('AI translation is opt-in, cached, cancellable, and renders provider text s
   const search=page.locator('#globalSearchInput');
   hold=true;
   await search.fill('世界の天体を観測して分析してください。');
-  await inline.getByText(/Chưa đủ căn cứ/).waitFor();
+  await page.locator('#n5InstantLookup:not([hidden])').waitFor();
+  await inline.getByText(/Bản dịch đối chiếu/).waitFor();
   assert.equal(calls,used);
   await search.press('Enter');
   await inline.getByText('Đang dịch…',{exact:true}).waitFor();
   await receivedHeldRequest;
   await search.fill('テレビを見ています。');
+  await search.press('Enter');
   await inline.getByText('Đang xem TV.',{exact:true}).waitFor();
   releaseHold?.();
   assert.equal(await inline.getByText('<img src=x onerror=alert(1)>',{exact:true}).count(),0);
@@ -1384,9 +1390,9 @@ test('mobile live lookup keeps IME and caret, opens a suggestion and follows con
   await page.evaluate(()=>{window.lookupScrollCalls=0;});
   await input.pressSequentially('kodomotach',{delay:30});
   await preview.getByText('Những đứa trẻ',{exact:true}).waitFor({timeout:20_000});
-  await page.locator('[data-lookup-query="kodomotach"]').waitFor();
-  assert(await preview.getByText(/こどもたち/).isVisible());
-  assert(await preview.locator('button').count()<=3);
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+  assert(await preview.getByRole('button',{name:/子どもたち/}).getByText(/こどもたち/).isVisible());
+  assert(await preview.locator('button:not([data-lookup="preview-commit"])').count()<=3);
   assert(await input.evaluate(element=>document.activeElement===element && element.selectionStart===10));
   assert.equal(await page.evaluate(()=>window.lookupScrollCalls),0);
 
@@ -1441,6 +1447,8 @@ test('inline live preview uses the latest paste and composes local translations 
   await input.fill('風が吹いています。');
   await input.dispatchEvent('input',{inputType:'insertFromPaste',data:'風が吹いています。'});
   await preview.getByText('Gió đang thổi.',{exact:true}).waitFor({timeout:20_000});
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+  await input.press('Enter');
   const result=page.locator('[data-lookup-query="風が吹いています。"]');
   await result.locator('[data-n5-translation-slot]').getByText('Gió đang thổi.',{exact:true}).waitFor();
   assert(await result.locator('[data-result-panel="overview"] .n5-lookup-path')
@@ -1448,6 +1456,7 @@ test('inline live preview uses the latest paste and composes local translations 
   assert(await input.evaluate(element=>document.activeElement===element));
   await input.fill('naitei');
   await preview.getByText('内定',{exact:true}).waitFor();
+  await input.press('Enter');
   const ambiguous=page.locator('[data-lookup-query="naitei"]');
   for (const form of ['泣いている','泣いています','泣いていい','泣いていた']) {
     await ambiguous.locator(`[data-lookup-form-surface="${form}"] button`).waitFor();
@@ -1460,6 +1469,7 @@ test('handwriting dialog keeps controls visible and scrolls internally at normal
   const {page} = await openApp(t,{viewport:{width:1280,height:720},deviceScaleFactor:1.5});
   const input = page.locator('#globalSearchInput');
   await input.fill('nihongo');
+  await input.press('Enter');
   await page.locator('[data-lookup-query="nihongo"]').waitFor();
   const toggle = page.locator('#handwritingSearchToggle');
   await toggle.click();
@@ -1560,7 +1570,7 @@ test('recognizer ranks both scopes with complete, reordered, missing and extra s
   const trials = await page.evaluate(async ()=>{
     const {bytes,records}=await n5InitHandwritingIndex();
     const result = [];
-    for (const char of '着新電食見聞書語') {
+    for (const char of '着知折新電食見聞書語') {
       const record = records.find(record=>record.char===char);
       const points = n5DecodeHandwritingStrokes(record,bytes).map(line=>line.map(([x,y])=>[x*480,y*480]));
       const extra = [...points,[[214,226],[228,228]]];
@@ -1568,21 +1578,21 @@ test('recognizer ranks both scopes with complete, reordered, missing and extra s
       for (const [index,strokes] of variants.entries()) {
         for (const scope of ['n5','all']) {
           const {scored,sampleCount}=n5RankHandwriting(handwritingNormalizeStrokes(strokes),scope,records,bytes);
-          result.push({char,scope,index,sampleCount,first:scored[0]?.char,
+          result.push({char,scope,index,sampleCount,course:record.course,first:scored[0]?.char,
             offered:scored.map(item=>item.char),allCourse:scored.every(item=>item.course)});
         }
       }
     }
     return result;
   });
-  assert.equal(trials.length,64);
+  assert.equal(trials.length,80);
   for (const trial of trials) {
-    const {char,scope,index,first,offered,sampleCount,allCourse} = trial;
+    const {char,scope,index,first,offered,sampleCount,allCourse,course} = trial;
     assert.equal(new Set(offered).size,offered.length);
     assert(offered.length>1);
     assert.equal(sampleCount,scope==='n5'?161:6703);
     if (scope==='n5') assert(allCourse && !offered.includes('着'));
-    if (index<2 && (char!=='着' || scope==='all')) assert.equal(first,char);
+    if (index<2 && (course || scope==='all')) assert.equal(first,char);
     if (index>=2 && char==='着' && scope==='all') assert(offered.includes(char));
   }
 });
@@ -1623,4 +1633,124 @@ test('mobile handwriting accepts touch, supports offline lookup, and keeps homop
   assert(await preview.getByText('Đến',{exact:true}).isVisible());
   await input.fill('シャツを着ています。');
   await preview.getByText('Đang mặc áo sơ mi.',{exact:true}).waitFor();
+});
+
+test('preview from study pages preserves the route, and committed homophones are expandable', {timeout:120_000}, async t => {
+  const {page}=await openApp(t,{viewport:{width:1366,height:768}});
+  const search=page.locator('#globalSearchInput');
+  const preview=page.locator('#n5InstantLookup');
+  const content=page.locator('#mainContainer');
+  for (const route of ['dashboard','vocab','kanji','grammar','flashcard','formPractice','reading']) {
+    await go(page,route);
+    const heading=await content.locator('h1').first().textContent();
+    await search.fill('shuukan');
+    await preview.getByText('週刊',{exact:true}).waitFor();
+    assert.equal(await content.getAttribute('data-n5-page'),route);
+    assert.equal(await content.locator('h1').first().textContent(),heading);
+    assert(await preview.getByText('週間',{exact:true}).isVisible());
+    await search.press('Escape');
+    await preview.waitFor({state:'hidden'});
+    await search.fill('');
+  }
+  await go(page,'vocab');
+  await search.fill('kami');
+  await preview.getByText('神',{exact:true}).waitFor();
+  await search.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Enter');
+  const dialog=page.getByRole('dialog');
+  await dialog.getByText('Từ loại',{exact:true}).waitFor();
+  assert.equal(await content.getAttribute('data-n5-page'),'vocab');
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+  await search.press('Enter');
+  const full=page.locator('[data-lookup-query="kami"]');
+  const group=full.locator('[data-homophones]');
+  await group.getByText(/Xem tất cả từ đồng âm/).click();
+  for (const word of ['紙','髪','神']) {
+    assert(await group.getByRole('button',{name:new RegExp(word)}).first().isVisible(),word);
+  }
+  assert(await page.evaluate(()=>n5LookupRecent().includes('kami')));
+});
+
+test('furigana clipboard handling keeps original, redraws only the accepted query, and removes ruby from copy', {timeout:120_000}, async t => {
+  const {page}=await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'light'});
+  const input=page.locator('#globalSearchInput');
+  await page.waitForFunction(()=>performance.getEntriesByType('resource').some(item=>item.name.endsWith('/assets/search/furigana-normalizer.js')));
+  async function paste(original,html='') {
+    await input.fill('');
+    await input.evaluate((field,{original,html})=>{
+      const data=new DataTransfer();
+      data.setData('text/plain',original);
+      if(html) data.setData('text/html',html);
+      const accepted=field.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));
+      if (accepted) {
+        field.setRangeText(original,field.selectionStart,field.selectionEnd,'end');
+        field.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertFromPaste',data:original}));
+      }
+    },{original,html});
+  }
+  await paste('日に本ほん語ご');
+  const notice=page.locator('.n5-paste-note');
+  await notice.getByText('Đề xuất · 日本語',{exact:true}).waitFor();
+  assert.equal(await input.inputValue(),'日に本ほん語ご');
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+  await notice.getByRole('button',{name:'Sử dụng bản chuẩn hóa'}).click();
+  assert.equal(await input.inputValue(),'日本語');
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+  await paste('漢(かん)字(じ)を読む。','<ruby>漢<rp>(</rp><rt>かん</rt><rp>)</rp>字<rt>じ</rt></ruby>を読む。<script>throw Error(1)</script>');
+  assert.equal(await input.inputValue(),'漢字を読む。');
+  await notice.getByRole('button',{name:'Hoàn tác'}).click();
+  assert.equal(await input.inputValue(),'漢(かん)字(じ)を読む。');
+  const copied=await page.evaluate(()=>{
+    document.activeElement.blur();
+    const demo=document.createElement('div');
+    demo.innerHTML='<ruby>漢<rt>かん</rt>字<rt>じ</rt></ruby>を読む。';
+    document.querySelector('#mainContainer').append(demo);
+    const range=document.createRange();
+    range.selectNodeContents(demo);
+    getSelection().removeAllRanges(); getSelection().addRange(range);
+    const data=new DataTransfer();
+    demo.dispatchEvent(new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:data}));
+    demo.remove();getSelection().removeAllRanges();
+    return data.getData('text/plain');
+  });
+  assert.equal(copied,'漢字を読む。');
+});
+
+test('grammar Q&A and exact expanded stroke data remain available offline once cached', {timeout:120_000}, async t => {
+  const {page}=await openApp(t,{viewport:{width:1280,height:720},colorScheme:'dark'});
+  await go(page,'grammar');
+  const article=page.locator('[data-course-question-topic="g1a_2"] [data-grammar-qa]');
+  await article.getByText('Cách hỏi & trả lời',{exact:true}).click();
+  assert(await article.getByText('いいえ、学生ではありません。',{exact:true}).isVisible());
+  await lookup(page,'折');
+  await page.locator('[data-result-type="kanji"]').getByRole('button',{name:'折',exact:true}).first().click();
+  const dialog=page.getByRole('dialog');
+  await dialog.getByRole('button',{name:'骨折',exact:true}).waitFor();
+  await dialog.getByText('Thứ tự nét · 7 nét',{exact:true}).click();
+  await dialog.getByRole('button',{name:'Phát từng nét'}).click();
+  await dialog.getByText(/\/ 7 nét/).waitFor();
+  await dialog.getByRole('button',{name:'Tạm dừng'}).click();
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+  await lookup(page,'shuumatsu');
+  assert(await page.locator('[data-lookup-query="shuumatsu"]').getByText('週末',{exact:true}).first().isVisible());
+  networkAvailable=false;
+  t.after(()=>{networkAvailable=true;});
+  await page.reload();
+  const typography=await page.evaluate(async()=>{
+    await document.fonts.load('700 20px "Plus Jakarta Sans"','Học tiếng Nhật');
+    await document.fonts.load('400 16px "Be Vietnam Pro"','Tiếng Việt');
+    await document.fonts.load('400 16px "Noto Sans JP"','日本語');
+    return [...document.fonts].filter(font=>font.status==='loaded').map(font=>font.family);
+  });
+  assert(['Plus Jakarta Sans','Be Vietnam Pro','Noto Sans JP'].every(font=>typography.includes(font)));
+  await lookup(page,'shuumatsu');
+  assert(await page.locator('[data-lookup-query="shuumatsu"]').getByText('週末',{exact:true}).first().isVisible());
+  await page.evaluate(()=>openGrammarStructureFromSearch('g6c_10'));
+  const question=dialog.locator('[data-grammar-qa] > .n5-qa-topic').filter({hasText:'どこで日本語を勉強しますか。'});
+  await question.getByText('Tự trả lời',{exact:true}).click();
+  await question.locator('[data-qa-reply]').fill('図書館で勉強します。');
+  await question.getByRole('button',{name:'Kiểm tra câu trả lời'}).click();
+  assert.equal(await dialog.locator('[data-n5-checker] textarea').inputValue(),'図書館で勉強します。');
 });

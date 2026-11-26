@@ -11,6 +11,7 @@ const nouns = new Map(Object.entries({
   東京:'Tokyo',大阪:'Osaka',京都:'Kyoto',英語:'tiếng Anh',パン:'bánh mì',コーヒー:'cà phê',車:'ô tô',駅:'nhà ga',
   ここ:'đây',そこ:'đó',あそこ:'kia',服:'quần áo',シャツ:'áo sơ mi',上着:'áo khoác',
   靴:'giày',靴下:'tất',ズボン:'quần',スカート:'váy',帽子:'mũ',
+  紙:'giấy',神:'thần linh',髪:'tóc',玄関:'lối vào nhà',
 }));
 const times = new Map(Object.entries({
   毎日:'mỗi ngày',毎朝:'mỗi sáng',今:'bây giờ',今日:'hôm nay',明日:'ngày mai',昨日:'hôm qua',明後日:'ngày kia',
@@ -21,6 +22,7 @@ const verbs = new Map(Object.entries({
   吹く:'thổi',泣く:'khóc',眠る:'ngủ',帰る:'về',買う:'mua',書く:'viết',話す:'nói',住む:'sống',働く:'làm việc',起きる:'thức dậy',待つ:'đợi',
   泳ぐ:'bơi',遊ぶ:'chơi',走る:'chạy',歩く:'đi bộ',開ける:'mở',閉める:'đóng',作る:'làm',使う:'dùng',
   着る:'mặc',履く:'mặc',穿く:'mặc',被る:'đội',冠る:'đội',
+  信じる:'tin vào',切る:'cắt',知る:'biết',
 }));
 const clothing = new Map([
   ['着る',new Set(['服','シャツ','上着'])],
@@ -46,7 +48,7 @@ const leading = {
   prohibition:'không được',prohibitionPolite:'không được',experience:'đã từng',experiencePolite:'đã từng',
   afterTe:'',before:'',simultaneous:'',tara:'',ba:'',
 };
-const ongoing = new Set(['見る','観る','食べる','飲む','読む','勉強する','書く','話す','吹く','降る','泣く','眠る','働く','待つ','泳ぐ','遊ぶ','走る','歩く','作る',...clothing.keys()]);
+const ongoing = new Set(['見る','観る','食べる','飲む','読む','勉強する','書く','話す','吹く','降る','泣く','眠る','知る','働く','待つ','泳ぐ','遊ぶ','走る','歩く','作る',...clothing.keys()]);
 const motion = new Set(['行く','来る','帰る']);
 const join = words => words.filter(Boolean).join(' ');
 const rootOf = token => token?.lemma?.jp || '';
@@ -98,6 +100,9 @@ function sentencePart(tokens) {
         if (root === '履く' && (word === '靴' || word === '靴下')) verb = 'đi';
         slot='object';
         meaning=nouns.get(word);
+      } else if (particle==='に' && root==='書く' && word==='紙') {
+        slot='place';
+        meaning='trên '+nouns.get(word);
       } else if (['に','へ'].includes(particle) && (motion.has(root) || particle === 'に' && verb === 'ở')) {
         slot='place';
         meaning=nouns.get(word);
@@ -117,6 +122,7 @@ function sentencePart(tokens) {
   if (args.compare && !args.subject || garments && !args.object) return null;
   if (form.startsWith('progressive') && root === '来る' && !still) return null;
   let prefix=still ? 'vẫn chưa' : leading[form];
+  if (root==='知る' && (form==='progressive' || form==='progressivePolite')) prefix='';
   if (!prefix && ['ngày mai','ngày kia','tuần sau','năm sau'].includes(args.time) && !adjectives.has(root)) prefix='sẽ';
   if (root === '行く' && args.place === 'trường') verb='đến';
   if (root === '来る' && args.place.startsWith('đến ')) args.place=args.place.slice(4);
