@@ -1,4 +1,4 @@
-const RELEASE = '5.52.5';
+const RELEASE = '5.53';
 const scope = new URL(self.registration.scope);
 const cachePrefix = `n5-master-hub:${scope.pathname}:`;
 const cacheName = cachePrefix + RELEASE;
@@ -13,6 +13,7 @@ const assets = new Set([
   `assets/tailwind.css?v=${RELEASE}`,
   `assets/ui/premium.css?v=${RELEASE}`,
   `assets/ui/effects.js?v=${RELEASE}`,
+  'assets/ui/reading.js',
   `assets/ui/handwriting.css?v=${RELEASE}`,
   `assets/ui/handwriting.js?v=${RELEASE}`,
   `assets/learning/builder.css?v=${RELEASE}`,
@@ -49,6 +50,7 @@ const assets = new Set([
   'assets/search/jmdict-hotfix.json',
   'assets/search/text.js',
   'assets/search/furigana-normalizer.js',
+  'assets/search/tap-lookup.js',
   'assets/fonts/v1/fonts.css',
   'assets/fonts/v1/jakarta.woff2',
   'assets/fonts/v1/vietnam-400.woff2',
@@ -65,6 +67,7 @@ const assets = new Set([
   `assets/translation/translation.css?v=${RELEASE}`,
   'assets/translation/protocol.js',
   'assets/translation/rules.js',
+  'assets/translation/document.js',
   'assets/translation/client.js',
   'assets/translation/memory.js',
   'assets/translation/view.js',

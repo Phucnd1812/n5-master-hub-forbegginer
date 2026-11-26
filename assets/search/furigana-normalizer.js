@@ -92,7 +92,7 @@ export function installFuriganaClipboard(doc,lookUp) {
     unbind?.();
     unbind = null;
   };
-  function present(target,original,candidate,accept,cancel,applied=false) {
+  function present(target,original,candidate,accept,cancel,applied=false,onDismiss=()=>{}) {
     clear();
     note=doc.createElement('aside');
     note.className='n5-paste-note';
@@ -124,7 +124,7 @@ export function installFuriganaClipboard(doc,lookUp) {
     else target.insertAdjacentElement('afterend',note);
     const onInput = () => clear();
     target.addEventListener('input',onInput,{once:true});
-    unbind=()=>target.removeEventListener('input',onInput);
+    unbind=()=>{target.removeEventListener('input',onInput);onDismiss();};
   }
   function replace(target,text,start,end,maximum) {
     const accepted=text.slice(0,Math.max(0,maximum-(target.value.length-(end-start))));
@@ -171,18 +171,26 @@ export function installFuriganaClipboard(doc,lookUp) {
     if (!/[\p{Script=Han}][ぁ-ゖァ-ヺ]/u.test(original)) return;
     const token={};
     pendingInput=token;
+    target.n5FuriganaToken=token;
+    target.dataset.n5PastePending='true';
+    const release=()=>{
+      if (target.n5FuriganaToken!==token) return;
+      delete target.n5FuriganaToken;
+      delete target.dataset.n5PastePending;
+      target.dispatchEvent(new Event('n5-paste-resolved',{bubbles:true}));
+    };
     setTimeout(async()=>{
-      if (pendingInput!==token || !target.isConnected) return;
+      if (pendingInput!==token || !target.isConnected) {release();return;}
       const pasted=target.value;
       const added=pasted.slice(start,target.selectionEnd);
-      if (added!==original) return;
+      if (added!==original) {release();return;}
       let result;
       try { result=await normalizeFlatFurigana(original,async word=>readingsFromLookup(await lookUp(word),word)); }
-      catch { return; }
-      if (!result || pendingInput!==token || !target.isConnected || target.value!==pasted) return;
+      catch { release();return; }
+      if (!result || pendingInput!==token || !target.isConnected || target.value!==pasted) {release();return;}
       present(target,original,result,()=>{
         if (target.value===pasted) replace(target,result.text,start,start+original.length,maximum);
-      });
+      },undefined,false,release);
     },0);
   });
 }

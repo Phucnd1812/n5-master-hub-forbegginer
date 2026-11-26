@@ -113,7 +113,7 @@ export function createGrammarView({esc,button,detailButton,settings,toggleDispla
     const sentence=index<0?esc(jp):esc(jp.slice(0,index))+'<mark class="n5-result-grammar-mark">'+esc(fragment)+
       '</mark>'+esc(jp.slice(index+fragment.length));
     return `<article class="n5-lookup-example n5-grammar-example">
-      <p lang="ja">${sentence}</p>
+      <p lang="ja" data-n5-tappable tabindex="0">${sentence}</p>
       ${kana ? `<p class="n5-lookup-meta" lang="ja" data-grammar-reading="furigana" ${settings.furigana ? '' : 'hidden'}>${esc(kana)}</p>` : ''}
       ${kana ? `<div data-example-romaji data-example-kana="${esc(kana)}" data-grammar-reading="roman" ${settings.roman ? '' : 'hidden'}>${note('Romaji theo mặt chữ',romanize(kana))}</div>` : ''}
       <p>${esc(vi)}</p>

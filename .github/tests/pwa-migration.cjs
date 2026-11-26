@@ -10,7 +10,7 @@ const engine = process.env.N5_TEST_BROWSER || 'chromium';
 const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.woff2':'font/woff2',
   '.webmanifest':'application/manifest+json','.json':'application/json','.bin':'application/octet-stream'};
 const release = root => readFileSync(join(root,'index.html'),'utf8').match(/name="n5-release" content="([^"]+)"/)[1];
-const previousRelease = '5.52.4';
+const previousRelease = '5.52.5';
 const savedMistake = 'Câu sai đã lưu trên v' + previousRelease;
 
 function checkKanjiAssets(baseline) {

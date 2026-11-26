@@ -697,3 +697,46 @@ html:root[data-n5-effects="performance"] :is(.n5-flashcard-motion, .n5-flashcard
 
 body :is(rt, .n5-lookup-strokes text) { font-family: var(--n5-font-japanese); }
 body :is(.n5-result-meaning, .n5-lookup-meta, .n5-grammar-chapter p, .n5-paste-note) { line-height: 1.55; }
+
+.n5-reading-settings {
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+  border-radius: var(--n5-panel-radius);
+  border: 1px solid var(--n5-border);
+  background: var(--n5-surface);
+}
+.n5-reading-settings h2 { font-size: 1.15rem; }
+.n5-reading-options {
+  display: grid;
+  gap: .55rem 1rem;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr));
+}
+.n5-reading-options label { min-height: 44px; }
+.n5-reading-options input[type=range] { display: block; width: 100%; accent-color: var(--n5-sky); }
+.n5-reading-options select { color: inherit; background: var(--n5-surface-soft); }
+.n5-reading-options output { font-weight: 600; }
+.n5-reading-settings button { justify-self: start; }
+.n5-reading-example { padding: .75rem; border-radius: .65rem; background: var(--n5-surface-soft); }
+.n5-reading-example p,
+body .n5-lookup-example p,
+body .n5-result-sentence,
+body .n5-translation-output,
+body .n5-qa-japanese,
+body .grammar-example-translation { line-height: var(--n5-reading-line,1.65); }
+body .n5-reading-example [lang=ja],
+body .n5-lookup-example [lang=ja],
+body .n5-result-sentence[lang=ja],
+body .n5-qa-japanese,
+body .grammar-example-jp { font-size: calc(1.125rem * var(--n5-japanese-scale,1)); }
+body .n5-lookup-big { font-size: calc(1.9rem * var(--n5-japanese-scale,1)); }
+body .n5-reading-example [lang=vi],
+body .n5-translation-output[lang=vi],
+body .n5-result-meaning,
+body .grammar-example-translation { font-size: calc(1rem * var(--n5-vietnamese-scale,1)); }
+body .n5-translation-output[lang=ja] { font-size: calc(1.125rem * var(--n5-japanese-scale,1)); }
+body .n5-result-word .n5-result-meaning { font-size: calc(1.25rem * var(--n5-vietnamese-scale,1)); }
+html[data-n5-furigana=false] :is([data-grammar-reading=furigana],[data-result-reading=Kana],rt,rp),
+html[data-n5-romaji=false] :is([data-grammar-reading=roman],[data-result-reading=Romaji]) { display: none !important; }
+html[data-n5-density=compact] :is(.n5-lookup-grid,.n5-lookup-word) { gap: .48rem; }
+html[data-n5-density=airy] :is(.n5-lookup-grid,.n5-lookup-word) { gap: 1.15rem; }

@@ -1,4 +1,5 @@
-export const MAX_TEXT = 320;
+export const MAX_TEXT = 3000;
+export const MAX_TRANSLATION_FIELD = 12000;
 export const DIRECTIONS = ['ja-vi','vi-ja','romaji'];
 export const OUTPUT_LANGUAGES = ['ja','vi','romaji'];
 
@@ -28,7 +29,9 @@ export function validOutput(value, direction) {
   if (!value || !translationSchema.properties.detectedLanguage.enum.includes(value.detectedLanguage)
       || (direction === 'vi-ja' ? value.detectedLanguage !== 'vi' : value.detectedLanguage === 'vi')
       || (direction === 'romaji' && value.detectedLanguage !== 'romaji')
-      || !strings.every(key => string(value[key])) || !value.translatedText.trim() || !value.japaneseText.trim()
+      || !strings.every(key => typeof value[key] === 'string' &&
+        value[key].length <= (key==='politenessLevel'?1400:MAX_TRANSLATION_FIELD))
+      || !value.translatedText.trim() || !value.japaneseText.trim()
       || !lists.every(key => list(value[key],string))
       || !Object.entries(tables).every(([key,fields]) => list(value[key],row => row && fields.every(field => string(row[field]))))) return null;
   const checked=Object.fromEntries(['detectedLanguage',...strings,...lists].map(key=>[key,value[key]]));
@@ -41,6 +44,6 @@ export function validOutput(value, direction) {
 export function validRequest(input) {
   if (!input || typeof input.text !== 'string' || input.text.length > MAX_TEXT || !DIRECTIONS.includes(input.direction)) return null;
   const text = input.text.trim();
-  if (text.length < 2 || !/[\p{L}\p{N}]/u.test(text) || /[\u0000-\u0008\u000b-\u001f\u007f]/u.test(text)) return null;
+  if (text.length < 2 || !/[\p{L}\p{N}]/u.test(text) || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(text)) return null;
   return {text,direction:input.direction};
 }

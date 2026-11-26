@@ -83,7 +83,7 @@ html:has(#handwritingSearchPanel[open]) { overflow: hidden; overscroll-behavior:
 .n5-handwriting-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; margin-top: .45rem; }
 .n5-handwriting-meta a { color: var(--hw-accent); text-decoration: underline; }
 .n5-handwriting-results h3 { font-size: 1rem; font-weight: 750; margin-bottom: .5rem; }
-.n5-handwriting-scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-bottom: .6rem; }
+.n5-handwriting-scope { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin-bottom: .6rem; }
 .n5-handwriting-button, .handwriting-candidate {
   min-height: 44px;
   border: 1px solid var(--n5-border);
@@ -116,4 +116,5 @@ html:has(#handwritingSearchPanel[open]) { overflow: hidden; overscroll-behavior:
 @media (max-width: 430px) {
   .n5-handwriting-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
   #recognizeHandwritingBtn { margin-inline-start: 0; }
+  .n5-handwriting-board { width: min(100%, 38dvh, 19rem); }
 }

@@ -73,7 +73,7 @@ export function readingLines(presentation,{furigana=true,roman=true}={}) {
 
 export function sentenceHeader(presentation,settings,{reverse=false}={}) {
   return '<header class="n5-result-surface n5-result-source" data-result-tone="source">'+
-    '<h2>Câu gốc</h2><p class="n5-result-sentence"'+(HAS_JAPANESE.test(presentation.text)?' lang="ja"':'')+'>'+
+    '<h2>Câu gốc</h2><p class="n5-result-sentence"'+(HAS_JAPANESE.test(presentation.text)?' lang="ja" data-n5-tappable tabindex="0"':'')+'>'+
     escapeResult(presentation.text)+'</p>'+
     (presentation.input?'<p class="n5-lookup-meta">Truy vấn · '+escapeResult(presentation.input)+'</p>':'')+
     (reverse?'':readingLines(presentation,settings))+
