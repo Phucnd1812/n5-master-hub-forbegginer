@@ -120,7 +120,7 @@ test('Edge validates authenticated allowlist before claim or provider and checks
   state.user=401;
   assert.equal((await request()).status,401);
   state.user=200;
-  assert.equal((await request('日'.repeat(321))).status,400);
+  assert.equal((await request('日'.repeat(protocol.MAX_TEXT+1))).status,400);
   assert.equal(state.calls.length,2);
   assert.equal((await setup({config:{key:''}}).request()).status,503);
   assert.equal((await setup({config:{freeConfirmed:''}}).request()).status,503);
@@ -155,4 +155,79 @@ test('Edge isolates data and secrets, consumes quota, validates schema and maps 
   assert.deepEqual(await (await request()).json(),{error:'unavailable'});
   const timed=setup({timeout:30,delay:true});
   assert.deepEqual(await (await timed.request()).json(),{error:'timeout'});
+});
+
+test('long translation retains paragraphs, protects quoted sentence boundaries, and keeps a single quota claim', async () => {
+  const {splitDocument,translateDocument,acceptsAutomatic}=await import('../../assets/translation/document.js');
+  const text='テレビを見ています。\n\n薬を飲んでから寝なければなりません。';
+  const analyze=async value=>(await search.search(value)).analysis;
+  const local=await translateDocument(text,'ja-vi',null,analyze,new AbortController().signal);
+  assert.equal(local.result.translatedText,'Đang xem TV.\n\nSau khi uống thuốc, phải đi ngủ.');
+  assert.deepEqual(splitDocument('田中さんは「何ですか。」と言いました。次の文。').map(piece=>piece.text),
+    ['田中さんは「何ですか。」と言いました。','次の文。']);
+  assert.equal(splitDocument('Gặp lúc 8.30 sáng.\nHẹn gặp lại.').length,2);
+  assert(!acceptsAutomatic('学校。',await analyze('学校。')));
+  assert.equal((await translateDocument(text+'\n天体物理学ではブラックホールを研究します。','ja-vi',null,
+    analyze,new AbortController().signal)).result,null);
+  const body=('昨日は雨が降っていたので、家で日本語を勉強してから、友達と電話で話しました。\n\n').repeat(100).slice(0,2999).trim();
+  const {request,state}=setup();
+  const response=await request(body);
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).originalText,body);
+  assert.equal(state.body.contents[0].parts[0].text,body);
+  assert.equal(state.body.generationConfig.maxOutputTokens,8192);
+  assert.equal(state.calls.length,3);
+});
+
+test('long Japanese samples show clause boundaries and decline an unsupported complete offline translation', async () => {
+  const examples=[
+    ['昨日は雨が降っていたので、家で日本語を勉強してから、友達と電話で話しました。',['Nguyên nhân','Hành động trước']],
+    ['日本語を勉強しているので、毎日日本のニュースを読むようにしています。',['Nguyên nhân']],
+    ['日本へ行ったことはありませんが、いつか行きたいと思っています。',['Đối lập theo ngữ cảnh']],
+    ['時間があれば、駅の近くにある本屋へ行って、日本語の本を買いたいです。',['Điều kiện','Mệnh đề nối bằng thể て']],
+    ['先生に教えてもらった文法を使って、友達と日本語で話してみました。',['Mệnh đề nối bằng thể て']],
+  ];
+  for (const [text,labels] of examples) {
+    const {analysis}=await search.search(text);
+    assert.deepEqual(analysis.clauses.map(clause=>clause.label),[...labels,'Mệnh đề cuối'],text);
+    assert.equal(rules.localTranslation(text,'ja-vi',analysis),null,text);
+  }
+});
+
+test('concurrent mounts share a provider call and a quota response stops later automatic requests', async () => {
+  const {createTranslationRequests,getMode,setMode}=await import('../../assets/translation/client.js');
+  const previousStorage=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
+  const storage=new Map();
+  Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:key=>storage.get(key) ?? null,
+    setItem:(key,value)=>storage.set(key,value)}});
+  try {
+    assert.equal(getMode(),'auto');
+    setMode('request');
+    assert.equal(getMode(),'request');
+    setMode('offline');
+    assert.equal(getMode(),'offline');
+  } finally {
+    if (previousStorage) Object.defineProperty(globalThis,'localStorage',previousStorage);
+    else delete globalThis.localStorage;
+  }
+  let calls=0, tick=0, release;
+  const translate=createTranslationRequests(async () => {
+    calls++;
+    if (calls===1) await new Promise(resolve=>{release=resolve;});
+    return Response.json({error:'quota'},{status:429});
+  },()=> 'uid-test',()=>tick);
+  const firstSignal=new AbortController();
+  const active={text:'長い文章を翻訳してください。',direction:'ja-vi'};
+  const first=translate(active,firstSignal.signal);
+  const duplicate=translate(active,new AbortController().signal);
+  firstSignal.abort();
+  assert.deepEqual(await first,{error:'aborted'});
+  release();
+  assert.deepEqual(await duplicate,{error:'quota'});
+  assert.equal(calls,1);
+  assert.deepEqual(await translate({...active,text:'これは別の文章です。'},new AbortController().signal),{error:'quota'});
+  assert.equal(calls,1);
+  tick=60001;
+  assert.deepEqual(await translate(active,new AbortController().signal),{error:'quota'});
+  assert.equal(calls,2);
 });

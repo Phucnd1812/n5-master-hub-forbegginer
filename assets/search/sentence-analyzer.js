@@ -333,7 +333,7 @@ export function createSentenceAnalyzer(wordExamples = [], layer = false) {
     const reading = name => publicParts.map(part => part.kind === 'punct' ? part.text : part[name] || '[…]');
     return {original, japanese:isRoman ? example?.jp || publicParts.map(part => part.jp || part.text).join('') : original,
       readings:reading('kana').join(''), romaji:reading('romaji').join(' ').replace(/\s+([。、,.!?])/g,'$1').trim(),
-      coverage, parts:publicParts, phrases, grammar:[...detections], notes, translation:example?.vi || '',
+      coverage, parts:publicParts, phrases, clauses:clauseOutline(publicParts), grammar:[...detections], notes, translation:example?.vi || '',
       ...(example?.kana ? {referenceReading:{kana:example.kana}} : {})};
   }
   function complete(query, extra) {
@@ -373,4 +373,37 @@ export function createSentenceAnalyzer(wordExamples = [], layer = false) {
   }
 
   return {addWord, analyze, complete, indexes:{japanese,roman,jpLengths,romanLengths}, finish() { romanForms.clear(); }};
+}
+
+const clauseForms={afterTe:'Hành động trước',before:'Hành động làm mốc',simultaneous:'Hành động đồng thời',
+  tara:'Điều kiện',ba:'Điều kiện'};
+const clauseWords={ので:'Nguyên nhân',のに:'Nhượng bộ',けれど:'Đối lập',けど:'Đối lập',ても:'Nhượng bộ'};
+
+function clauseOutline(parts) {
+  const clauses=[];
+  let start=0,depth=0;
+  function add(end,label) {
+    const text=parts.slice(start,end).map(part=>part.text).join('').replace(/^[\s、,]+|[\s、,]+$/gu,'');
+    if (text) clauses.push({text,label});
+    start=end;
+  }
+  for (const [index,part] of parts.entries()) {
+    if (part.kind==='punct') {
+      for (const character of part.text) {
+        if (/[「『（(]/u.test(character)) depth++;
+        else if (depth && /[」』）)]/u.test(character)) depth--;
+      }
+      continue;
+    }
+    if (depth || index===parts.length-1) continue;
+    const previous=parts[index-1];
+    const comma=/^[、,]/u.test(parts[index+1]?.text || '') && parts[index+1]?.kind==='punct';
+    let label=clauseForms[part.form?.key] || clauseWords[part.jp];
+    if (!label && previous?.form && part.jp==='から') label='Nguyên nhân';
+    if (!label && comma && previous?.form && part.jp==='が') label='Đối lập theo ngữ cảnh';
+    if (!label && comma && part.form?.key==='te') label='Mệnh đề nối bằng thể て';
+    if (label) add(index+1,label);
+  }
+  if (clauses.length) add(parts.length,'Mệnh đề cuối');
+  return clauses.length>1?clauses:[];
 }

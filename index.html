@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="application-name" content="N5 Master Hub">
-  <meta name="n5-release" content="5.52.5">
+  <meta name="n5-release" content="5.53">
   <meta name="description" content="Học tiếng Nhật JLPT N5 với từ vựng, Kanji, ngữ pháp và Flashcard ngoại tuyến.">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,13 +15,14 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch.png">
-  <title>N5 Master Hub v5.52.5</title>
+  <title>N5 Master Hub v5.53</title>
   <link rel="stylesheet" href="./assets/fonts/v1/fonts.css">
   <script src="./assets/vendor/lucide-1.77.0.min.js" defer></script>
-  <script src="./assets/study-engine.js?v=5.52.5" defer></script>
-  <script src="./assets/smart-study.js?v=5.52.5" defer></script>
-  <script src="./assets/ui/effects.js?v=5.52.5" defer></script>
-  <script src="./pwa.js?v=5.52.5" defer></script>
+  <script src="./assets/study-engine.js?v=5.53" defer></script>
+  <script src="./assets/smart-study.js?v=5.53" defer></script>
+  <script src="./assets/ui/effects.js?v=5.53" defer></script>
+  <script src="./pwa.js?v=5.53" defer></script>
+  <script type="module" src="./assets/ui/reading.js"></script>
   <style>
     :root {
       --n5-heading-font: Inter, "Noto Sans JP", "Hiragino Sans", Meiryo, system-ui, sans-serif;
@@ -1896,15 +1897,15 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 .n5-personal-dialog{width:min(100%,550px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:24px;background:#fff;color:#142437;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 25px 80px #0005;}
 .dark .n5-personal-dialog{background:#142337;color:#e5eef7}.n5-personal-dialog label{display:flex;flex-direction:column;gap:6px;font:600 13px/1.4 system-ui}.n5-personal-dialog input,.n5-personal-dialog select,.n5-personal-dialog textarea,.n5-p-actions select,.n5-p-actions input{width:100%;box-sizing:border-box;border:1px solid #94a3b877;background:#94a3b812;color:inherit;border-radius:12px;padding:10px;font:400 16px/1.4 system-ui;min-width:0}.n5-personal-dialog textarea{resize:vertical}.n5-p-button{padding:10px 13px;border-radius:12px;border:1px solid #94a3b855;background:#94a3b816;color:inherit;font-weight:700;font-size:13px;line-height:1.35;cursor:pointer;min-height:40px}.n5-p-button.primary{background:#0579b5;color:#fff;border-color:transparent}.n5-p-button.retry{background:#fef3c7;color:#92400e;border-color:#fbbf24}.n5-p-button:disabled{opacity:.4;cursor:default}.n5-p-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.n5-p-actions select,.n5-p-actions input{flex:1 1 140px;width:auto}.n5-p-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-top:1px solid #94a3b855;overflow-wrap:anywhere}.n5-p-row>div:first-child{min-width:0;flex:1}.n5-p-study{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;min-height:290px;padding:24px;border:1px solid #7dd3fc;border-radius:24px;background:linear-gradient(145deg,#eefaff,#e6fcf4);color:#16344c;text-align:center;overflow-wrap:anywhere;animation:n5PEnter .2s ease-out}.n5-p-study strong{font-size:clamp(24px,6vw,38px);line-height:1.5}.n5-p-study.answer{background:linear-gradient(140deg,#123449,#075b55);color:#fff}.dark .n5-p-study:not(.answer){background:#193347;color:#eff9ff}.n5-p-add{font-size:12px;white-space:nowrap}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto}.n5-smart-row>.n5-p-actions{justify-content:end}.n5-smart-row>.n5-p-add{grid-column:1/-1;justify-self:end}.n5-smart-row>.n5-p-actions .n5-p-add{white-space:normal}@keyframes n5PEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.n5-p-study{animation:none}}@media(max-width:600px){.n5-personal-overlay{align-items:flex-end;padding:8px}.n5-personal-dialog{max-height:85dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.n5-smart-row:has(.n5-p-add){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.n5-smart-row>.n5-p-actions{grid-column:1/-1}.n5-p-row{align-items:flex-start}.n5-p-row .n5-p-actions{flex-direction:column}}
 </style>
-  <link rel="stylesheet" href="./assets/tailwind.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/search/result.css?v=5.52.5">
-  <link rel="stylesheet" href="./assets/ui/handwriting.css?v=5.52.5">
+  <link rel="stylesheet" href="./assets/tailwind.css?v=5.53">
+  <link rel="stylesheet" href="./assets/search/lookup.css?v=5.53">
+  <link rel="stylesheet" href="./assets/grammar/grammar.css?v=5.53">
+  <link rel="stylesheet" href="./assets/learning/builder.css?v=5.53">
+  <link rel="stylesheet" href="./assets/learning/checker.css?v=5.53">
+  <link rel="stylesheet" href="./assets/ui/premium.css?v=5.53">
+  <link rel="stylesheet" href="./assets/translation/translation.css?v=5.53">
+  <link rel="stylesheet" href="./assets/search/result.css?v=5.53">
+  <link rel="stylesheet" href="./assets/ui/handwriting.css?v=5.53">
 </head>
 <body class="h-full bg-slate-50 dark:bg-jpdark-950 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
   <div id="app" class="flex h-screen overflow-hidden">
@@ -2556,6 +2557,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5HideInstantLookup() {
+      n5LookupUI?.cancelPreview();
       document.getElementById('n5InstantLookup').hidden=true;
     }
 
@@ -2565,12 +2567,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         !document.getElementById('handwritingSearchPanel').open;
     }
 
-    function n5RenderInstantLookup(query,html) {
+    function n5RenderInstantLookup(query,html,mounted) {
       if (!n5CanPreview(query)) return;
       const panel=document.getElementById('n5InstantLookup');
       panel.innerHTML=html;
       panel.dataset.previewQuery=query;
       panel.hidden=!html;
+      if (mounted) void mounted(panel).catch(()=>{});
     }
 
     function n5UpdateLookupInput(value) {
@@ -2696,13 +2699,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function n5LoadLookup() {
-      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.52.5'),n5EnsurePack()]).then(([{createLookupUI}]) => {
+      n5LookupModule ??= Promise.all([import('./assets/search/lookup-ui.js?v=5.53'),n5EnsurePack()]).then(([{createLookupUI}]) => {
         n5LookupUI = createLookupUI({
           sources: () => ({vocab:N5_ALL_VOCAB,kanji:N5_ALL_KANJI,grammar:GRAMMAR_DATA,imported:n5PackRows}),
           dictionaryRevision: () => n5PackRevision,
           current:n5LookupCurrent, rendered:n5LookupRendered, remember:n5RememberLookup,
           canPreview:n5CanPreview, preview:n5RenderInstantLookup, commitPreview:query=>n5SmartSearch(query,true),
-          query:n5SmartSearch, clear:clearGlobalSearch, refresh:() => renderCurrentView(true),
+          goModule:navigateTo, query:n5SmartSearch, clear:clearGlobalSearch, refresh:() => renderCurrentView(true),
           filter:() => state.globalSearchFilter, setFilter:setGlobalSearchFilter,
           saved:n5SmartHistory, save:n5SmartSaveQuery, clearSaved:n5SmartClearHistory,
           recent:n5LookupRecent,
@@ -2714,6 +2717,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
             clearTimeout(n5LookupRecentTimer);
           },
           translate:n5SmartTranslate, translateAI:n5TranslateWithAI,
+          translationAccount:()=>n5CloudSession && !n5CloudReloadRequired?n5CloudSession.user.id:null,
+          translationPending:()=>!!document.getElementById('globalSearchInput').dataset.n5PastePending,
           consumeTranslation:query=>{
             if (n5TranslationSubmitted !== query) return false;
             n5TranslationSubmitted = '';
@@ -2722,6 +2727,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
           openTranslation:(text,direction)=>{n5TranslationDraft={text,direction};navigateTo('translator');},
           audio:playAudio, message:showToast, item:n5LookupItem,
           findVocab:word => N5_ALL_VOCAB.find(item => [item.kanji,item.audio,item.kana].includes(word)),
+          bookmarked:id=>state.bookmarks.includes(id),
+          bookmark:id=>{toggleBookmark(id);return state.bookmarks.includes(id);},
           related:(id,reading) => reading ? N5_ALL_VOCAB.filter(item => item.id !== id &&
             item.kana === reading).slice(0,5) : [],
           examples:n5LookupExamples, strokes:n5OfflineKanjiStrokes, strokePreview:n5HandwritingStrokePreview,
@@ -2812,6 +2819,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     let handwritingRedo = [];
     let handwritingCanvas, handwritingCanvasModule;
     let handwritingRevision = 0;
+    let handwritingLiveTimer = 0;
     const handwritingStrokeTemplateCache = new Map();
     const HANDWRITING_TEMPLATE_STORE = 'n5_handwriting_stroke_templates_v1';
     let handwritingTemplateStore = null;
@@ -2845,6 +2853,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
 
     function invalidateHandwriting(message) {
+      clearTimeout(handwritingLiveTimer);
       handwritingRevision++;
       handwritingBusy(false);
       if (message) handwritingStatus(message);
@@ -2860,7 +2869,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       panel.showModal();
       document.getElementById('handwritingSearchToggle').setAttribute('aria-expanded','true');
       handwritingControls();
-      handwritingCanvasModule ??= import('./assets/ui/handwriting.js?v=5.52.5').then(({createHandwritingCanvas}) => {
+      handwritingCanvasModule ??= import('./assets/ui/handwriting.js?v=5.53').then(({createHandwritingCanvas}) => {
         handwritingCanvas = createHandwritingCanvas(document.getElementById('handwritingSearchCanvas'), {
           getStrokes:() => handwritingStrokes,
           start(stroke) {
@@ -2880,8 +2889,12 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function showHandwritingStrokeCount() {
       handwritingControls();
       handwritingStatus(handwritingStrokes.length ?
-        'Đã ghi nhận ' + handwritingStrokes.length + ' nét. Nhấn Nhận diện để tìm chữ.' :
+        'Đã ghi nhận ' + handwritingStrokes.length + ' nét.' :
         'Viết một chữ Kanji để bắt đầu.');
+      clearTimeout(handwritingLiveTimer);
+      if (handwritingStrokes.length && document.getElementById('handwritingSearchPanel').open) {
+        handwritingLiveTimer=setTimeout(recognizeHandwritingKanji,380);
+      }
     }
 
     function undoHandwritingStroke() {
@@ -2952,7 +2965,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     // A fast 6x6 occupancy filter reduces candidates,
     // then per-stroke Hungarian matching scores the closest shapes.
     let n5HandwritingIndex=null;
-    let n5HandwritingScope='n5';
+    let n5HandwritingScope='smart';
     const n5CourseKanji = new Map(KANJI_DATA.map(x=>[x.kanji,x]));
     async function n5InitHandwritingIndex(){
       if(n5HandwritingIndex)return n5HandwritingIndex;
@@ -2980,16 +2993,19 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       return bins;
     }
     function n5HandwritingFastScore(userBins,userCount,rec,bytes){
-      const bins=new Float32Array(36),start=rec.offset,step=2*N5_KVG_POINT_COUNT;
-      let n=0;
-      // Every other point is sufficient for shortlist filtering.
-      for(let i=0;i<rec.count;i++)for(let p=0;p<N5_KVG_POINT_COUNT;p+=2){
-        const pos=start+i*step+p*2;
-        const x=Math.min(5,(bytes[pos]*6/256)|0),y=Math.min(5,(bytes[pos+1]*6/256)|0);
-        bins[y*6+x]++;n++;
+      if (!rec.bins) {
+        const bins=new Float32Array(36),start=rec.offset,step=2*N5_KVG_POINT_COUNT;
+        let count=0;
+        for(let i=0;i<rec.count;i++)for(let p=0;p<N5_KVG_POINT_COUNT;p+=2){
+          const pos=start+i*step+p*2;
+          const x=Math.min(5,(bytes[pos]*6/256)|0),y=Math.min(5,(bytes[pos+1]*6/256)|0);
+          bins[y*6+x]++;count++;
+        }
+        for(let i=0;i<bins.length;i++)bins[i]/=count;
+        rec.bins=bins;
       }
       let diff=0;
-      for(let k=0;k<36;k++)diff+=Math.abs(userBins[k]-bins[k]/Math.max(1,n));
+      for(let k=0;k<36;k++)diff+=Math.abs(userBins[k]-rec.bins[k]);
       const countDiff=Math.abs(userCount-rec.count)/Math.max(userCount,rec.count,1);
       // Count differences are unreliable when a learner joins two pen strokes.
       // Prioritize the visible silhouette instead of rejecting such writing.
@@ -3010,13 +3026,40 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       // 0.23 = a large distance for normalized characters; clamp outliers.
       return Math.min(1,(nearestAvg(a,b)+nearestAvg(b,a))/.46);
     }
+    function n5HandwritingVariants(user) {
+      const extents=[0,0];
+      for (const line of user) for (const [x,y] of line) {
+        extents[0]=Math.max(extents[0],Math.abs(x-.5));
+        extents[1]=Math.max(extents[1],Math.abs(y-.5));
+      }
+      const axis=extents[0]<extents[1]?0:1;
+      const scale=Math.min(1.43,.42/Math.max(extents[axis],.11));
+      if (scale<1.12) return [];
+      return [1+(scale-1)*.55,scale].map((factor,index)=>{
+        const strokes=user.map(line=>line.map(point=>point.map((value,i)=>
+          i===axis?(value-.5)*factor+.5:value)));
+        return {strokes,bins:n5HandwritingSignature(strokes),penalty:index===0?.018:.032};
+      });
+    }
     // Shared by the Web Worker and synchronous fallback to keep their results identical.
-    function n5RankHandwriting(user,scope,records,bytes){
+    function* n5HandwritingRankSteps(user,scope,records,bytes){
+      const expanded=scope!=='n5';
       const sample=scope==='n5'?records.filter(rec=>rec.course):records;
       const userBins=n5HandwritingSignature(user),uCount=user.length;
-      let candidates=sample.map(rec=>({rec,fast:n5HandwritingFastScore(userBins,uCount,rec,bytes)}));
+      const variants=scope==='smart'?n5HandwritingVariants(user):[];
+      let candidates=[];
+      for (const [index,rec] of sample.entries()) {
+        let fast=n5HandwritingFastScore(userBins,uCount,rec,bytes);
+        let adjusted;
+        for (const variant of variants) {
+          const score=n5HandwritingFastScore(variant.bins,uCount,rec,bytes)+variant.penalty;
+          if (score<fast) {fast=score;adjusted=variant;}
+        }
+        candidates.push({rec,fast,adjusted});
+        if (index%96===95) yield;
+      }
       candidates.sort((a,b)=>a.fast-b.fast);
-      if(scope==='all'){
+      if(expanded){
         // Shape-first shortlist: do not discard a 6-stroke glyph because it
         // was drawn in 3–4 continuous gestures.
         const primary=candidates.slice(0,470);
@@ -3028,23 +3071,32 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       }
       // Stage 2 uses a cheap whole-character ink distance. The expensive
       // stroke assignment is reserved for only the closest shapes.
-      const rough=candidates.map(({rec,fast})=>{
+      const rough=[];
+      for (const [index,{rec,fast,adjusted}] of candidates.entries()) {
         const template=n5DecodeHandwritingStrokes(rec,bytes);
-        const ink=n5HandwritingInkDistance(user,template);
-        return {rec,fast,ink,template,rough:ink*.78+fast*.22};
-      }).sort((a,b)=>a.rough-b.rough);
+        let ink=n5HandwritingInkDistance(user,template);
+        const alternative=adjusted?n5HandwritingInkDistance(adjusted.strokes,template)+adjusted.penalty:Infinity;
+        const corrected=alternative<ink;
+        if (corrected) ink=alternative;
+        rough.push({rec,fast,ink,template,adjusted:corrected?adjusted.strokes:user,rough:ink*.78+fast*.22});
+        if (index%24===23) yield;
+      }
+      rough.sort((a,b)=>a.rough-b.rough);
       const shortlist=rough.slice(0,55),seenFine=new Set(shortlist.map(x=>x.rec.char));
       // Guarantee a few plausible taught glyphs survive the expanded search.
-      if(scope==='all')for(const c of rough.filter(x=>x.rec.course).slice(0,16)){
+      if(expanded)for(const c of rough.filter(x=>x.rec.course).slice(0,16)){
         if(!seenFine.has(c.rec.char)){shortlist.push(c);seenFine.add(c.rec.char);}
       }
-      const ranked=shortlist.map(({rec,fast,ink,template})=>{
-        const stroke=handwritingTemplateDistance(user,template);
+      const ranked=[];
+      for (const [index,{rec,fast,ink,template,adjusted}] of shortlist.entries()) {
+        const stroke=handwritingTemplateDistance(adjusted,template);
         const countGap=Math.abs(uCount-rec.count)/Math.max(uCount,rec.count,1);
-        const distance=ink*.65+stroke*.14+fast*.14+countGap*.07-(scope==='all'&&rec.course?.008:0);
-        return {char:rec.char,course:rec.course,score:Math.max(0,Math.min(1,1-distance))};
-      }).sort((a,b)=>b.score-a.score);
-      const best=ranked.slice(0,9);
+        const distance=ink*.65+stroke*.14+fast*.14+countGap*.07-(expanded&&rec.course?.008:0);
+        ranked.push({char:rec.char,course:rec.course,score:Math.max(0,Math.min(1,1-distance))});
+        if (index%8===7) yield;
+      }
+      ranked.sort((a,b)=>b.score-a.score);
+      const best=ranked.slice(0,10);
       // With extended search, dense/complex glyphs may outrank a simpler N5
       // character by a few points. Show the strongest relevant taught glyph
       // near the top, clearly labeled as a suggestion, never as a certainty.
@@ -3060,6 +3112,23 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         for(const item of known)if(!seen.has(item.char)){best.push({...item,courseSuggestion:true});seen.add(item.char);}
       }
       return {scored:best,sampleCount:sample.length};
+    }
+    function n5RankHandwriting(user,scope,records,bytes) {
+      const steps=n5HandwritingRankSteps(user,scope,records,bytes);
+      let step;
+      do {step=steps.next();} while (!step.done);
+      return step.value;
+    }
+    async function n5RankHandwritingCooperative(user,scope,records,bytes,current) {
+      const steps=n5HandwritingRankSteps(user,scope,records,bytes);
+      while (current()) {
+        const deadline=performance.now()+8;
+        do {
+          const step=steps.next();
+          if (step.done) return step.value;
+        } while (performance.now()<deadline);
+        await new Promise(resolve=>setTimeout(resolve,0));
+      }
     }
     function n5DecodeHandwritingStrokes(record,bytes){
       const lines=[];let at=record.offset;
@@ -3081,6 +3150,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     }
     // v5.36: the large Kanji shape matcher runs off the main UI thread when possible.
     let n5HWWorker=null,n5HWReady=null,n5HWSeq=0;
+    let n5HWQueued;
     const n5HWPending=new Map();
     function n5RunHandwritingWorker(user,scope){
       if(typeof Worker==='undefined'||typeof Blob==='undefined')return Promise.reject(Error('Web Worker không khả dụng'));
@@ -3095,6 +3165,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
               n5HandwritingSignature.toString(),
               n5HandwritingFastScore.toString(),
               n5HandwritingInkDistance.toString(),
+              n5HandwritingVariants.toString(),
+              n5HandwritingRankSteps.toString(),
               n5RankHandwriting.toString(),
               n5DecodeHandwritingStrokes.toString(),
               `let index=null;
@@ -3130,6 +3202,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
             const fail=error=>{
               reject(error);
               n5HWPending.forEach(p=>p.reject(error));n5HWPending.clear();
+              n5HWQueued?.reject(error);n5HWQueued=undefined;
               worker.terminate();
               if(n5HWWorker===worker){n5HWWorker=null;n5HWReady=null;}
             };
@@ -3141,6 +3214,9 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
               n5HWPending.delete(m.id);
               if(m.type==='result')pending.resolve(m);
               else pending.reject(new Error(m.message||'Nhận diện thất bại'));
+              const next=n5HWQueued;
+              n5HWQueued=undefined;
+              next?.dispatch();
             };
             worker.onerror=()=>fail(new Error('Không thể khởi chạy bộ xử lý nền'));
             worker.postMessage({type:'init',url:n5HandwritingTemplateURL,course:[...n5CourseKanji.keys()]});
@@ -3150,12 +3226,19 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         ready.catch(()=>{if(n5HWReady===ready)n5HWReady=null;});
       }
       return n5HWReady.then(worker=>new Promise((resolve,reject)=>{
-        const id=++n5HWSeq;n5HWPending.set(id,{resolve,reject});
-        worker.postMessage({type:'recognize',id,user,scope});
+        const dispatch=()=>{
+          const id=++n5HWSeq;
+          n5HWPending.set(id,{resolve,reject});
+          worker.postMessage({type:'recognize',id,user,scope});
+        };
+        if (n5HWPending.size) {
+          n5HWQueued?.reject(new Error('Có nét viết mới hơn'));
+          n5HWQueued={dispatch,reject};
+        } else dispatch();
       }));
     }
     function setHandwritingScope(scope) {
-      if (scope !== 'n5' && scope !== 'all' || scope === n5HandwritingScope) return;
+      if (!['smart','n5','all'].includes(scope) || scope === n5HandwritingScope) return;
       n5HandwritingScope = scope;
       document.querySelectorAll('[data-n5-handwriting-scope]').forEach(button => {
         const selected = button.dataset.n5HandwritingScope === scope;
@@ -3167,6 +3250,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 
     async function recognizeHandwritingKanji() {
       handwritingCanvas?.stop();
+      clearTimeout(handwritingLiveTimer);
       const panel = document.getElementById('handwritingSearchPanel');
       const out = document.getElementById('handwritingSearchResults');
       const user = handwritingNormalizeStrokes(handwritingStrokes);
@@ -3187,7 +3271,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
           if (!current()) return;
           const {bytes,records} = await n5InitHandwritingIndex();
           if (!current()) return;
-          result = n5RankHandwriting(user,scope,records,bytes);
+          result = await n5RankHandwritingCooperative(user,scope,records,bytes,current);
         }
         if (!current()) return;
         const {scored,sampleCount} = result;
@@ -3197,7 +3281,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         const hint = weak && scope === 'n5' ?
           `<aside class="n5-handwriting-hint"><p class="n5-handwriting-note">Chữ này có thể nằm ngoài bài N5. Bạn có thể thử kho mở rộng hoặc viết rõ nét hơn.</p>
           <button class="n5-handwriting-button" type="button" onclick="setHandwritingScope('all')">Thử kho mở rộng</button></aside>` : '';
-        out.innerHTML = `<p class="n5-handwriting-note">${scope === 'n5' ? 'Trong bài N5' : 'Kho mở rộng'} · ${sampleCount.toLocaleString('vi-VN')} mẫu ngoại tuyến</p>
+        const scopeLabel={smart:'Thông minh',n5:'Trong bài N5',all:'Kho mở rộng'}[scope];
+        out.innerHTML = `<p class="n5-handwriting-note">${scopeLabel} · ${sampleCount.toLocaleString('vi-VN')} mẫu ngoại tuyến</p>
           ${hint}<p class="n5-handwriting-note">${weak || close ? 'Một số chữ có hình dạng gần nhau. Hãy chọn chữ bạn định viết.' : 'Chọn một chữ để xem nghĩa và từ liên quan.'}</p>
           <div class="n5-handwriting-candidates">${scored.map((candidate,index) => {
             const item = n5LookupItem('kanji-char',candidate.char);
@@ -4780,7 +4865,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
                       ${item.examples.map(ex => `
                         <div class="grammar-example-row p-3 bg-slate-50/50 dark:bg-jpdark-800/40 rounded-xl gap-3">
                           <div class="grammar-example-text space-y-1 min-w-0 flex-1">
-                            <p class="grammar-example-jp text-base font-bold text-slate-900 dark:text-white font-jp jp-example break-words">${ex.jp}</p>
+                            <p lang="ja" data-n5-tappable tabindex="0" class="grammar-example-jp text-base font-bold text-slate-900 dark:text-white font-jp jp-example break-words">${ex.jp}</p>
                             ${ex.kana ? `<p class="text-xs text-slate-500 font-jp break-words">${ex.kana}</p>` : ''}
                             <p class="grammar-example-translation ${ex.vi ? '' : 'hidden'}">👉 ${ex.vi || ''}</p>
                             ${!ex.vi ? `<p class="grammar-example-translation text-xs" data-grammar-translate="1" data-source="${encodeURIComponent(String(ex.jp || '').replace(/<br\s*\/?>(?=.)/gi, '。').replace(/<rt[^>]*>[\s\S]*?<\/rt>/gi, '').replace(/<[^>]+>/g, '').trim())}">Đang chuẩn bị bản dịch…</p>` : ''}
@@ -6225,8 +6310,9 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       <label class="block p-4 rounded-2xl border border-dashed border-sky-400 text-center cursor-pointer">Chọn file JSON để khôi phục<input type="file" accept="application/json,.json" onchange="importHubData(event)" class="block mt-3 w-full text-sm"></label>
       <p class="text-xs text-amber-700 dark:text-amber-300">Khôi phục sẽ thay thế tiến độ hiện có. Hệ thống yêu cầu xác nhận và kiểm tra file trước khi ghi dữ liệu.</p>
       <p class="text-xs text-slate-500">Mẹo: file sao lưu chứa thông tin cá nhân và lịch học.</p>
-      <div id="n5-pwa-panel"></div>${n5CloudPanel()}${n5PackRender()}</div>`;
+      <div id="n5-pwa-panel"></div><section class="n5-reading-settings" data-n5-reading-settings></section>${n5CloudPanel()}${n5PackRender()}</div>`;
       window.n5Pwa?.mount();
+      import('./assets/ui/reading.js').then(({mountReadingPreferences})=>mountReadingPreferences(container.querySelector('[data-n5-reading-settings]'))).catch(()=>{});
     }
     /* v5.44 — personal notebooks and independent flashcard scheduling */
     const n5PersonalBlank=()=>({decks:[{id:'pd_inbox',name:'Từ vựng của tôi'}],cards:[]});
@@ -6288,7 +6374,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5BackupPayload(){
       const smartStudy = window.n5SmartStudy?.snapshot();
       const uiEffects = n5SavedEffects();
-      return {version:'N5Hub-5.52.5',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
+      return {version:'N5Hub-5.53',searchHistory:n5SmartHistory(),personalCards:state.personalCards,exportedAt:new Date().toISOString(),bookmarks:[...state.bookmarks],
         completedItems:[...state.completedItems],ttsRate:state.ttsRate,reviewData:state.reviewData,
         mistakes:state.mistakes,studyLog:state.studyLog,lastPosition:state.lastPosition,
         ...(uiEffects === undefined ? {} : {uiEffects}),
@@ -6900,7 +6986,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
 
     function renderReadingHub(container) {
       const p=currentReadingPassage();
-      container.innerHTML=`<div class="max-w-3xl mx-auto space-y-5"><div><p class="text-xs uppercase tracking-wider font-bold text-violet-600">読解 · N5</p><h1 class="text-2xl font-extrabold">Luyện đọc hiểu N5</h1><p class="text-sm text-slate-500 mt-1">Đọc đoạn văn, chọn đáp án, sau đó xem bản dịch và giải thích.</p></div><div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-500">Bài ${readingIndex+1} / ${READING_PRACTICE_SET.length}</span><span class="text-xs px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300">${studyEscape(p.level)}</span></div><article class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 space-y-4"><h2 class="font-bold text-lg">${studyEscape(p.title)}</h2><p class="text-xl sm:text-2xl leading-relaxed font-jp whitespace-pre-line">${studyEscape(p.jp)}</p><div class="flex flex-wrap gap-2"><button onclick="playAudio(${studyJsStringArg(p.jp)})" class="px-3 py-2 rounded-xl bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 text-sm font-semibold">Nghe đoạn văn</button></div><div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3"><h3 class="font-bold">${studyEscape(p.question)}</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${p.options.map((opt,i)=>`<button ${readingAnswered?'disabled':''} onclick="answerReading(${i})" class="p-3 rounded-xl border text-left ${readingAnswered && i===p.correct?'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20':readingAnswered && i===window.__readingSelected?'border-rose-400 bg-rose-50 dark:bg-rose-950/20':'border-slate-200 dark:border-slate-700 hover:border-violet-400'}">${String.fromCharCode(65+i)}. ${studyEscape(opt)}</button>`).join('')}</div></div>${readingAnswered?`<div class="p-4 rounded-2xl bg-violet-50 dark:bg-violet-950/20 space-y-2"><p class="font-bold ${window.__readingLastCorrect?'text-emerald-700':'text-rose-600'}">${window.__readingLastCorrect?'Chính xác!':'Chưa đúng. Đáp án đúng: '+studyEscape(p.options[p.correct])}</p><p class="text-sm">${studyEscape(p.explanation)}</p><p class="text-sm text-slate-600 dark:text-slate-300">${studyEscape(p.vi)}</p><p class="text-xs text-slate-500">${studyEscape(p.vocab)}</p></div><button onclick="nextReadingPassage()" class="w-full p-3 rounded-xl bg-violet-600 text-white font-bold">Đoạn tiếp theo</button>`:''}</article></div>`;
+      container.innerHTML=`<div class="max-w-3xl mx-auto space-y-5"><div><p class="text-xs uppercase tracking-wider font-bold text-violet-600">読解 · N5</p><h1 class="text-2xl font-extrabold">Luyện đọc hiểu N5</h1><p class="text-sm text-slate-500 mt-1">Đọc đoạn văn, chọn đáp án, sau đó xem bản dịch và giải thích.</p></div><div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-500">Bài ${readingIndex+1} / ${READING_PRACTICE_SET.length}</span><span class="text-xs px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300">${studyEscape(p.level)}</span></div><article class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 space-y-4"><h2 class="font-bold text-lg">${studyEscape(p.title)}</h2><p lang="ja" data-n5-tappable tabindex="0" class="text-xl sm:text-2xl leading-relaxed font-jp whitespace-pre-line">${studyEscape(p.jp)}</p><div class="flex flex-wrap gap-2"><button onclick="playAudio(${studyJsStringArg(p.jp)})" class="px-3 py-2 rounded-xl bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 text-sm font-semibold">Nghe đoạn văn</button></div><div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3"><h3 class="font-bold">${studyEscape(p.question)}</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${p.options.map((opt,i)=>`<button ${readingAnswered?'disabled':''} onclick="answerReading(${i})" class="p-3 rounded-xl border text-left ${readingAnswered && i===p.correct?'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20':readingAnswered && i===window.__readingSelected?'border-rose-400 bg-rose-50 dark:bg-rose-950/20':'border-slate-200 dark:border-slate-700 hover:border-violet-400'}">${String.fromCharCode(65+i)}. ${studyEscape(opt)}</button>`).join('')}</div></div>${readingAnswered?`<div class="p-4 rounded-2xl bg-violet-50 dark:bg-violet-950/20 space-y-2"><p class="font-bold ${window.__readingLastCorrect?'text-emerald-700':'text-rose-600'}">${window.__readingLastCorrect?'Chính xác!':'Chưa đúng. Đáp án đúng: '+studyEscape(p.options[p.correct])}</p><p class="text-sm">${studyEscape(p.explanation)}</p><p class="text-sm text-slate-600 dark:text-slate-300">${studyEscape(p.vi)}</p><p class="text-xs text-slate-500">${studyEscape(p.vocab)}</p></div><button onclick="nextReadingPassage()" class="w-full p-3 rounded-xl bg-violet-600 text-white font-bold">Đoạn tiếp theo</button>`:''}</article></div>`;
       lucide.createIcons();
     }
     function answerReading(index){if(readingAnswered)return;const p=currentReadingPassage();readingAnswered=true;window.__readingSelected=index;window.__readingLastCorrect=index===p.correct;window.n5SmartStudy?.record(p.id,'reading','choice',index===p.correct?'correct':'incorrect');if(index!==p.correct)addStudyMistake({id:'reading_'+p.id,type:'reading',question:p.jp+' | '+p.question,chosenAnswer:p.options[index],correctAnswer:p.options[p.correct],explanation:p.explanation});renderReadingHub(document.getElementById('mainContainer'));}
@@ -6909,7 +6995,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function renderListeningHub(container){
       const p=currentListeningPassage();
       const transcriptVisible=listeningTranscriptVisible||listeningAnswered;
-      container.innerHTML=`<div class="max-w-3xl mx-auto space-y-5"><div><p class="text-xs uppercase tracking-wider font-bold text-sky-600">聴解 · N5</p><h1 class="text-2xl font-extrabold">Luyện nghe JLPT N5</h1><p class="text-sm text-slate-500 mt-1">Nghe hội thoại, trả lời câu hỏi khi chưa xem phụ đề. Âm thanh hiện được tạo bằng TTS tiếng Nhật trên trình duyệt, không phải audio đề thi chính thức.</p></div><div class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 space-y-4"><div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-500">Bài ${listeningIndex+1} / ${LISTENING_PRACTICE_SET.length}</span><span class="text-xs px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/30 text-sky-700">${studyEscape(p.level)}</span></div><h2 class="font-bold text-lg">${studyEscape(p.title)}</h2><div class="p-6 rounded-2xl bg-slate-50 dark:bg-jpdark-800 text-center space-y-3"><i data-lucide="headphones" class="w-10 h-10 mx-auto text-sky-500"></i><button onclick="playAudio(${studyJsStringArg(p.audio)})" class="px-5 py-3 rounded-xl bg-sky-600 text-white font-bold">▶ Phát hội thoại</button><p class="text-xs text-slate-500">Có thể nghe lại nhiều lần. Điều chỉnh tốc độ ở thanh bên.</p></div><div class="flex flex-wrap gap-2"><button onclick="toggleListeningTranscript()" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">${transcriptVisible?'Ẩn phụ đề':'Hiện phụ đề'}</button></div>${transcriptVisible?`<div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-sm"><p class="font-semibold">${studyEscape(p.audio)}</p><p class="text-slate-600 dark:text-slate-300 mt-2">${studyEscape(p.transcript)}</p></div>`:''}<div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3"><h3 class="font-bold">${studyEscape(p.question)}</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${p.options.map((opt,i)=>`<button ${listeningAnswered?'disabled':''} onclick="answerListening(${i})" class="p-3 rounded-xl border text-left ${listeningAnswered && i===p.correct?'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20':listeningAnswered && i===window.__listeningSelected?'border-rose-400 bg-rose-50 dark:bg-rose-950/20':'border-slate-200 dark:border-slate-700 hover:border-sky-400'}">${String.fromCharCode(65+i)}. ${studyEscape(opt)}</button>`).join('')}</div></div>${listeningAnswered?`<div class="p-4 rounded-xl bg-sky-50 dark:bg-sky-950/20"><p class="font-bold ${window.__listeningLastCorrect?'text-emerald-700':'text-rose-600'}">${window.__listeningLastCorrect?'Chính xác!':'Chưa đúng. Đáp án: '+studyEscape(p.options[p.correct])}</p><p class="text-sm mt-1">${studyEscape(p.explanation)}</p></div><button onclick="nextListeningPassage()" class="w-full p-3 rounded-xl bg-sky-600 text-white font-bold">Bài nghe tiếp theo</button>`:''}</div></div>`;
+      container.innerHTML=`<div class="max-w-3xl mx-auto space-y-5"><div><p class="text-xs uppercase tracking-wider font-bold text-sky-600">聴解 · N5</p><h1 class="text-2xl font-extrabold">Luyện nghe JLPT N5</h1><p class="text-sm text-slate-500 mt-1">Nghe hội thoại, trả lời câu hỏi khi chưa xem phụ đề. Âm thanh hiện được tạo bằng TTS tiếng Nhật trên trình duyệt, không phải audio đề thi chính thức.</p></div><div class="p-5 sm:p-7 rounded-3xl bg-white dark:bg-jpdark-900 border border-slate-200 dark:border-slate-800 space-y-4"><div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-500">Bài ${listeningIndex+1} / ${LISTENING_PRACTICE_SET.length}</span><span class="text-xs px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/30 text-sky-700">${studyEscape(p.level)}</span></div><h2 class="font-bold text-lg">${studyEscape(p.title)}</h2><div class="p-6 rounded-2xl bg-slate-50 dark:bg-jpdark-800 text-center space-y-3"><i data-lucide="headphones" class="w-10 h-10 mx-auto text-sky-500"></i><button onclick="playAudio(${studyJsStringArg(p.audio)})" class="px-5 py-3 rounded-xl bg-sky-600 text-white font-bold">▶ Phát hội thoại</button><p class="text-xs text-slate-500">Có thể nghe lại nhiều lần. Điều chỉnh tốc độ ở thanh bên.</p></div><div class="flex flex-wrap gap-2"><button onclick="toggleListeningTranscript()" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">${transcriptVisible?'Ẩn phụ đề':'Hiện phụ đề'}</button></div>${transcriptVisible?`<div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-sm"><p class="font-semibold" lang="ja" data-n5-tappable tabindex="0">${studyEscape(p.audio)}</p><p class="text-slate-600 dark:text-slate-300 mt-2">${studyEscape(p.transcript)}</p></div>`:''}<div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3"><h3 class="font-bold">${studyEscape(p.question)}</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${p.options.map((opt,i)=>`<button ${listeningAnswered?'disabled':''} onclick="answerListening(${i})" class="p-3 rounded-xl border text-left ${listeningAnswered && i===p.correct?'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20':listeningAnswered && i===window.__listeningSelected?'border-rose-400 bg-rose-50 dark:bg-rose-950/20':'border-slate-200 dark:border-slate-700 hover:border-sky-400'}">${String.fromCharCode(65+i)}. ${studyEscape(opt)}</button>`).join('')}</div></div>${listeningAnswered?`<div class="p-4 rounded-xl bg-sky-50 dark:bg-sky-950/20"><p class="font-bold ${window.__listeningLastCorrect?'text-emerald-700':'text-rose-600'}">${window.__listeningLastCorrect?'Chính xác!':'Chưa đúng. Đáp án: '+studyEscape(p.options[p.correct])}</p><p class="text-sm mt-1">${studyEscape(p.explanation)}</p></div><button onclick="nextListeningPassage()" class="w-full p-3 rounded-xl bg-sky-600 text-white font-bold">Bài nghe tiếp theo</button>`:''}</div></div>`;
       lucide.createIcons();
     }
     function toggleListeningTranscript(){listeningTranscriptVisible=!listeningTranscriptVisible;renderListeningHub(document.getElementById('mainContainer'));}
@@ -7197,6 +7283,10 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         else field?.focus();
       });
 
+      import('./assets/search/tap-lookup.js').then(({bindTapLookup})=>bindTapLookup((text,offset,source,current)=>
+        n5LoadLookup().then(lookup=>{if(current())return lookup.inspectText(text,offset,source,current);})
+      )).catch(()=>{});
+
       // Global Search Input Listener
       const globalSearch = document.getElementById('globalSearchInput');
       globalSearch.addEventListener('compositionstart', () => {
@@ -7214,6 +7304,9 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         updateTopSearchClearButton();
         if (globalSearchIsComposing || e.isComposing) return;
         n5UpdateLookupInput(e.target.value);
+      });
+      globalSearch.addEventListener('n5-paste-resolved',()=>{
+        if (!globalSearchIsComposing && document.activeElement===globalSearch) n5UpdateLookupInput(globalSearch.value);
       });
       globalSearch.addEventListener('focus', () => {
         n5ShowLookupRecent();
@@ -7236,10 +7329,13 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         } else if (event.key === 'ArrowDown' && n5LookupUI?.focusFirstResult()) event.preventDefault();
       });
       document.addEventListener('keydown',event => {
-        if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k' ||
-            event.isComposing || globalSearchIsComposing) return;
+        if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 'k' ||
+            event.isComposing || globalSearchIsComposing || event.defaultPrevented || event.repeat ||
+            document.querySelector('dialog[open]:not(.n5-lookup-dialog)')) return;
         event.preventDefault();
-        if (!n5LookupUI?.focusDialogSearch()) focusN5Search();
+        if (n5LookupUI?.focusDialogSearch()) return;
+        const origin=document.activeElement;
+        n5LoadLookup().then(lookup=>lookup.openPalette(origin)).catch(focusN5Search);
       });
       const recentLookup = document.getElementById('n5LookupRecent');
       recentLookup.addEventListener('click', event => {
@@ -7415,7 +7511,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const history=p.searchHistory===undefined?[]:p.searchHistory;
       if(!Array.isArray(history)||history.length>15||history.some(x=>typeof x!=='string'||x.length>2000))throw Error('Lịch sử tìm kiếm không hợp lệ.');
       if(JSON.stringify(p).length>5*1024*1024)throw Error('Bản đồng bộ vượt giới hạn 5 MB.');
-      return {version:'N5Hub-5.52.5',...validated,searchHistory:history};
+      return {version:'N5Hub-5.53',...validated,searchHistory:history};
     }
     function n5CloudRememberBase(row,p){
       n5CloudBase={uid:n5CloudSession.user.id,revision:Number(row.revision),sig:n5CloudSignature(p),updated:row.updated_at||new Date().toISOString(),auto:n5CloudEnabled};
@@ -7466,7 +7562,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
       const controller = new AbortController();
       const stop = () => controller.abort();
       signal.addEventListener('abort',stop,{once:true});
-      const timer = setTimeout(stop,16_000);
+      const timer = setTimeout(stop,payload.text.length>320?44_000:16_000);
       try {
         const response = await fetch(N5_CLOUD_URL+'/functions/v1/smart-translate',{
           method:'POST',cache:'no-store',signal:controller.signal,
@@ -7628,7 +7724,7 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
     function n5CloudPanel(){
       const esc=studyEscape,button='rounded-xl px-4 py-3 text-sm font-bold';
       return `<section id="n5-cloud-panel" class="rounded-3xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 space-y-3">
-        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.52.5</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
+        <div><p class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300">Cloud Sync · v5.53</p><h2 class="text-xl font-extrabold">Tài khoản & đồng bộ</h2></div>
         <p id="n5-cloud-status" role="status" class="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-3 text-sm leading-relaxed">${esc(n5CloudText)}</p>
         ${n5CloudSession?`<p class="text-sm break-all">Đăng nhập: <b>${esc(n5CloudSession.user.email||'Tài khoản của bạn')}</b></p>
         <button type="button" onclick="n5CloudSync()" class="w-full ${button} bg-sky-600 text-white">Đồng bộ ngay</button>
@@ -7665,7 +7761,8 @@ html.dark .n5-kanji-profile-btn{color:#7dd3fc;background:rgba(14,165,233,.10)}
         <section class="n5-handwriting-results" aria-labelledby="n5-handwriting-results-title">
           <h3 id="n5-handwriting-results-title">Kết quả nhận diện</h3>
           <div class="n5-handwriting-scope" role="group" aria-label="Phạm vi nhận diện Kanji">
-            <button type="button" class="n5-handwriting-button" data-n5-handwriting-scope="n5" aria-pressed="true" onclick="setHandwritingScope('n5')">Trong bài N5</button>
+            <button type="button" class="n5-handwriting-button" data-n5-handwriting-scope="smart" aria-pressed="true" onclick="setHandwritingScope('smart')">Thông minh</button>
+            <button type="button" class="n5-handwriting-button" data-n5-handwriting-scope="n5" aria-pressed="false" onclick="setHandwritingScope('n5')">Trong bài N5</button>
             <button type="button" class="n5-handwriting-button" data-n5-handwriting-scope="all" aria-pressed="false" onclick="setHandwritingScope('all')">Kho mở rộng</button>
           </div>
           <div id="handwritingSearchResults" aria-live="polite"><p class="n5-handwriting-note">Viết một chữ Kanji để bắt đầu.</p></div>

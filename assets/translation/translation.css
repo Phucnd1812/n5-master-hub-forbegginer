@@ -25,3 +25,11 @@
 .n5-translation [data-translation-result]:empty, .n5-translation [role=status]:empty { display: none; }
 .n5-translation-result, .n5-translation details[open] { display: grid; gap: .42rem; }
 .n5-translation .n5-lookup-chip:disabled { opacity: .6; }
+
+.n5-translation-output { white-space: pre-wrap; font-weight: 600; }
+.n5-result-source [data-n5-tappable] { white-space: pre-wrap; }
+[data-translation-document]:empty { display: none; }
+[data-translation-document] ol { display: grid; gap: .4rem; margin: .45rem 0; }
+[data-translation-document] button { text-align: start; overflow-wrap: anywhere; }
+#n5InstantLookup .n5-translation { padding: .45rem .65rem; gap: .2rem; }
+[data-preview-translation]:empty { display: none; }

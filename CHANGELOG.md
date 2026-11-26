@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.53 — Intelligent Dictionary, Hybrid Translation & Native Experience
+
+- Nhận diện Kanji tự động sau khi dừng viết. Phạm vi Thông minh kết hợp kho giáo trình với 6.703 mẫu ngoại tuyến và so khớp cả khi tỷ lệ nét hơi lệch. Giữ phạm vi N5 và nút Nhận diện thủ công.
+- Dịch các đoạn có nhiều câu bằng bộ dịch cục bộ và bộ nhớ đã có. Chế độ Tự động thông minh gửi văn bản đủ điều kiện đến Gemini khi bản dịch cục bộ thiếu căn cứ. Hỗ trợ tối đa 3.000 ký tự trong công cụ Dịch với Edge Function được cập nhật.
+- Xem nghĩa chính, âm đọc, từ loại và cách chia trong thẻ từ điển. Có thể chọn từ trong câu ví dụ, bài đọc, hội thoại và câu dịch để tra ngay.
+- Mở rộng thẻ chi tiết trên mobile bằng thanh nắm, dùng Ctrl+K hoặc ⌘+K để tra cứu và mở công cụ, chỉnh cỡ chữ, khoảng cách dòng, furigana, Romaji và mật độ trong phần Cài đặt.
+- Cập nhật PWA và kiểm thử nâng cấp từ v5.52.5. [Kết quả và cách cập nhật Edge Function](docs/v5.53-review.md)
+
 ## v5.52.5 — Complete Dictionary & Kanji Expansion
 
 - Mở rộng kho từ JMdict và Kanji KANJIDIC2. Nhóm từ đồng âm có danh sách đầy đủ theo từng lượt, giữ riêng từ gốc và dạng chia. Bổ sung thứ tự nét KanjiVG tải theo nhu cầu, có phát, tạm dừng và phát lại.

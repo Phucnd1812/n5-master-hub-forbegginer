@@ -548,7 +548,12 @@ test('Grammar Checker separates rule errors from uncertainty and reopens the sav
 test('Spotlight keyboard navigation opens the knowledge map and a contextual conjugation', {timeout:60_000}, async t => {
   const {page} = await openApp(t,{viewport:{width:1280,height:800}});
   await page.keyboard.press('Control+k');
-  await page.waitForFunction(() => document.activeElement?.id === 'globalSearchInput');
+  const palette=page.getByRole('dialog',{name:'Tra cứu và đi nhanh'});
+  await palette.getByRole('searchbox').waitFor();
+  await palette.getByRole('searchbox').press('ArrowDown');
+  await page.waitForFunction(()=>document.activeElement?.dataset.value==='translator');
+  await page.keyboard.press('Escape');
+  await palette.waitFor({state:'hidden'});
   await lookup(page,'飲む');
   await page.locator('#globalSearchInput').press('ArrowDown');
   await page.waitForFunction(() => document.activeElement?.matches('[data-result-id] button.n5-lookup-title'));
@@ -1197,7 +1202,7 @@ test('hybrid translation preserves local search, memory, and offline history', {
   assert.equal(await page.locator('[data-translation-result]').count(),0);
   await go(page,'translator');
   const tool=page.locator('[data-n5-translation-tool]');
-  const input=tool.getByRole('textbox',{name:'Câu cần dịch'});
+  const input=tool.getByRole('textbox',{name:'Văn bản cần dịch'});
   await input.fill('Tôi muốn đi Nhật Bản.');
   await tool.getByRole('button',{name:'Dịch câu',exact:true}).click();
   await tool.getByText('日本へ行きたいです。',{exact:true}).waitFor();
@@ -1225,9 +1230,10 @@ test('hybrid translation preserves local search, memory, and offline history', {
   await history.getByText('Chưa có bản dịch đã lưu.',{exact:true}).waitFor();
 });
 
-test('AI translation is opt-in, cached, cancellable, and renders provider text safely', {timeout:90_000}, async t => {
+test('AI respects manual mode, caches and cancels requests, and renders provider text safely', {timeout:90_000}, async t => {
   const {page}=await openApp(t);
-  let calls=0, status=200, error='quota', hold=false, releaseHold;
+  let calls=0, status=200, error='', hold=false, releaseHold;
+  await page.evaluate(()=>localStorage.setItem('n5_translation_mode_v1','request'));
   let notifyHold;
   const receivedHeldRequest=new Promise(resolve=>{notifyHold=resolve;});
   const {translationSchema}=await import('../../assets/translation/protocol.js');
@@ -1265,9 +1271,6 @@ test('AI translation is opt-in, cached, cancellable, and renders provider text s
   await page.evaluate(()=>{
     n5CloudStoreSession({access_token:'session-test',refresh_token:'refresh-test',user:{id:'test-user'},expires_in:3600});
   });
-  status=429;
-  await ai.click();
-  await inline.getByText(/Đã chạm giới hạn/).waitFor();
   status=403;
   error='forbidden';
   await ai.click();
@@ -1312,12 +1315,11 @@ test('AI translation is opt-in, cached, cancellable, and renders provider text s
   const search=page.locator('#globalSearchInput');
   hold=true;
   await search.fill('世界の天体を観測して分析してください。');
-  await page.locator('#n5InstantLookup:not([hidden])').waitFor();
-  await inline.getByText(/Bản dịch đối chiếu/).waitFor();
-  assert.equal(calls,used);
-  await search.press('Enter');
-  await inline.getByText('Đang dịch…',{exact:true}).waitFor();
+  const preview=page.locator('#n5InstantLookup:not([hidden])');
+  await preview.getByText('Đang dịch bằng Gemini…',{exact:true}).waitFor();
   await receivedHeldRequest;
+  assert.equal(calls,used+1);
+  await inline.getByText(/Bản dịch đối chiếu/).waitFor();
   await search.fill('テレビを見ています。');
   await search.press('Enter');
   await inline.getByText('Đang xem TV.',{exact:true}).waitFor();
@@ -1509,7 +1511,7 @@ test('handwriting dialog keeps controls visible and scrolls internally at normal
       .map(stroke=>stroke.map(([x,y])=>[x*480,y*480]));
     handwritingCanvas.redraw();
   });
-  await recognize.click();
+  await panel.getByRole('button',{name:'Trong bài N5',exact:true}).click();
   const expand = panel.getByRole('button',{name:'Thử kho mở rộng'});
   await expand.waitFor();
   assert.match(await panel.locator('#handwritingSearchResults').innerText(),/161 mẫu ngoại tuyến/);
@@ -1621,9 +1623,7 @@ test('mobile handwriting accepts touch, supports offline lookup, and keeps homop
       fire(pointerId===51?'pointercancel':'pointerup',stroke.at(-1));
     }
   });
-  await dialog.getByText(/Đã ghi nhận 12 nét/).waitFor();
-  await dialog.getByRole('button',{name:'Nhận diện',exact:true}).tap();
-  await dialog.getByRole('button',{name:'Thử kho mở rộng'}).tap();
+  assert.equal(await dialog.locator('[data-n5-handwriting-scope="smart"]').getAttribute('aria-pressed'),'true');
   await dialog.locator('[data-handwriting-char="着"]').tap();
   await page.locator('[data-lookup-query="着"]').waitFor();
   const input = page.locator('#globalSearchInput');
@@ -1753,4 +1753,146 @@ test('grammar Q&A and exact expanded stroke data remain available offline once c
   await question.locator('[data-qa-reply]').fill('図書館で勉強します。');
   await question.getByRole('button',{name:'Kiểm tra câu trả lời'}).click();
   assert.equal(await dialog.locator('[data-n5-checker] textarea').inputValue(),'図書館で勉強します。');
+});
+
+test('default automatic translation handles paragraphs without Enter and guards quota and modes', {timeout:120_000}, async t => {
+  const {page}=await openApp(t);
+  await page.evaluate(()=>n5CloudStoreSession({
+    access_token:'session-test',refresh_token:'refresh-test',user:{id:'test-user'},expires_in:3600,
+  }));
+  const calls=[];
+  const {translationSchema}=await import('../../assets/translation/protocol.js');
+  const shell=Object.fromEntries(translationSchema.required.map(key=>[key,translationSchema.properties[key].type==='array'?[]:'']));
+  let exhausted=false;
+  mockCloud=async (request,response,url)=>{
+    assert.equal(url.pathname,mockPath+'/functions/v1/smart-translate');
+    let body='';
+    for await (const chunk of request) body+=chunk;
+    const {text,direction}=JSON.parse(body);
+    calls.push({text,direction});
+    response.writeHead(exhausted?429:200,{'Content-Type':'application/json'}).end(JSON.stringify(exhausted?{error:'quota'}:{
+      ...shell,detectedLanguage:direction==='vi-ja'?'vi':'ja',originalText:text,model:'gemini-test',
+      translatedText:'Bản dịch thử nghiệm toàn đoạn.',japaneseText:text,
+      literalTranslation:'Bản dịch sát nghĩa.',sentenceStructure:['Phân tích cấu trúc thử nghiệm.'],
+    }));
+  };
+  t.after(()=>{mockCloud=null;});
+  const search=page.locator('#globalSearchInput');
+  const preview=page.locator('#n5InstantLookup');
+  await search.fill('玄関');
+  await preview.getByText(/lối vào nhà/).first().waitFor();
+  await search.fill('テレビを見ています。');
+  await preview.getByText('Đang xem TV.',{exact:true}).waitFor();
+  assert.equal(calls.length,0);
+  const phrase='昨日は雨が降っていたので、家で日本語を勉強してから、友達と電話で話しました。';
+  const passage=Array(10).fill(phrase).join('\n\n');
+  await search.dispatchEvent('compositionstart');
+  await search.fill(phrase);
+  await page.waitForTimeout(1000);
+  assert.equal(calls.length,0);
+  await search.dispatchEvent('compositionend');
+  await preview.getByText('Bản dịch thử nghiệm toàn đoạn.',{exact:true}).waitFor();
+  assert.equal(calls.length,1);
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),'dashboard');
+  await search.press('Enter');
+  const inline=page.locator('[data-n5-translation-slot]');
+  await inline.getByText(/Bản dịch đã lưu/).first().waitFor();
+  assert.equal(calls.length,1);
+  await go(page,'translator');
+  const tool=page.locator('[data-n5-translation-tool]');
+  const input=tool.locator('[name="text"]');
+  await input.fill(passage);
+  await tool.locator('[data-translation-result]').getByText('Bản dịch thử nghiệm toàn đoạn.',{exact:true}).waitFor();
+  assert.deepEqual(calls.at(-1),{text:passage,direction:'ja-vi'});
+  assert.equal(calls.length,2);
+  await input.fill('日'.repeat(3001));
+  await tool.getByText(/3\.000 ký tự/).last().waitFor();
+  assert.equal((await input.inputValue()).length,3001);
+  assert.equal(calls.length,2);
+  exhausted=true;
+  await input.fill('日本語を勉強しているので、毎日日本のニュースを読むようにしています。');
+  await tool.getByText(/Đã chạm giới hạn/).waitFor();
+  await input.fill('日本へ行ったことはありませんが、いつか行きたいと思っています。');
+  await tool.getByText(/Đã chạm giới hạn/).waitFor();
+  assert.equal(calls.length,3);
+  await tool.getByText('Thiết lập AI và lịch sử bản dịch',{exact:true}).click();
+  await tool.locator('[data-translation-mode]').selectOption('offline');
+  await input.fill('時間があれば、駅の近くにある本屋へ行って、日本語の本を買いたいです。');
+  await tool.getByText(/Chưa đủ căn cứ/).waitFor();
+  assert.equal(calls.length,3);
+});
+
+test('lookup opens from Japanese text and the mobile sheet and reading settings preserve study context', {timeout:120_000}, async t => {
+  const {page}=await openApp(t,{...playwright.devices['iPhone 13'],colorScheme:'dark'});
+  await go(page,'reading');
+  const paragraph=page.locator('[data-n5-tappable]').first();
+  await paragraph.waitFor();
+  const snapshot=await page.locator('#mainContainer').getAttribute('data-n5-page');
+  await paragraph.press('Enter');
+  const dialog=page.getByRole('dialog');
+  await dialog.locator('[data-context-result]').waitFor();
+  await dialog.locator('button[data-lookup="part"]').first().click();
+  const handle=dialog.getByRole('button',{name:'Mở rộng chi tiết',exact:true});
+  await handle.click();
+  assert.equal(await dialog.locator('.n5-sheet-grab').getAttribute('aria-expanded'),'true');
+  await dialog.getByRole('button',{name:'Quay lại',exact:true}).click();
+  await dialog.locator('[data-context-result]').waitFor();
+  await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+  assert.equal(await page.locator('#mainContainer').getAttribute('data-n5-page'),snapshot);
+  await page.evaluate(()=>{
+    const example=document.createElement('p');
+    example.id='test-tap-sample';
+    example.dataset.n5Tappable='';
+    example.lang='ja';
+    example.tabIndex=0;
+    example.textContent='日本語を勉強しています。';
+    document.querySelector('#mainContainer').prepend(example);
+  });
+  const sample=page.locator('#test-tap-sample');
+  const point=await sample.evaluate(node=>{
+    const range=document.createRange();
+    range.setStart(node.firstChild,5);range.setEnd(node.firstChild,6);
+    const hit=range.getBoundingClientRect();
+    const ref=node.getBoundingClientRect();
+    return {x:hit.left-ref.left+hit.width/2,y:hit.top-ref.top+hit.height/2};
+  });
+  await sample.tap({position:point});
+  await dialog.getByRole('heading',{name:'勉強しています',exact:true}).waitFor();
+  await dialog.getByText(/勉強する/).first().waitFor();
+  const grab=dialog.locator('.n5-sheet-grab');
+  await grab.dispatchEvent('pointerdown',{pointerId:7,pointerType:'touch',isPrimary:true,button:0,clientY:100});
+  await grab.dispatchEvent('pointerup',{pointerId:7,pointerType:'touch',isPrimary:true,button:0,clientY:175});
+  await dialog.waitFor({state:'hidden'});
+
+  await go(page,'backup');
+  const settings=page.locator('[data-n5-reading-settings]');
+  await settings.locator('[name="density"]').selectOption('compact');
+  await settings.locator('[name="furigana"]').uncheck();
+  assert.equal(await page.locator('html').getAttribute('data-n5-density'),'compact');
+  await page.reload();
+  assert.equal(await page.locator('html').getAttribute('data-n5-furigana'),'false');
+  await go(page,'backup');
+  await settings.getByRole('button',{name:'Khôi phục mặc định'}).click();
+  assert.equal(await page.locator('html').getAttribute('data-n5-density'),'balanced');
+});
+
+test('live recognition returns independently authored 知 折 着 without manually changing scope', {timeout:120_000}, async t => {
+  const {page}=await openApp(t,{viewport:{width:1366,height:768}});
+  const samples=require('./handwriting-fixtures.cjs');
+  await page.locator('#handwritingSearchToggle').click();
+  const panel=page.locator('#handwritingSearchPanel');
+  await page.waitForFunction(()=>!!handwritingCanvas);
+  const box=await panel.locator('canvas').boundingBox();
+  for (const [char,strokes] of Object.entries(samples)) {
+    for (const line of strokes) {
+      const point=([x,y])=>[box.x+box.width*x/100,box.y+box.height*y/100];
+      await page.mouse.move(...point(line[0]));
+      await page.mouse.down();
+      for (const end of line.slice(1)) await page.mouse.move(...point(end),{steps:2});
+      await page.mouse.up();
+    }
+    await panel.locator('[data-handwriting-char="'+char+'"]').waitFor();
+    assert.equal(await panel.locator('[data-n5-handwriting-scope="smart"]').getAttribute('aria-pressed'),'true');
+    await panel.getByRole('button',{name:'Xóa nét'}).click();
+  }
 });
